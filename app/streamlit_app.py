@@ -1243,7 +1243,7 @@ elif "Prediction" in page:
 
             st.markdown("---")
             p1, p2, p3 = st.columns(3)
-            gen = p1.selectbox("Gender", ["M", "F"])
+            gen = p1.selectbox("Gender", ["Male", "Female"])
             reg = p2.selectbox("Region", ["City", "Town", "Village"])
             pt = p3.selectbox("Plan", ["Basic", "Enterprise", "Premium"])
             ref = p1.selectbox("Referral", ["Yes", "No"])
