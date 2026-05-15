@@ -1,6 +1,6 @@
 ﻿"""ChurnSense â€“ Professional SaaS Dashboard"""
 import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -8,7 +8,12 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, roc_curve, precision_recall_curve, f1_score
-import shap
+try:
+    import shap
+    SHAP_AVAILABLE = True
+except Exception:
+    shap = None
+    SHAP_AVAILABLE = False
 from utils import load_artifacts, MODELS_DIR
 from predict import predict_batch
 
@@ -897,7 +902,7 @@ elif "Analytics" in page:
     with tab2:
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-        if y_pred_full is not None:
+        if y_pred_full is not None and SHAP_AVAILABLE:
             import hashlib as _hl
             _mh = _hl.md5(str(pipeline["feature_names"]).encode()).hexdigest()
             shap_vals, X_shap, shap_idx = compute_shap_values(
@@ -992,6 +997,16 @@ elif "Analytics" in page:
                 st.pyplot(fig_dep)
                 plt.close(fig_dep)
                 st.markdown('</div>', unsafe_allow_html=True)
+
+        elif not SHAP_AVAILABLE:
+            st.markdown('''<div class="card">
+            <div class="card-header">
+                <div class="card-title">SHAP Unavailable</div>
+                <div class="card-subtitle">SHAP library is not installed in this environment</div>
+            </div>
+            ''', unsafe_allow_html=True)
+            st.warning("SHAP is not installed. Install it with `pip3 install shap` or `pip3 install -r requirements.txt` to enable SHAP analysis.")
+            st.markdown('</div>', unsafe_allow_html=True)
 
         else:
             st.info("Model predictions required for SHAP analysis.")
