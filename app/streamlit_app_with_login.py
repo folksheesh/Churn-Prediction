@@ -1,5 +1,6 @@
-﻿"""ChurnSense â€“ Professional SaaS Dashboard"""
+"""ChurnSense â€“ Professional SaaS Dashboard"""
 import sys, os
+import base64
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import streamlit as st
 import pandas as pd
@@ -377,6 +378,353 @@ h3 { color: #1f2937 !important; font-weight: 600 !important; font-size: 1rem !im
 }
 </style>""", unsafe_allow_html=True)
 
+# ═══════════════════════════════════════════════════════════════════════
+# LOGIN PAGE
+# ═══════════════════════════════════════════════════════════════════════
+def _get_login_secret(name, default):
+    """Read Streamlit secret if available, otherwise use local default."""
+    try:
+        return st.secrets.get(name, default)
+    except Exception:
+        return default
+
+
+def _image_icon_data_uri(filename, fallback_data_uri):
+    """Convert a local icon file into a CSS-ready data URI."""
+    candidates = [
+        os.path.join(os.path.dirname(__file__), filename),
+        os.path.join(os.path.dirname(__file__), "assets", filename),
+        os.path.join(os.getcwd(), filename),
+        os.path.join(os.getcwd(), "assets", filename),
+    ]
+    for icon_path in candidates:
+        if os.path.exists(icon_path):
+            ext = os.path.splitext(icon_path)[1].lower()
+            mime = "image/png" if ext == ".png" else "image/svg+xml" if ext == ".svg" else "image/jpeg"
+            with open(icon_path, "rb") as icon_file:
+                encoded = base64.b64encode(icon_file.read()).decode("utf-8")
+            return f"data:{mime};base64,{encoded}"
+    return fallback_data_uri
+
+
+def render_login_page():
+    """Render ChurnSense login page before the dashboard loads."""
+    fallback_mail_icon = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%23cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" ry="2"/><path d="m3 7 9 6 9-6"/></svg>'
+    mail_icon_uri = _image_icon_data_uri("mail.png", fallback_mail_icon)
+
+    st.markdown("""
+    <style>
+    :root {
+        --login-bg: #0b1220;
+        --login-card: #111c2e;
+        --login-input: #2b3646;
+        --login-border: rgba(148, 163, 184, 0.34);
+        --login-text: #f8fafc;
+        --login-muted: #cbd5e1;
+        --login-placeholder: #9ca3af;
+        --login-accent: #6366f1;
+    }
+
+    .stApp {
+        background:
+            radial-gradient(circle at 50% 35%, rgba(37, 99, 235, 0.08), transparent 34%),
+            var(--login-bg) !important;
+    }
+    .block-container {
+        max-width: 500px !important;
+        padding: 6.2rem 1.5rem 2.2rem !important;
+        margin: 0 auto !important;
+    }
+    section[data-testid="stSidebar"] {
+        display: none !important;
+    }
+    header, footer, #MainMenu, .stDeployButton {
+        visibility: hidden !important;
+        display: none !important;
+    }
+
+    .login-brand {
+        text-align: center;
+        margin: 0 0 2rem 0;
+    }
+    .login-brand h1 {
+        font-size: 2.15rem !important;
+        line-height: 1.05 !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.03em !important;
+        margin: 0 0 0.55rem 0 !important;
+    }
+    .login-brand .brand-primary {
+        color: #f8fafc !important;
+    }
+    .login-brand .brand-accent {
+        background: linear-gradient(180deg, #95a9ff 0%, #7d96ff 55%, #6f87f7 100%);
+        -webkit-background-clip: text !important;
+        background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        color: transparent !important;
+    }
+    .login-brand p {
+        color: var(--login-muted) !important;
+        font-size: 1rem !important;
+        line-height: 1.4 !important;
+        font-weight: 400 !important;
+        margin: 0 !important;
+        letter-spacing: 0.01em !important;
+    }
+
+    /* Form dijadikan card agar semua input masuk rapi ke dalam kotak */
+    div[data-testid="stForm"]:has(.login-form-anchor) {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        background: rgba(17, 28, 46, 0.96) !important;
+        border: 1px solid var(--login-border) !important;
+        border-radius: 22px !important;
+        padding: 2.05rem 2.05rem 1.95rem !important;
+        box-shadow: 0 28px 80px rgba(0, 0, 0, 0.28) !important;
+        overflow: visible !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-testid="stVerticalBlock"] {
+        gap: 0.85rem !important;
+    }
+    .login-form-anchor {
+        display: none !important;
+    }
+    .login-title {
+        color: var(--login-text) !important;
+        font-size: 1.55rem !important;
+        line-height: 1.2 !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.01em !important;
+        margin: 0 0 1.05rem 0 !important;
+    }
+    .login-title-spacer {
+        height: 0.2rem !important;
+    }
+
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-testid="stTextInput"] label,
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-testid="stTextInput"] label p {
+        color: #e5e7eb !important;
+        font-size: 0.88rem !important;
+        line-height: 1.2 !important;
+        font-weight: 600 !important;
+        margin-bottom: 0.45rem !important;
+    }
+
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-baseweb="input"] {
+        position: relative !important;
+        background: var(--login-input) !important;
+        border: 1px solid rgba(148, 163, 184, 0.42) !important;
+        border-radius: 12px !important;
+        box-shadow: none !important;
+        height: 52px !important;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-baseweb="input"]:has(input[aria-label="Email"]),
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-baseweb="input"]:has(input[aria-label="Password"]) {
+        background: linear-gradient(90deg, rgba(255,255,255,0.045) 0 52px, var(--login-input) 52px 100%) !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-baseweb="input"]:has(input[aria-label="Email"])::before,
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-baseweb="input"]:has(input[aria-label="Password"])::before {
+        content: "";
+        position: absolute;
+        left: 48px;
+        top: 11px;
+        width: 1px;
+        height: 28px;
+        background: rgba(148, 163, 184, 0.20);
+        z-index: 1;
+        pointer-events: none;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-baseweb="input"]:focus-within {
+        border-color: rgba(129, 140, 248, 0.9) !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.16) !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-baseweb="input"] input {
+        height: 50px !important;
+        color: var(--login-text) !important;
+        background: transparent !important;
+        font-size: 0.96rem !important;
+        font-weight: 400 !important;
+        padding: 0 1rem !important;
+        caret-color: var(--login-text) !important;
+        box-shadow: none !important;
+        border: 0 !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-baseweb="input"] input::placeholder {
+        color: var(--login-placeholder) !important;
+        opacity: 1 !important;
+        font-weight: 400 !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) input[aria-label="Email"] {
+        padding-left: 3.45rem !important;
+        background-image: url('__MAIL_ICON_URI__');
+        background-repeat: no-repeat !important;
+        background-position: 15px center !important;
+        background-size: 18px 18px !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) input[aria-label="Password"] {
+        padding-left: 3.45rem !important;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%23cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"/><path d="M7 11V8a5 5 0 0 1 10 0v3"/></svg>');
+        background-repeat: no-repeat !important;
+        background-position: 15px center !important;
+        background-size: 18px 18px !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-testid="stTextInput"] button {
+        display: none !important;
+    }
+    /* Aman: hanya menyembunyikan teks bantuan bawaan Streamlit, tidak menyentuh wrapper input */
+    div[data-testid="stForm"]:has(.login-form-anchor) [data-testid="InputInstructions"],
+    div[data-testid="stForm"]:has(.login-form-anchor) .stTextInputInstructions {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+
+    /* Rapikan autofill browser tanpa mematikan input */
+    div[data-testid="stForm"]:has(.login-form-anchor) input::-webkit-credentials-auto-fill-button,
+    div[data-testid="stForm"]:has(.login-form-anchor) input::-webkit-contacts-auto-fill-button {
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-testid="stCheckbox"] {
+        margin-top: -0.2rem !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-testid="stCheckbox"] label {
+        align-items: center !important;
+        gap: 0.55rem !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-testid="stCheckbox"] label p {
+        color: #d1d5db !important;
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
+        margin: 0 !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) div[data-testid="stCheckbox"] span {
+        border-color: rgba(148, 163, 184, 0.55) !important;
+    }
+    .forgot-text {
+        color: #e5e7eb !important;
+        text-align: right !important;
+        font-size: 0.9rem !important;
+        line-height: 2.15rem !important;
+        font-weight: 500 !important;
+        white-space: nowrap !important;
+    }
+
+    div[data-testid="stForm"]:has(.login-form-anchor) .stFormSubmitButton button {
+        width: 100% !important;
+        height: 56px !important;
+        margin-top: 0.35rem !important;
+        border-radius: 12px !important;
+        background: #ffffff !important;
+        color: var(--login-accent) !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        font-size: 0.98rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0 !important;
+        transition: transform 0.12s ease, background 0.12s ease !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) .stFormSubmitButton button:hover {
+        background: #f8fafc !important;
+        color: #4f46e5 !important;
+        border: 0 !important;
+        transform: translateY(-1px) !important;
+    }
+    div[data-testid="stForm"]:has(.login-form-anchor) .stFormSubmitButton button:active {
+        transform: translateY(0) !important;
+    }
+
+    .signup-text {
+        text-align: center !important;
+        color: #cbd5e1 !important;
+        font-size: 0.9rem !important;
+        line-height: 1.4 !important;
+        margin-top: 1.45rem !important;
+    }
+    .signup-text span {
+        color: #ffffff !important;
+        font-weight: 800 !important;
+    }
+    .login-error {
+        background: rgba(239, 68, 68, 0.12) !important;
+        border: 1px solid rgba(239, 68, 68, 0.32) !important;
+        color: #fecaca !important;
+        border-radius: 10px !important;
+        padding: 0.75rem 0.9rem !important;
+        font-size: 0.86rem !important;
+        margin-top: 1rem !important;
+        text-align: center !important;
+    }
+
+    @media (max-width: 640px) {
+        .block-container {
+            max-width: 100% !important;
+            padding: 4.5rem 1rem 2rem !important;
+        }
+        .login-brand h1 {
+            font-size: 1.9rem !important;
+        }
+        div[data-testid="stForm"]:has(.login-form-anchor) {
+            padding: 1.7rem 1.45rem 1.65rem !important;
+            border-radius: 18px !important;
+        }
+    }
+    </style>
+    """.replace("__MAIL_ICON_URI__", mail_icon_uri), unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="login-brand">
+        <h1><span class="brand-primary">Churn</span><span class="brand-accent">Sense</span></h1>
+        <p>Retention Intelligence Platform</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.form("login_form", clear_on_submit=False):
+        st.markdown('<span class="login-form-anchor"></span>', unsafe_allow_html=True)
+        st.markdown('<div class="login-title">Sign In</div><div class="login-title-spacer"></div>', unsafe_allow_html=True)
+
+        email = st.text_input("Email", placeholder="Enter your email", key="login_email")
+        password = st.text_input("Password", placeholder="Enter your password", type="password", key="login_password")
+
+        opt_left, opt_right = st.columns([1, 1])
+        with opt_left:
+            remember_me = st.checkbox("Remember me", key="remember_me")
+        with opt_right:
+            st.markdown('<div class="forgot-text">Forgot password?</div>', unsafe_allow_html=True)
+
+        submitted = st.form_submit_button("Sign In  →", use_container_width=True, type="primary")
+
+    valid_email = _get_login_secret("LOGIN_EMAIL", "admin@churnsense.com")
+    valid_password = _get_login_secret("LOGIN_PASSWORD", "admin123")
+
+    if submitted:
+        if email.strip() == valid_email and password == valid_password:
+            st.session_state["authenticated"] = True
+            st.session_state["user_email"] = email.strip()
+            st.session_state["remember_me"] = remember_me
+            st.rerun()
+        else:
+            st.markdown('<div class="login-error">Email atau password salah. Coba lagi.</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="signup-text">Don\'t have an account? <span>Sign up for free</span></div>', unsafe_allow_html=True)
+
+
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+if not st.session_state["authenticated"]:
+    render_login_page()
+    st.stop()
+
+
+
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # DATA & MODEL LOADING
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -466,6 +814,12 @@ with st.sidebar:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+    if st.button("Sign out", use_container_width=True):
+        st.session_state["authenticated"] = False
+        st.session_state.pop("user_email", None)
+        st.rerun()
 
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
