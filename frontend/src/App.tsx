@@ -39,7 +39,7 @@ export default function App() {
           </Route>
           
           {/* Public or Protected User routes could go here later */}
-          <Route path="/user-demo" element={<UserDashboard />} />
+          <Route path="/user-dashboard" element={<UserDashboard />} />
         </Routes>
       </Router>
     </AuthProvider>

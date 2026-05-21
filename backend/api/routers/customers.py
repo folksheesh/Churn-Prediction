@@ -217,6 +217,8 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         db.commit()
         return {"message": f"Successfully imported {len(df)} customers.", "count": len(df)}
         
+    except HTTPException as he:
+        raise he
     except Exception as e:
         print(f"Error importing CSV: {e}")
         db.rollback()
