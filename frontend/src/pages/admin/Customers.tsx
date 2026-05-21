@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Plus, MoreHorizontal, UserX, UserCheck, X, Lightbulb, AlertTriangle, MessageSquare, TrendingDown, TrendingUp, BarChart2, Activity } from 'lucide-react';
+import { Search, Filter, Plus, MoreHorizontal, UserX, UserCheck, X, Lightbulb, AlertTriangle, MessageSquare, TrendingDown, TrendingUp, BarChart2, Activity, UploadCloud, Download } from 'lucide-react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +9,9 @@ export default function Customers() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'churn_data' | 'nlp_feedback'>('churn_data');
   const [currentPage, setCurrentPage] = useState(1);
@@ -77,16 +80,67 @@ export default function Customers() {
     }
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await api.get('/customers/csv/template', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'customers_template.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to download template');
+    }
+  };
+
+  const handleImportCSV = async () => {
+    if (!importFile) return;
+    setIsImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+      const res = await api.post('/customers/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      alert(`Import successful: ${res.data.count} customers imported.`);
+      setIsImportModalOpen(false);
+      setImportFile(null);
+      fetchCustomers();
+    } catch (err: any) {
+      console.error(err);
+      if (err.response?.data?.detail?.errors) {
+        alert(`Data Validation Failed:\n\n${err.response.data.detail.errors.join('\n')}`);
+      } else if (typeof err.response?.data?.detail === 'string') {
+        alert(`Error: ${err.response.data.detail}`);
+      } else {
+        alert('Failed to import CSV');
+      }
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <>
       <header className="h-14 flex items-center justify-between px-6 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
         <h1 className="text-sm font-semibold tracking-tight text-zinc-900">Customer Intelligence</h1>
-        <button 
-          onClick={() => setIsAddDrawerOpen(true)}
-          className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow"
-        >
-          <Plus size={14} /> New Customer
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow"
+          >
+            <UploadCloud size={14} /> Import CSV
+          </button>
+          <button 
+            onClick={() => setIsAddDrawerOpen(true)}
+            className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow"
+          >
+            <Plus size={14} /> New Customer
+          </button>
+        </div>
       </header>
 
       <div className="p-6 max-w-[1600px] mx-auto w-full">
@@ -495,6 +549,49 @@ export default function Customers() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Import CSV Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 bg-zinc-950/30 backdrop-blur-sm z-50 flex justify-center items-center animate-fade-in">
+          <div className="w-[450px] bg-white rounded-xl shadow-2xl p-6 flex flex-col relative animate-in zoom-in-95 duration-200">
+            <button onClick={() => { setIsImportModalOpen(false); setImportFile(null); }} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-700 transition-colors">
+              <X size={16} />
+            </button>
+            <h2 className="text-lg font-bold text-zinc-900 mb-1">Import Customers</h2>
+            <p className="text-xs text-zinc-500 mb-6">Upload a CSV file to bulk import customer records and automatically run ML predictions.</p>
+            
+            <button 
+              onClick={handleDownloadTemplate}
+              className="flex items-center justify-center gap-2 w-full py-2 mb-4 border border-zinc-200 rounded-md text-sm font-medium text-blue-600 bg-blue-50/50 hover:bg-blue-50 transition-colors"
+            >
+              <Download size={14} /> Download CSV Template
+            </button>
+            
+            <div className="border-2 border-dashed border-zinc-200 rounded-lg p-8 flex flex-col items-center justify-center mb-6 bg-zinc-50/50">
+              <UploadCloud size={32} className="text-zinc-400 mb-3" />
+              <input 
+                type="file" 
+                accept=".csv"
+                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                className="text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+            </div>
+            
+            <div className="flex justify-end gap-3">
+              <button onClick={() => { setIsImportModalOpen(false); setImportFile(null); }} className="px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 rounded border border-zinc-200 transition-colors shadow-sm">
+                Cancel
+              </button>
+              <button 
+                onClick={handleImportCSV} 
+                disabled={!importFile || isImporting}
+                className="px-4 py-2 text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 rounded transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                {isImporting ? <div className="w-4 h-4 border-2 border-zinc-500 border-t-white rounded-full animate-spin"></div> : 'Upload & Predict'}
+              </button>
+            </div>
           </div>
         </div>
       )}
