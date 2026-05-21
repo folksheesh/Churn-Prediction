@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Plus, MoreHorizontal, UserX, UserCheck, X, Lightbulb, AlertTriangle, MessageSquare, TrendingDown, TrendingUp, BarChart2 } from 'lucide-react';
+import { Search, Filter, Plus, MoreHorizontal, UserX, UserCheck, X, Lightbulb, AlertTriangle, MessageSquare, TrendingDown, TrendingUp, BarChart2, Activity } from 'lucide-react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -8,8 +8,8 @@ export default function Customers() {
   const [filterRisk, setFilterRisk] = useState('All');
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCustomerForAction, setSelectedCustomerForAction] = useState<any | null>(null);
+  const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'churn_data' | 'nlp_feedback'>('churn_data');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
@@ -93,133 +93,143 @@ export default function Customers() {
 
   return (
     <>
-      <header className="h-16 flex items-center justify-between px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
-        <h1 className="text-lg font-semibold tracking-tight text-zinc-900">Customer Management</h1>
+      <header className="h-14 flex items-center justify-between px-6 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
+        <h1 className="text-sm font-semibold tracking-tight text-zinc-900">Customer Intelligence</h1>
         <button 
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm"
+          onClick={() => setIsAddDrawerOpen(true)}
+          className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors shadow-sm"
         >
-          <Plus size={16} /> Add Customer
+          <Plus size={14} /> New Customer
         </button>
       </header>
 
-      <div className="p-8 max-w-[1400px] mx-auto w-full">
+      <div className="p-6 max-w-[1600px] mx-auto w-full">
         
-        {/* Tabs */}
-        <div className="flex border-b border-zinc-200 mb-8">
-          <button 
-            className={cn("px-5 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2", activeTab === 'churn_data' ? "border-zinc-900 text-zinc-900" : "border-transparent text-zinc-500 hover:text-zinc-700")}
-            onClick={() => setActiveTab('churn_data')}
-          >
-            <BarChart2 size={16} />
-            Total Churn Analysis
-          </button>
-          <button 
-            className={cn("px-5 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2", activeTab === 'nlp_feedback' ? "border-zinc-900 text-zinc-900" : "border-transparent text-zinc-500 hover:text-zinc-700")}
-            onClick={() => setActiveTab('nlp_feedback')}
-          >
-            <MessageSquare size={16} />
-            NLP & Feedback Insights
-          </button>
+        {/* Segmented Control Tabs */}
+        <div className="flex mb-6 w-full max-w-sm">
+          <div className="flex bg-zinc-100/80 p-1 rounded-lg border border-zinc-200/50 w-full">
+            <button 
+              className={cn("flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex justify-center items-center gap-1.5", activeTab === 'churn_data' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700")}
+              onClick={() => setActiveTab('churn_data')}
+            >
+              <BarChart2 size={14} />
+              Risk Workspace
+            </button>
+            <button 
+              className={cn("flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex justify-center items-center gap-1.5", activeTab === 'nlp_feedback' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700")}
+              onClick={() => setActiveTab('nlp_feedback')}
+            >
+              <MessageSquare size={14} />
+              NLP Feedback
+            </button>
+          </div>
         </div>
 
         {activeTab === 'churn_data' ? (
-          <>
-        <div className="mb-6 flex justify-between items-center">
-          <div className="relative w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-            <input 
-              type="text" 
-              placeholder="Search customers by name or ID..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 border border-zinc-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all shadow-sm"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-zinc-500 font-medium">Filter Risk:</span>
-            <select 
-              value={filterRisk} 
-              onChange={(e) => setFilterRisk(e.target.value)}
-              className="pl-3 pr-8 py-1.5 bg-white border border-zinc-200 rounded-md text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/20"
-            >
-              <option value="All">All Levels</option>
-              <option value="High">High Risk</option>
-              <option value="Medium">Medium Risk</option>
-              <option value="Low">Low Risk</option>
-            </select>
-          </div>
-        </div>
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-end">
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-900">Risk Workspace</h2>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Triage and manage customer retention risks</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative w-64">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+                  <input 
+                    type="text" 
+                    placeholder="Search name or ID..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 border border-zinc-200/80 rounded-md text-[13px] bg-white focus:outline-none focus:ring-1 focus:ring-zinc-900/20 focus:border-zinc-300 transition-all shadow-sm"
+                  />
+                </div>
+                <select 
+                  value={filterRisk} 
+                  onChange={(e) => setFilterRisk(e.target.value)}
+                  className="pl-3 pr-8 py-1.5 bg-white border border-zinc-200/80 rounded-md text-[13px] font-medium text-zinc-700 hover:bg-zinc-50 transition-colors shadow-sm focus:outline-none focus:ring-1 focus:ring-zinc-900/20"
+                >
+                  <option value="All">All Risks</option>
+                  <option value="High">High Risk</option>
+                  <option value="Medium">Medium Risk</option>
+                  <option value="Low">Low Risk</option>
+                </select>
+              </div>
+            </div>
 
-        <div className="bg-white border border-zinc-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
-          {loading ? (
+            <div className="bg-white border border-zinc-200/80 rounded-md shadow-[0_2px_8px_rgb(0,0,0,0.04)] flex flex-col overflow-hidden">
+              {loading ? (
             <div className="h-64 flex items-center justify-center">
                <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin"></div>
             </div>
           ) : (
             <div className="w-full overflow-x-auto">
-              <table className="w-full text-sm text-left whitespace-nowrap">
-                <thead className="text-[11px] text-zinc-500 bg-zinc-50 uppercase tracking-wider border-b border-zinc-200">
+              <table className="w-full text-left whitespace-nowrap">
+                <thead className="text-[10px] font-semibold text-zinc-500 bg-zinc-50/50 uppercase tracking-wider border-b border-zinc-100">
                   <tr>
-                    <th className="px-5 py-3 font-medium">Customer</th>
-                    <th className="px-5 py-3 font-medium">Plan Tier</th>
-                    <th className="px-5 py-3 font-medium">Feedback (Sentiment)</th>
-                    <th className="px-5 py-3 font-medium">Churn Risk</th>
-                    <th className="px-5 py-3 font-medium">Last Active</th>
-                    <th className="px-5 py-3 font-medium text-right">Actions</th>
+                    <th className="px-5 py-2.5">Customer</th>
+                    <th className="px-5 py-2.5">Plan Tier</th>
+                    <th className="px-5 py-2.5">Recent Feedback</th>
+                    <th className="px-5 py-2.5">Churn Risk</th>
+                    <th className="px-5 py-2.5">Activity</th>
+                    <th className="px-5 py-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100">
+                <tbody className="divide-y divide-zinc-100/80">
                   {paginatedCustomers.map((c) => (
-                    <tr key={c.id} className={cn("hover:bg-zinc-50/80 transition-colors group", c.churn_risk === 'High' ? "bg-rose-50/10" : "")}>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center font-bold text-xs border border-zinc-200">
+                    <tr key={c.id} className={cn("hover:bg-zinc-50/50 transition-colors group", c.churn_risk === 'High' ? "bg-rose-50/10" : "")}>
+                      <td className="px-5 py-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-md bg-zinc-100/80 text-zinc-600 flex items-center justify-center font-bold text-[10px] border border-zinc-200/60 shadow-sm">
                             {c.name?.substring(0,2).toUpperCase() || 'NA'}
                           </div>
-                          <div>
-                            <div className="font-medium text-zinc-900">{c.name}</div>
-                            <div className="text-[11px] text-zinc-500 font-mono mt-0.5">{c.id}</div>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-zinc-900 text-[13px] leading-tight">{c.name}</span>
+                            <span className="text-[10px] text-zinc-500 font-mono mt-0.5">{c.id}</span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-zinc-600">{c.plan_tier || 'Unknown'}</td>
-                      <td className="px-5 py-3">
+                      <td className="px-5 py-2.5">
+                        <span className="text-[11px] font-medium text-zinc-700 bg-zinc-100/80 px-2 py-0.5 rounded-sm border border-zinc-200/50">{c.plan_tier || 'Unknown'}</span>
+                      </td>
+                      <td className="px-5 py-2.5">
                         {c.feedback ? (
                            <div className="flex flex-col">
-                             <span className="text-xs text-zinc-700 truncate max-w-[150px]">{c.feedback}</span>
+                             <span className="text-[11px] text-zinc-600 truncate max-w-[180px]">{c.feedback}</span>
                            </div>
                         ) : (
-                          <span className="text-xs text-zinc-400 italic">No feedback provided</span>
+                          <span className="text-[11px] text-zinc-400 italic">No feedback provided</span>
                         )}
                       </td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className={cn("w-1.5 h-1.5 rounded-full", 
-                            c.churn_risk === 'High' ? 'bg-rose-500' : c.churn_risk === 'Medium' ? 'bg-amber-500' : 'bg-emerald-500'
-                          )}></div>
-                          <span className={cn("font-medium text-xs", 
-                            c.churn_risk === 'High' ? 'text-rose-600' : c.churn_risk === 'Medium' ? 'text-amber-600' : 'text-emerald-600'
-                          )}>{c.churn_risk}</span>
-                          <span className="text-[11px] text-zinc-400">({Math.round((c.churn_probability || 0)*100)}%)</span>
+                      <td className="px-5 py-2.5">
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className={cn("w-1.5 h-1.5 rounded-full", 
+                              c.churn_risk === 'High' ? 'bg-rose-500' : c.churn_risk === 'Medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                            )}></div>
+                            <span className={cn("font-semibold text-[11px]", 
+                              c.churn_risk === 'High' ? 'text-rose-600' : c.churn_risk === 'Medium' ? 'text-amber-600' : 'text-emerald-600'
+                            )}>{c.churn_risk}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                             <div className="w-12 h-1 bg-zinc-100 rounded-full overflow-hidden">
+                                <div className={cn("h-full rounded-full", 
+                                  c.churn_risk === 'High' ? 'bg-rose-500' : c.churn_risk === 'Medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                                )} style={{ width: `${Math.round((c.churn_probability || 0)*100)}%` }}></div>
+                             </div>
+                             <span className="text-[10px] font-mono text-zinc-400">{Math.round((c.churn_probability || 0)*100)}%</span>
+                          </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-zinc-500 text-xs">
+                      <td className="px-5 py-2.5 text-zinc-500 text-xs">
                         {c.days_since_active ? `${c.days_since_active} days ago` : 'Unknown'}
                       </td>
-                      <td className="px-5 py-3 text-right">
-                        {c.churn_risk === 'High' ? (
-                          <button 
-                            onClick={() => setSelectedCustomerForAction(c)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded text-xs font-medium transition-colors shadow-sm"
-                          >
-                            <AlertTriangle size={14} /> Mitigate
-                          </button>
-                        ) : (
-                          <button className="text-zinc-400 hover:text-zinc-600 p-1 rounded hover:bg-zinc-100 transition-colors">
-                            <MoreHorizontal size={16} />
-                          </button>
-                        )}
+                      <td className="px-5 py-2.5 text-right">
+                        <button 
+                          onClick={() => setSelectedCustomer(c)}
+                          className={cn("inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold transition-colors shadow-sm", c.churn_risk === 'High' ? "bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200" : "bg-white text-zinc-600 hover:bg-zinc-50 border border-zinc-200")}
+                        >
+                          {c.churn_risk === 'High' ? <><AlertTriangle size={12} /> Mitigate</> : "View Profile"}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -235,7 +245,7 @@ export default function Customers() {
             </div>
           )}
           
-          <div className="px-5 py-3 border-t border-zinc-200 bg-zinc-50 flex justify-between items-center text-xs text-zinc-500">
+          <div className="px-5 py-2.5 border-t border-zinc-100 bg-zinc-50/30 flex justify-between items-center text-[11px] text-zinc-500 font-medium">
             <span>Showing {paginatedCustomers.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - {Math.min(currentPage * itemsPerPage, filteredCustomers.length)} of {filteredCustomers.length} results</span>
             <div className="flex gap-1.5">
               <button 
@@ -255,7 +265,7 @@ export default function Customers() {
             </div>
           </div>
         </div>
-          </>
+        </div>
         ) : (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -287,14 +297,14 @@ export default function Customers() {
               </div>
             </div>
 
-            <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
+            <div className="saas-card overflow-hidden">
+              <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
                 <div>
-                  <h3 className="font-semibold text-zinc-900">NLP Keyword Extractions & Actual Feedback</h3>
-                  <p className="text-xs text-zinc-500 mt-1">Direct feedback from users filtered by ML sentiment model</p>
+                  <h3 className="saas-heading">NLP Keyword Extractions & Actual Feedback</h3>
+                  <p className="saas-subtext mt-0.5">Direct feedback from users filtered by ML sentiment model</p>
                 </div>
                 {nlpInsights.feedbacks.length > 100 && (
-                  <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                  <span className="saas-badge bg-amber-50 text-amber-700 border-amber-200">
                     Showing top 100 of {nlpInsights.feedbacks.length}
                   </span>
                 )}
@@ -340,123 +350,165 @@ export default function Customers() {
         )}
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md overflow-hidden">
+      {/* Add Customer Drawer */}
+      {isAddDrawerOpen && (
+        <div className="fixed inset-0 bg-zinc-950/20 backdrop-blur-sm z-50 flex justify-end">
+          <div className="w-[400px] bg-white h-full shadow-2xl animate-in slide-in-from-right flex flex-col border-l border-zinc-200">
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
-              <h2 className="text-lg font-semibold text-zinc-900">Add New Customer</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-zinc-400 hover:text-zinc-700 transition-colors">
-                <X size={20} />
+              <h2 className="saas-heading">Add New Customer</h2>
+              <button onClick={() => setIsAddDrawerOpen(false)} className="text-zinc-400 hover:text-zinc-700 transition-colors">
+                <X size={16} />
               </button>
             </div>
             
-            <form onSubmit={handleAddCustomer} className="p-6 space-y-4">
+            <form onSubmit={handleAddCustomer} className="p-6 space-y-4 flex-1 overflow-y-auto">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-zinc-700">Customer ID</label>
-                <input required type="text" placeholder="e.g. CUST-123" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="w-full border border-zinc-300 rounded px-3 py-1.5 text-sm" />
+                <label className="text-xs font-semibold text-zinc-700">Customer ID</label>
+                <input required type="text" placeholder="e.g. CUST-123" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-zinc-700">Full Name</label>
-                <input required type="text" placeholder="Jane Doe" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-zinc-300 rounded px-3 py-1.5 text-sm" />
+                <label className="text-xs font-semibold text-zinc-700">Full Name</label>
+                <input required type="text" placeholder="Jane Doe" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-700">Plan Tier</label>
-                  <select value={formData.plan_tier} onChange={e => setFormData({...formData, plan_tier: e.target.value})} className="w-full border border-zinc-300 rounded px-3 py-1.5 text-sm">
+                  <label className="text-xs font-semibold text-zinc-700">Plan Tier</label>
+                  <select value={formData.plan_tier} onChange={e => setFormData({...formData, plan_tier: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400">
                     <option>Starter</option>
                     <option>Pro</option>
                     <option>Enterprise</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-700">Age</label>
-                  <input type="number" placeholder="30" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full border border-zinc-300 rounded px-3 py-1.5 text-sm" />
+                  <label className="text-xs font-semibold text-zinc-700">Age</label>
+                  <input type="number" placeholder="30" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
                 </div>
               </div>
-              
-              <div className="pt-4 flex justify-end gap-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 rounded-md transition-colors">
-                  Cancel
-                </button>
-                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-zinc-900 hover:bg-zinc-800 rounded-md transition-colors shadow-sm">
-                  Save Customer
-                </button>
-              </div>
             </form>
+
+            <div className="p-4 border-t border-zinc-100 flex justify-end gap-3 bg-zinc-50/50">
+              <button type="button" onClick={() => setIsAddDrawerOpen(false)} className="px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 rounded border border-zinc-200 transition-colors shadow-sm">
+                Cancel
+              </button>
+              <button onClick={handleAddCustomer} className="px-3 py-1.5 text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 rounded transition-colors shadow-sm">
+                Save Customer
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {selectedCustomerForAction && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 bg-rose-50/30">
-              <div className="flex items-center gap-2 text-rose-600">
-                <AlertTriangle size={18} />
-                <h2 className="text-sm font-semibold text-rose-900">Churn Mitigation Action</h2>
+      {/* Customer Intelligence Drawer (Slide-over) */}
+      {selectedCustomer && (
+        <div className="fixed inset-0 bg-zinc-950/20 backdrop-blur-sm z-50 flex justify-end">
+          <div className="w-[500px] bg-white h-full shadow-2xl animate-in slide-in-from-right flex flex-col border-l border-zinc-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                <h2 className="saas-heading">Customer Intelligence Profile</h2>
               </div>
-              <button onClick={() => setSelectedCustomerForAction(null)} className="text-zinc-400 hover:text-zinc-700 transition-colors">
-                <X size={20} />
+              <button onClick={() => setSelectedCustomer(null)} className="text-zinc-400 hover:text-zinc-700 transition-colors">
+                <X size={16} />
               </button>
             </div>
             
-            <div className="p-6">
-              <div className="mb-6 flex items-center gap-4 bg-zinc-50 p-4 rounded-lg border border-zinc-100">
-                <div className="w-10 h-10 rounded-full bg-white border border-zinc-200 flex items-center justify-center font-bold text-zinc-600 text-sm">
-                  {selectedCustomerForAction.name?.substring(0,2).toUpperCase() || 'NA'}
-                </div>
-                <div>
-                  <div className="font-semibold text-zinc-900">{selectedCustomerForAction.name}</div>
-                  <div className="text-xs text-zinc-500">{selectedCustomerForAction.id} • {selectedCustomerForAction.plan_tier}</div>
-                </div>
-                <div className="ml-auto text-right">
-                  <div className="text-xs text-rose-500 font-medium">Critical Risk</div>
-                  <div className="text-sm font-bold text-rose-700">{(selectedCustomerForAction.churn_probability * 100).toFixed(0)}% Probability</div>
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6 border-b border-zinc-100 bg-zinc-50/30">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center font-bold text-zinc-600 text-lg">
+                    {selectedCustomer.name?.substring(0,2).toUpperCase() || 'NA'}
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-lg font-bold text-zinc-900 leading-tight">{selectedCustomer.name}</h1>
+                    <div className="text-xs font-medium text-zinc-500 mt-0.5">{selectedCustomer.id} • {selectedCustomer.plan_tier} Plan</div>
+                    <div className="mt-3 flex gap-2">
+                      <span className="saas-badge bg-white text-zinc-600">{selectedCustomer.age} Yrs</span>
+                      <span className="saas-badge bg-white text-zinc-600">{selectedCustomer.gender}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">Health Score</div>
+                    <div className={cn("text-2xl font-black tracking-tight", 
+                      selectedCustomer.churn_risk === 'High' ? "text-rose-600" :
+                      selectedCustomer.churn_risk === 'Medium' ? "text-amber-600" : "text-emerald-600"
+                    )}>
+                      {100 - Math.round((selectedCustomer.churn_probability || 0)*100)}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider mb-2">Rumusan Masalah</h3>
-                  <div className="text-sm text-zinc-700 bg-rose-50/50 p-3 rounded-md border border-rose-100/50">
-                    {selectedCustomerForAction.feedback?.toLowerCase().includes('website') || selectedCustomerForAction.feedback?.toLowerCase().includes('service') 
-                      ? `Keluhan spesifik terkait "${selectedCustomerForAction.feedback}". Ini berkolerasi tinggi dengan pelanggan yang akan segera berhenti berlangganan.` 
-                      : selectedCustomerForAction.days_since_active > 14 
-                      ? `Penurunan drastis aktivitas, tidak menggunakan aplikasi selama ${selectedCustomerForAction.days_since_active} hari terakhir.` 
-                      : `Pola metrik API dan Frekuensi Login menunjukkan probabilitas churn yang sangat tinggi berdasarkan profil behavior.`}
-                  </div>
-                </div>
+              <div className="p-6 space-y-6">
                 
+                {/* Risk Section */}
+                <div className={cn("p-4 rounded-lg border", selectedCustomer.churn_risk === 'High' ? "bg-rose-50/50 border-rose-200/50" : "bg-zinc-50 border-zinc-200")}>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <AlertTriangle size={14} className={selectedCustomer.churn_risk === 'High' ? "text-rose-600" : "text-zinc-500"} />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900">Risk Assessment</h3>
+                  </div>
+                  <div className="text-sm font-medium text-zinc-700 leading-relaxed mb-3">
+                    {selectedCustomer.churn_risk === 'High' 
+                      ? "Critical churn probability detected based on recent behavioral drops and negative sentiment."
+                      : "Customer exhibits normal usage patterns and stable sentiment."}
+                  </div>
+                  
+                  {selectedCustomer.churn_risk === 'High' && (
+                    <div className="bg-white rounded border border-rose-100 p-3 shadow-sm">
+                      <h4 className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-1 flex items-center gap-1"><Lightbulb size={12}/> AI Recommended Action</h4>
+                      <p className="text-[13px] font-medium text-zinc-800">
+                        {selectedCustomer.feedback?.toLowerCase().includes('website') 
+                          ? "Escalate UI/UX complaint ticket directly to engineering team today."
+                          : selectedCustomer.days_since_active > 14 
+                          ? "Initiate proactive outreach call to verify technical blockers."
+                          : "Issue an automated 15% retention discount via email sequence."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Behavioral Metrics */}
                 <div>
-                  <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Lightbulb size={14} className="text-emerald-500"/> Quick Action Mitigasi</h3>
-                  <div className="text-sm text-emerald-800 bg-emerald-50 p-3 rounded-md border border-emerald-100/50 font-medium">
-                    {selectedCustomerForAction.feedback?.toLowerCase().includes('website') 
-                      ? "Eskalasi tiket keluhan UI/UX secara prioritas ke tim teknis HARI INI."
-                      : selectedCustomerForAction.days_since_active > 14 
-                      ? "Lakukan Proactive Outreach via Telepon/Email untuk menanyakan kendala."
-                      : "Kirimkan penawaran/diskon personal (Retention Promo) via Email."}
+                  <h3 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Behavioral Telemetry (90d)</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="saas-card p-3">
+                      <div className="text-[10px] font-semibold text-zinc-500 mb-1">API Calls</div>
+                      <div className="text-lg font-bold text-zinc-900">{selectedCustomer.api_calls_90d?.toLocaleString() || 0}</div>
+                    </div>
+                    <div className="saas-card p-3">
+                      <div className="text-[10px] font-semibold text-zinc-500 mb-1">Session Logins</div>
+                      <div className="text-lg font-bold text-zinc-900">{selectedCustomer.logins_90d?.toLocaleString() || 0}</div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Feedback */}
+                <div>
+                  <h3 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Recent Feedback</h3>
+                  {selectedCustomer.feedback ? (
+                    <div className="bg-zinc-50 border border-zinc-200 rounded p-4 text-[13px] text-zinc-700 italic">
+                      "{selectedCustomer.feedback}"
+                    </div>
+                  ) : (
+                    <div className="text-[13px] text-zinc-500">No recorded feedback.</div>
+                  )}
+                </div>
+
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-zinc-50 border-t border-zinc-100 flex justify-end gap-3">
-              <button 
-                onClick={() => setSelectedCustomerForAction(null)} 
-                className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-200 bg-zinc-100 rounded-md transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => {
-                  alert(`Mitigation action executed for ${selectedCustomerForAction.name}!`);
-                  setSelectedCustomerForAction(null);
-                }}
-                className="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-md transition-colors shadow-sm flex items-center gap-2"
-              >
-                Execute Action
-              </button>
-            </div>
+            {selectedCustomer.churn_risk === 'High' && (
+              <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex justify-end gap-3">
+                <button 
+                  onClick={() => {
+                    alert(`Mitigation applied for ${selectedCustomer.name}`);
+                    setSelectedCustomer(null);
+                  }}
+                  className="w-full px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-md transition-colors shadow-sm flex items-center justify-center gap-2"
+                >
+                  <AlertTriangle size={14} /> Execute Mitigation Playbook
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

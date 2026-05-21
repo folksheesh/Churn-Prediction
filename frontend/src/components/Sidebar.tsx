@@ -20,18 +20,18 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 border-r border-zinc-200 bg-zinc-50/50 flex flex-col hidden md:flex shrink-0 h-screen sticky top-0">
+    <aside className="w-[240px] border-r border-zinc-200 bg-zinc-50/30 flex flex-col hidden md:flex shrink-0 h-screen sticky top-0">
       {/* Workspace Selector */}
-      <div className="h-16 flex items-center px-4 border-b border-zinc-200/80">
-        <div className="flex items-center gap-3 w-full hover:bg-zinc-100 p-2 rounded-lg transition-colors cursor-pointer">
-          <div className="w-8 h-8 rounded-md bg-zinc-900 text-white flex items-center justify-center font-bold shadow-sm">
+      <div className="h-14 flex items-center px-3 border-b border-zinc-200/60 mt-2 mb-2">
+        <div className="flex items-center gap-2.5 w-full hover:bg-zinc-100/80 p-1.5 rounded-md transition-colors cursor-pointer group">
+          <div className="w-6 h-6 rounded bg-zinc-900 text-white flex items-center justify-center font-bold shadow-sm text-xs">
             C
           </div>
           <div className="flex flex-col flex-1">
-            <span className="font-semibold text-sm tracking-tight text-zinc-900 leading-tight">ChurnSense</span>
-            <span className="text-xs text-zinc-500 font-medium">Acme Corp</span>
+            <span className="font-semibold text-sm tracking-tight text-zinc-900 leading-none">ChurnSense</span>
+            <span className="text-[10px] text-zinc-500 font-medium mt-0.5">Acme Corp</span>
           </div>
-          <ChevronDown size={14} className="text-zinc-400" />
+          <ChevronDown size={14} className="text-zinc-400 group-hover:text-zinc-600 transition-colors" />
         </div>
       </div>
       
@@ -39,8 +39,8 @@ export default function Sidebar() {
         <div className="space-y-6">
           {/* Main Navigation */}
           <div>
-            <div className="text-[11px] font-semibold text-zinc-400 mb-3 px-2 uppercase tracking-wider">Workspace</div>
-            <nav className="space-y-0.5">
+            <div className="text-[10px] font-semibold text-zinc-400/80 mb-2 px-3 uppercase tracking-wider">Workspace</div>
+            <nav className="space-y-0.5 px-2">
               {mainNavItems.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
@@ -49,13 +49,13 @@ export default function Sidebar() {
                     key={item.name}
                     to={item.href}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors group",
+                      "flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-md transition-colors group relative",
                       isActive 
-                        ? "bg-white text-zinc-900 shadow-sm border border-zinc-200/60" 
-                        : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 border border-transparent"
+                        ? "bg-zinc-100/80 text-zinc-900" 
+                        : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100/50"
                     )}
                   >
-                    <Icon size={16} className={isActive ? "text-zinc-900" : "text-zinc-500 group-hover:text-zinc-700"} /> 
+                    <Icon size={15} className={isActive ? "text-zinc-900" : "text-zinc-400 group-hover:text-zinc-600"} /> 
                     {item.name}
                   </Link>
                 );
@@ -64,16 +64,16 @@ export default function Sidebar() {
           </div>
 
           {/* Admin Navigation */}
-          <div>
+          <div className="mt-6">
             <div 
-              className="flex items-center justify-between px-2 mb-3 cursor-pointer group"
+              className="flex items-center justify-between px-3 mb-2 cursor-pointer group"
               onClick={() => setAdminOpen(!adminOpen)}
             >
-              <div className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider group-hover:text-zinc-600 transition-colors">Administration</div>
+              <div className="text-[10px] font-semibold text-zinc-400/80 uppercase tracking-wider group-hover:text-zinc-600 transition-colors">Administration</div>
               <ChevronDown size={14} className={cn("text-zinc-400 transition-transform", !adminOpen && "-rotate-90")} />
             </div>
             {adminOpen && (
-              <nav className="space-y-0.5">
+              <nav className="space-y-0.5 px-2">
                 {adminNavItems.map((item) => {
                   const isActive = pathname.startsWith(item.href) && item.href !== '/admin' || (item.href === '/admin' && pathname === '/admin');
                   const Icon = item.icon;
@@ -82,13 +82,13 @@ export default function Sidebar() {
                       key={item.name}
                       to={item.href}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors group",
+                        "flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-md transition-colors group relative",
                         isActive 
-                          ? "bg-white text-zinc-900 shadow-sm border border-zinc-200/60" 
-                          : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/80 border border-transparent"
+                          ? "bg-zinc-100/80 text-zinc-900" 
+                          : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100/50"
                       )}
                     >
-                      <Icon size={16} className={isActive ? "text-zinc-900" : "text-zinc-500 group-hover:text-zinc-700"} /> 
+                      <Icon size={15} className={isActive ? "text-zinc-900" : "text-zinc-400 group-hover:text-zinc-600"} /> 
                       {item.name}
                     </Link>
                   );
@@ -100,21 +100,21 @@ export default function Sidebar() {
       </div>
       
       {/* Footer User Profile */}
-      <div className="p-4 border-t border-zinc-200/80 bg-zinc-50">
-        <Link to="/settings" className="flex items-center justify-between p-2 rounded-lg hover:bg-zinc-100 transition-colors cursor-pointer group">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
+      <div className="p-3 border-t border-zinc-200/60 bg-zinc-50/50">
+        <Link to="/settings" className="flex items-center justify-between p-2 rounded-md hover:bg-zinc-100/80 transition-colors cursor-pointer group">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-full bg-zinc-200/50 border border-zinc-200 text-zinc-700 flex items-center justify-center font-bold text-[10px]">
               JD
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-zinc-900">Jane Doe</span>
-              <span className="text-xs text-zinc-500 flex items-center gap-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+              <span className="text-[13px] font-semibold text-zinc-900 leading-none">Jane Doe</span>
+              <span className="text-[10px] text-zinc-500 flex items-center gap-1 mt-0.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                 System Active
               </span>
             </div>
           </div>
-          <Settings size={16} className="text-zinc-400 group-hover:text-zinc-600 transition-colors" />
+          <Settings size={14} className="text-zinc-400 group-hover:text-zinc-600 transition-colors" />
         </Link>
       </div>
     </aside>

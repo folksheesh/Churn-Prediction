@@ -1,41 +1,25 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  BarChart, Bar
-} from 'recharts';
-import { Users, Activity, DollarSign, ArrowUpRight, ArrowDownRight, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Users, Activity, DollarSign, ArrowUpRight, ArrowDownRight, ShieldAlert, CheckCircle2, BellRing, ArrowRight, Zap, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<any>(null);
   const [alerts, setAlerts] = useState<any[]>([]);
-  const [features, setFeatures] = useState<any[]>([]);
-  const [historicalData, setHistoricalData] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
 
   useEffect(() => {
     Promise.all([
       api.get('/analytics/overview'),
       api.get('/analytics/critical-alerts?limit=6'),
-      api.get('/analytics/feature-importance'),
-      api.get('/analytics/historical-trend')
+      api.get('/analytics/activity-logs?limit=5')
     ])
-    .then(([overviewRes, alertsRes, featuresRes, trendRes]) => {
+    .then(([overviewRes, alertsRes, activityRes]) => {
       setMetrics(overviewRes.data);
       setAlerts(alertsRes.data);
-      
-      if (Array.isArray(featuresRes.data)) {
-        const maxImp = Math.max(...featuresRes.data.map((f: any) => f.importance));
-        setFeatures(featuresRes.data.map((f: any) => ({
-          ...f, 
-          importance: Math.round((f.importance / maxImp) * 100) 
-        })));
-      } else {
-        setFeatures([]);
-      }
-      
-      setHistoricalData(trendRes.data);
+      setActivities(activityRes.data || []);
     })
     .catch(err => console.error("Error fetching dashboard data:", err))
     .finally(() => setLoading(false));
@@ -51,159 +35,180 @@ export default function Dashboard() {
 
   return (
     <>
-      <header className="h-16 flex items-center justify-between px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
+      <header className="h-14 flex items-center justify-between px-6 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-zinc-900">Intelligence Dashboard</h1>
+          <h1 className="text-sm font-semibold tracking-tight text-zinc-900">Operational Overview</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded-md">Last updated: Just now</div>
-          <button className="text-sm font-medium bg-zinc-900 text-white px-3 py-1.5 rounded-md shadow-sm hover:bg-zinc-800 transition-colors">
-            Generate Report
-          </button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> Live Updates
+          </div>
         </div>
       </header>
 
-      <div className="p-8 max-w-[1400px] mx-auto w-full space-y-6">
+      <div className="p-6 max-w-[1600px] mx-auto w-full space-y-6">
         
-        {/* Top KPI Widgets */}
+        {/* Top KPI Widgets - Compact SaaS Style */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard 
             title="Total Active Customers" 
             value={metrics?.retained?.toLocaleString() || "—"} 
             trend="+2.4%" isPositive={true}
-            icon={<Users size={16} />} 
+            icon={<Users size={14} />} 
           />
           <MetricCard 
             title="Predicted Churn Rate" 
             value={`${metrics?.churn_rate?.toFixed(2) || 0}%`} 
             trend="-0.5%" isPositive={true}
-            icon={<Activity size={16} />} 
+            icon={<Activity size={14} />} 
           />
           <MetricCard 
             title="MRR At Risk" 
             value={`$${metrics?.at_risk_mrr?.toLocaleString() || "0"}`} 
             trend="+12.5%" isPositive={false}
-            icon={<DollarSign size={16} />} 
+            icon={<DollarSign size={14} />} 
             alert={true}
           />
           <MetricCard 
             title="Critical Risk Alerts" 
             value={alerts.length.toString()} 
             trend="+3" isPositive={false}
-            icon={<ShieldAlert size={16} />} 
+            icon={<ShieldAlert size={14} />} 
+            alert={alerts.length > 0}
           />
         </div>
 
+        {/* Asymmetric Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Chart Area */}
-          <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
-            <div className="px-6 py-5 border-b border-zinc-100 flex justify-between items-center">
-              <div>
-                <h2 className="text-base font-semibold text-zinc-900">Customer Retention Trend</h2>
-                <p className="text-sm text-zinc-500 mt-0.5">Historical active vs churned user counts (6 mo)</p>
+          
+          {/* Main Operational Column (70%) */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            
+            {/* AI Recommendation Strip */}
+            <div className="bg-indigo-50/50 border border-indigo-100 rounded-md p-4 flex gap-4 items-start shadow-sm">
+              <div className="mt-0.5 text-indigo-500 bg-indigo-100 p-1.5 rounded-md"><Zap size={16} /></div>
+              <div className="flex-1">
+                <h3 className="saas-heading text-indigo-950">AI Retention Opportunity Detected</h3>
+                <p className="text-[13px] text-indigo-800/80 mt-1 leading-relaxed">
+                  Our model indicates that offering a 15% discount to users who have experienced 
+                  "Poor Website" performance in the last 7 days can reduce their churn probability by 40%.
+                </p>
+              </div>
+              <button className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded shadow-sm hover:bg-indigo-700 transition-colors">
+                Apply Mitigation
+              </button>
+            </div>
+
+            {/* Operational Triage Table */}
+            <div className="saas-card flex flex-col overflow-hidden flex-1">
+              <div className="px-5 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
+                  <h2 className="saas-heading">Needs Immediate Attention</h2>
+                </div>
+                <Link to="/customers" className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors">
+                  View all in CRM <ArrowRight size={12} />
+                </Link>
+              </div>
+              
+              <div className="w-full overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-[11px] text-zinc-400 bg-white uppercase tracking-wider border-b border-zinc-100">
+                    <tr>
+                      <th className="px-5 py-2.5 font-medium">Customer</th>
+                      <th className="px-5 py-2.5 font-medium">Risk Signal</th>
+                      <th className="px-5 py-2.5 font-medium text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100">
+                    {alerts.map((row, i) => (
+                      <tr key={i} className="hover:bg-zinc-50/50 transition-colors group">
+                        <td className="px-5 py-3">
+                          <div className="font-medium text-zinc-900 text-[13px]">{row.name}</div>
+                          <div className="text-[11px] font-mono text-zinc-500 mt-0.5">{row.id} • {row.plan}</div>
+                        </td>
+                        <td className="px-5 py-3">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-rose-600 text-[13px]">{row.score}% Prob.</span>
+                              <div className="w-12 h-1 bg-zinc-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-rose-500 rounded-full" style={{ width: `${row.score}%` }}></div>
+                              </div>
+                            </div>
+                            <span className="text-[11px] font-medium text-zinc-600 bg-zinc-100 inline-block px-1.5 py-0.5 rounded w-max">{row.signal}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <button className="text-[11px] font-semibold bg-white border border-zinc-200 text-zinc-700 px-2.5 py-1.5 rounded hover:bg-zinc-50 hover:border-zinc-300 transition-all shadow-sm">
+                            Triage
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {alerts.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="px-6 py-12 text-center text-zinc-500">
+                          <CheckCircle2 size={24} className="mx-auto mb-2 text-emerald-500" />
+                          <span className="text-sm font-medium">No critical risks currently active.</span>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
-            <div className="p-6 flex-1 min-h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={historicalData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#18181b" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="#18181b" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} />
-                  <RechartsTooltip 
-                    contentStyle={{ borderRadius: '8px', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '13px' }}
-                    itemStyle={{ color: '#09090b', fontWeight: 500 }}
-                  />
-                  <Area type="monotone" dataKey="active" stroke="#18181b" strokeWidth={2} fillOpacity={1} fill="url(#colorActive)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
           </div>
 
-          {/* Feature Importance Side Panel */}
-          <div className="bg-white border border-zinc-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
-            <div className="px-6 py-5 border-b border-zinc-100">
-              <h2 className="text-base font-semibold text-zinc-900">Key Churn Drivers</h2>
-              <p className="text-sm text-zinc-500 mt-0.5">XGBoost model feature importance</p>
+          {/* Right Context Column (30%) */}
+          <div className="flex flex-col gap-6">
+            
+            {/* System Health / Goal Tracking */}
+            <div className="saas-card p-5">
+               <h3 className="saas-heading mb-4 flex items-center gap-1.5"><Target size={14} className="text-zinc-500"/> Quarterly Retention Goal</h3>
+               <div className="relative pt-1">
+                  <div className="flex mb-2 items-center justify-between">
+                    <div>
+                      <span className="text-2xl font-bold text-zinc-900">92.4%</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-semibold inline-block text-zinc-500">
+                        Target: 95.0%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-zinc-100">
+                    <div style={{ width: "85%" }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-zinc-900"></div>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 leading-relaxed">
+                    You are currently trailing behind the Q3 retention target. Focus on mitigating Starter plan churn.
+                  </p>
+               </div>
             </div>
-            <div className="p-6 flex-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={features} layout="vertical" margin={{ top: 0, right: 0, left: 30, bottom: 0 }}>
-                  <XAxis type="number" hide />
-                  <YAxis dataKey="feature" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#52525b' }} width={110} />
-                  <RechartsTooltip 
-                    cursor={{ fill: '#f4f4f5' }}
-                    contentStyle={{ borderRadius: '8px', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
-                  />
-                  <Bar dataKey="importance" fill="#a1a1aa" radius={[0, 4, 4, 0]} barSize={20} />
-                </BarChart>
-              </ResponsiveContainer>
+
+            {/* Live Activity Feed */}
+            <div className="saas-card flex-1 flex flex-col overflow-hidden min-h-[300px]">
+              <div className="px-5 py-4 border-b border-zinc-100 flex items-center gap-1.5 bg-zinc-50/50">
+                <BellRing size={14} className="text-zinc-500" />
+                <h2 className="saas-heading">Live System Feed</h2>
+              </div>
+              <div className="p-5 flex-1 overflow-y-auto">
+                <div className="relative border-l border-zinc-200 ml-2 space-y-6">
+                  {activities.length > 0 ? activities.map((log: any, idx: number) => (
+                    <div key={idx} className="relative pl-4">
+                      <div className="absolute w-2 h-2 bg-white border-2 border-zinc-300 rounded-full -left-[5px] top-1"></div>
+                      <div className="text-[10px] text-zinc-400 font-mono mb-0.5">{log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : 'Just now'}</div>
+                      <div className="text-xs font-semibold text-zinc-900">{log.action}</div>
+                      <div className="text-[11px] text-zinc-600 mt-0.5">{log.details}</div>
+                    </div>
+                  )) : (
+                    <div className="text-xs text-zinc-500 pl-4">No recent activity detected.</div>
+                  )}
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
-
-        {/* Operational Triage Table */}
-        <div className="bg-white border border-zinc-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
-          <div className="px-6 py-5 border-b border-zinc-100 flex justify-between items-center bg-white">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
-              <h2 className="text-base font-semibold text-zinc-900">Action Required: Critical Risk</h2>
-            </div>
-          </div>
-          
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-zinc-500 bg-zinc-50 uppercase tracking-wider border-b border-zinc-100">
-                <tr>
-                  <th className="px-6 py-3 font-medium">Customer</th>
-                  <th className="px-6 py-3 font-medium">Risk Score</th>
-                  <th className="px-6 py-3 font-medium">Plan</th>
-                  <th className="px-6 py-3 font-medium">Key Signal</th>
-                  <th className="px-6 py-3 font-medium text-right">Recommended Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {alerts.map((row, i) => (
-                  <tr key={i} className="hover:bg-zinc-50/80 transition-colors group">
-                    <td className="px-6 py-3">
-                      <div className="font-medium text-zinc-900">{row.name}</div>
-                      <div className="text-[11px] font-mono text-zinc-500">{row.id}</div>
-                    </td>
-                    <td className="px-6 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-rose-600">{row.score}%</span>
-                        <div className="w-16 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-rose-500 rounded-full" style={{ width: `${row.score}%` }}></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3 text-zinc-600">{row.plan}</td>
-                    <td className="px-6 py-3 text-xs font-medium text-zinc-600">{row.signal}</td>
-                    <td className="px-6 py-3 text-right">
-                      <button className="text-xs font-medium bg-white border border-zinc-200 text-zinc-700 px-3 py-1.5 rounded hover:bg-zinc-50 hover:border-zinc-300 transition-all shadow-sm">
-                        Engage via CS
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {alerts.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-zinc-500">
-                      <CheckCircle2 size={24} className="mx-auto mb-2 text-emerald-500" />
-                      No critical risk customers found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </div>
     </>
   );
@@ -212,23 +217,23 @@ export default function Dashboard() {
 function MetricCard({ title, value, trend, isPositive, icon, alert = false }: any) {
   return (
     <div className={cn(
-      "bg-white border rounded-lg p-5 flex flex-col relative overflow-hidden shadow-sm transition-all hover:shadow-md",
-      alert ? "border-rose-200" : "border-zinc-200"
+      "saas-card p-4 flex flex-col relative overflow-hidden transition-all",
+      alert ? "border-rose-200/60 bg-rose-50/10" : ""
     )}>
-      <div className="flex justify-between items-start mb-2">
-        <span className="text-xs font-medium text-zinc-500">{title}</span>
-        <div className="text-zinc-400">
+      <div className="flex justify-between items-start mb-1.5">
+        <span className="text-[11px] font-medium text-zinc-500 tracking-wide uppercase">{title}</span>
+        <div className={cn("p-1.5 rounded-md", alert ? "bg-rose-100 text-rose-600" : "bg-zinc-100 text-zinc-500")}>
           {icon}
         </div>
       </div>
       
-      <div className="mt-1">
-        <span className="text-2xl font-bold text-zinc-900 tracking-tight">{value}</span>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="text-2xl font-bold text-zinc-900 tracking-tight leading-none">{value}</span>
       </div>
 
       <div className="mt-3 flex items-center gap-1.5">
         <span className={cn(
-          "text-[11px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-0.5",
+          "text-[10px] font-semibold px-1.5 py-0.5 rounded-sm flex items-center gap-0.5",
           isPositive ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"
         )}>
           {isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
