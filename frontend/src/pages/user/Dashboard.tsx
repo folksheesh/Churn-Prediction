@@ -1364,31 +1364,31 @@ export default function Home() {
                 <ul className="space-y-3 text-xs font-medium text-slate-600">
                   <li className="flex items-start gap-2">
                     <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Customer Name</span>: nama customer, contoh <span className="bg-slate-200 px-1 rounded">John Smith</span></div>
+                    <div><span className="font-bold text-slate-700">Customer Name</span>: the customer's name, e.g. <span className="bg-slate-200 px-1 rounded">John Smith</span></div>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Region</span>: wilayah customer, contoh <span className="bg-slate-200 px-1 rounded">North America</span></div>
+                    <div><span className="font-bold text-slate-700">Region</span>: customer's geographic region, e.g. <span className="bg-slate-200 px-1 rounded">North America</span></div>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Tenure</span>: lama berlangganan dalam bulan, contoh <span className="bg-slate-200 px-1 rounded">18</span></div>
+                    <div><span className="font-bold text-slate-700">Tenure</span>: subscription length in months, e.g. <span className="bg-slate-200 px-1 rounded">18</span></div>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Monthly Value</span>: nilai langganan bulanan, contoh <span className="bg-slate-200 px-1 rounded">149</span></div>
+                    <div><span className="font-bold text-slate-700">Monthly Value</span>: monthly subscription value, e.g. <span className="bg-slate-200 px-1 rounded">149</span></div>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Login Frequency</span>: frekuensi login, contoh <span className="bg-slate-200 px-1 rounded">Daily</span></div>
+                    <div><span className="font-bold text-slate-700">Login Frequency</span>: frequency of logins, e.g. <span className="bg-slate-200 px-1 rounded">Daily</span></div>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Support Tickets</span>: jumlah tiket bantuan, contoh <span className="bg-slate-200 px-1 rounded">3</span></div>
+                    <div><span className="font-bold text-slate-700">Support Tickets</span>: support tickets count, e.g. <span className="bg-slate-200 px-1 rounded">3</span></div>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Last Activity</span>: aktivitas terakhir, contoh <span className="bg-slate-200 px-1 rounded">2026-05-12</span></div>
+                    <div><span className="font-bold text-slate-700">Last Activity</span>: last activity date, e.g. <span className="bg-slate-200 px-1 rounded">2026-05-12</span></div>
                   </li>
                 </ul>
               </div>

@@ -151,9 +151,9 @@ export default function Admin() {
           <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm flex flex-col">
             <div className="flex items-center gap-2 mb-4">
               <MessageSquareWarning size={18} className="text-zinc-500" />
-              <h3 className="font-semibold text-zinc-900 text-sm">Dampak Feedback terhadap Churn</h3>
+              <h3 className="font-semibold text-zinc-900 text-sm">Feedback Impact on Churn</h3>
             </div>
-            <p className="text-xs text-zinc-500 mb-4">Rata-rata probabilitas churn berdasarkan keluhan pelanggan</p>
+            <p className="text-xs text-zinc-500 mb-4">Average churn probability based on customer complaints</p>
             <div className="flex-1 min-h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={feedbackImpactData} layout="vertical" margin={{ top: 0, right: 30, left: 50, bottom: 0 }}>

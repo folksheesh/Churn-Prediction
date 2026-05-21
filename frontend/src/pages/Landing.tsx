@@ -102,40 +102,50 @@ export default function Landing() {
         <section className="py-24 px-6 md:px-12 max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-zinc-900 mb-4">How ChurnSight Works</h2>
-            <p className="text-zinc-500 text-lg">Dari proses upload data hingga hasil akhir yang siap dieksekusi.</p>
+            <p className="text-zinc-500 text-lg">From data upload to actionable insights.</p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-12 relative">
+          <div className="grid md:grid-cols-4 gap-8 relative">
             {/* Connecting lines for md screens */}
-            <div className="hidden md:block absolute top-8 left-[16%] right-[16%] h-[2px] bg-zinc-200 z-0"></div>
+            <div className="hidden md:block absolute top-8 left-[12%] right-[12%] h-[2px] bg-zinc-200 z-0"></div>
 
-            <div className="relative z-10 flex flex-col items-center text-center bg-[#fcfcfc] px-4">
+            <div className="relative z-10 flex flex-col items-center text-center bg-[#fcfcfc] px-2">
               <div className="w-16 h-16 bg-white border-2 border-blue-600 rounded-full flex items-center justify-center text-blue-600 font-bold text-xl mb-6 shadow-sm">
                 1
               </div>
               <h3 className="text-lg font-bold text-zinc-900 mb-2">Upload Data CSV</h3>
               <p className="text-sm text-zinc-500 leading-relaxed">
-                Unggah data pelanggan Anda. Sistem kami akan memvalidasi kolom seperti tenure, penggunaan, dan riwayat transaksi.
+                Upload your customer history data into the system in CSV format.
               </p>
             </div>
 
-            <div className="relative z-10 flex flex-col items-center text-center bg-[#fcfcfc] px-4">
+            <div className="relative z-10 flex flex-col items-center text-center bg-[#fcfcfc] px-2">
               <div className="w-16 h-16 bg-white border-2 border-blue-600 rounded-full flex items-center justify-center text-blue-600 font-bold text-xl mb-6 shadow-sm">
                 2
               </div>
-              <h3 className="text-lg font-bold text-zinc-900 mb-2">AI Processing</h3>
+              <h3 className="text-lg font-bold text-zinc-900 mb-2">Data Validation</h3>
               <p className="text-sm text-zinc-500 leading-relaxed">
-                Model Machine Learning kami langsung bekerja memproses data, mencari pola churn, dan menghitung persentase risiko.
+                The system automatically validates format completeness, columns, and data integrity.
               </p>
             </div>
 
-            <div className="relative z-10 flex flex-col items-center text-center bg-[#fcfcfc] px-4">
+            <div className="relative z-10 flex flex-col items-center text-center bg-[#fcfcfc] px-2">
               <div className="w-16 h-16 bg-white border-2 border-blue-600 rounded-full flex items-center justify-center text-blue-600 font-bold text-xl mb-6 shadow-sm">
                 3
               </div>
-              <h3 className="text-lg font-bold text-zinc-900 mb-2">Hasil Akhir & Aksi</h3>
+              <h3 className="text-lg font-bold text-zinc-900 mb-2">AI Processing</h3>
               <p className="text-sm text-zinc-500 leading-relaxed">
-                Dapatkan dashboard interaktif berisi daftar pelanggan berisiko tinggi beserta rekomendasi retensi berbasis AI.
+                Our Machine Learning models identify churn patterns and calculate risk percentages.
+              </p>
+            </div>
+
+            <div className="relative z-10 flex flex-col items-center text-center bg-[#fcfcfc] px-2">
+              <div className="w-16 h-16 bg-white border-2 border-blue-600 rounded-full flex items-center justify-center text-blue-600 font-bold text-xl mb-6 shadow-sm">
+                4
+              </div>
+              <h3 className="text-lg font-bold text-zinc-900 mb-2">Final Results</h3>
+              <p className="text-sm text-zinc-500 leading-relaxed">
+                Get an interactive dashboard of high-risk customers and AI retention recommendations.
               </p>
             </div>
           </div>
