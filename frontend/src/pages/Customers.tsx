@@ -33,31 +33,16 @@ export default function Customers() {
     setCurrentPage(1);
   }, [searchTerm, filterRisk]);
 
-  // Simple local sentiment analysis for demonstration with actual data
-  const nlpInsights = useMemo(() => {
-    let positive = 0;
-    let negative = 0;
-    let neutral = 0;
-    const feedbacks: any[] = [];
-    
-    customers.forEach(c => {
-      if (!c.feedback || c.feedback === 'No reason specified') return;
-      const text = c.feedback.toLowerCase();
-      let sentiment = 'Neutral';
-      if (text.includes('poor') || text.includes('bad') || text.includes('issue') || text.includes('slow') || text.includes('hard') || text.includes('too many') || text.includes('terrible')) {
-        sentiment = 'Negative';
-        negative++;
-      } else if (text.includes('good') || text.includes('great') || text.includes('always') || text.includes('quality') || text.includes('love') || text.includes('excellent')) {
-        sentiment = 'Positive';
-        positive++;
-      } else {
-        neutral++;
-      }
-      feedbacks.push({ customer: c, sentiment, text: c.feedback });
-    });
-    
-    return { positive, negative, neutral, feedbacks, total: feedbacks.length };
-  }, [customers]);
+  const [nlpInsights, setNlpInsights] = useState<{positive: number, negative: number, neutral: number, total: number, feedbacks: any[]}>({
+    positive: 0, negative: 0, neutral: 0, total: 0, feedbacks: []
+  });
+
+  useEffect(() => {
+    // Fetch aggregated NLP insights from backend instead of processing 35000 rows in the browser
+    api.get('/analytics/nlp-insights').then(res => {
+      setNlpInsights(res.data);
+    }).catch(console.error);
+  }, []);
 
   useEffect(() => {
     fetchCustomers();
@@ -66,7 +51,8 @@ export default function Customers() {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/customers/?limit=100000${searchTerm ? `&search=${searchTerm}` : ''}`);
+      // Limit to 200 items for instant loading instead of freezing the browser with 35,000 items
+      const res = await api.get(`/customers/?limit=200${searchTerm ? `&search=${searchTerm}` : ''}`);
       setCustomers(res.data.items || []);
     } catch (err) {
       console.error(err);
@@ -97,7 +83,7 @@ export default function Customers() {
         <h1 className="text-sm font-semibold tracking-tight text-zinc-900">Customer Intelligence</h1>
         <button 
           onClick={() => setIsAddDrawerOpen(true)}
-          className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors shadow-sm"
+          className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow"
         >
           <Plus size={14} /> New Customer
         </button>
@@ -226,9 +212,9 @@ export default function Customers() {
                       <td className="px-5 py-2.5 text-right">
                         <button 
                           onClick={() => setSelectedCustomer(c)}
-                          className={cn("inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold transition-colors shadow-sm", c.churn_risk === 'High' ? "bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200" : "bg-white text-zinc-600 hover:bg-zinc-50 border border-zinc-200")}
+                          className={cn("inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold shadow-sm transition-all active:scale-[0.97]", c.churn_risk === 'High' ? "bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 hover:shadow" : "bg-white text-zinc-600 hover:bg-zinc-50 border border-zinc-200")}
                         >
-                          {c.churn_risk === 'High' ? <><AlertTriangle size={12} /> Mitigate</> : "View Profile"}
+                          {c.churn_risk === 'High' ? <><AlertTriangle size={12} className="animate-pulse"/> Mitigate</> : "View Profile"}
                         </button>
                       </td>
                     </tr>
@@ -352,8 +338,8 @@ export default function Customers() {
 
       {/* Add Customer Drawer */}
       {isAddDrawerOpen && (
-        <div className="fixed inset-0 bg-zinc-950/20 backdrop-blur-sm z-50 flex justify-end">
-          <div className="w-[400px] bg-white h-full shadow-2xl animate-in slide-in-from-right flex flex-col border-l border-zinc-200">
+        <div className="fixed inset-0 bg-zinc-950/30 backdrop-blur-sm z-50 flex justify-end animate-fade-in">
+          <div className="w-[400px] bg-white h-full shadow-2xl animate-slide-in-right flex flex-col border-l border-zinc-200">
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
               <h2 className="saas-heading">Add New Customer</h2>
               <button onClick={() => setIsAddDrawerOpen(false)} className="text-zinc-400 hover:text-zinc-700 transition-colors">
@@ -400,8 +386,8 @@ export default function Customers() {
 
       {/* Customer Intelligence Drawer (Slide-over) */}
       {selectedCustomer && (
-        <div className="fixed inset-0 bg-zinc-950/20 backdrop-blur-sm z-50 flex justify-end">
-          <div className="w-[500px] bg-white h-full shadow-2xl animate-in slide-in-from-right flex flex-col border-l border-zinc-200">
+        <div className="fixed inset-0 bg-zinc-950/30 backdrop-blur-sm z-50 flex justify-end animate-fade-in">
+          <div className="w-[500px] bg-white h-full shadow-2xl animate-slide-in-right flex flex-col border-l border-zinc-200">
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-indigo-500"></div>

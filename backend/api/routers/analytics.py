@@ -116,3 +116,52 @@ async def get_critical_alerts(limit: int = 5, db: Session = Depends(get_db)):
             f"Tickets: {c.tickets_opened_90d}" if c.tickets_opened_90d and c.tickets_opened_90d > 2 else "Low activity"
         )
     } for c in customers]
+
+@router.get("/nlp-insights")
+async def get_nlp_insights(db: Session = Depends(get_db)):
+    # Total customers
+    total_customers = db.query(Customer).count()
+    
+    # Fetch customers with actual feedback to analyze sentiment
+    customers_with_feedback = db.query(Customer.id, Customer.name, Customer.feedback, Customer.churn_risk, Customer.plan_tier).filter(
+        Customer.feedback.isnot(None),
+        Customer.feedback != 'No reason specified'
+    ).all()
+    
+    positive = 0
+    negative = 0
+    feedbacks = []
+    
+    for c in customers_with_feedback:
+        text = c.feedback.lower()
+        sentiment = 'Neutral'
+        if any(w in text for w in ['poor', 'bad', 'issue', 'slow', 'hard', 'too many', 'terrible']):
+            sentiment = 'Negative'
+            negative += 1
+        elif any(w in text for w in ['good', 'great', 'always', 'quality', 'love', 'excellent']):
+            sentiment = 'Positive'
+            positive += 1
+            
+        # Only send non-neutral actionable feedbacks to the frontend to keep payload small
+        if sentiment != 'Neutral':
+            feedbacks.append({
+                "customer": {
+                    "id": c.id,
+                    "name": c.name,
+                    "churn_risk": c.churn_risk,
+                    "plan_tier": c.plan_tier
+                },
+                "sentiment": sentiment,
+                "text": c.feedback
+            })
+            
+    # Anyone without actionable positive/negative feedback is considered Neutral
+    neutral = total_customers - positive - negative
+        
+    return {
+        "positive": positive,
+        "negative": negative,
+        "neutral": neutral,
+        "total": total_customers,
+        "feedbacks": feedbacks[:200] # send top 200 to UI
+    }

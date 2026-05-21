@@ -12,15 +12,12 @@ from backend.core.models import Base, Customer
 from backend.api.services.ml_service import run_batch_prediction
 
 def seed_db():
+    print("Dropping tables...")
+    Base.metadata.drop_all(bind=engine)
     print("Creating tables...")
     Base.metadata.create_all(bind=engine)
     
     db = SessionLocal()
-    
-    # Check if we already have data
-    if db.query(Customer).count() > 0:
-        print("Database already seeded.")
-        return
         
     csv_path = os.path.join(ROOT, "data", "processed", "cleaned_churn_data.csv")
     if not os.path.exists(csv_path):
@@ -30,9 +27,7 @@ def seed_db():
     print("Loading CSV...")
     df = pd.read_csv(csv_path)
     
-    # Take a sample for the dashboard to avoid massive SQLite inserts initially
-    df = df.head(1000)
-    
+    # Process all rows instead of just 1000
     print("Running predictions for seed data...")
     try:
         df_pred = run_batch_prediction(df)

@@ -51,8 +51,8 @@ export default function Dashboard() {
         {/* Top KPI Widgets - Compact SaaS Style */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard 
-            title="Total Active Customers" 
-            value={metrics?.retained?.toLocaleString() || "—"} 
+            title="Total Customers" 
+            value={metrics?.total_customers?.toLocaleString() || "—"} 
             trend="+2.4%" isPositive={true}
             icon={<Users size={14} />} 
           />
@@ -86,7 +86,7 @@ export default function Dashboard() {
             
             {/* AI Recommendation Strip */}
             <div className="bg-indigo-50/50 border border-indigo-100 rounded-md p-4 flex gap-4 items-start shadow-sm">
-              <div className="mt-0.5 text-indigo-500 bg-indigo-100 p-1.5 rounded-md"><Zap size={16} /></div>
+              <div className="mt-0.5 text-indigo-500 bg-indigo-100 p-1.5 rounded-md"><Zap size={16} className="animate-pulse" /></div>
               <div className="flex-1">
                 <h3 className="saas-heading text-indigo-950">AI Retention Opportunity Detected</h3>
                 <p className="text-[13px] text-indigo-800/80 mt-1 leading-relaxed">
@@ -94,7 +94,7 @@ export default function Dashboard() {
                   "Poor Website" performance in the last 7 days can reduce their churn probability by 40%.
                 </p>
               </div>
-              <button className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded shadow-sm hover:bg-indigo-700 transition-colors">
+              <button className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded shadow-sm hover:bg-indigo-700 transition-all active:scale-[0.97] hover:shadow">
                 Apply Mitigation
               </button>
             </div>
@@ -214,10 +214,10 @@ export default function Dashboard() {
   );
 }
 
-function MetricCard({ title, value, trend, isPositive, icon, alert = false }: any) {
+function MetricCard({ title, value, trend, isPositive, icon, alert }: { title: string, value: string, trend: string, isPositive: boolean, icon: React.ReactNode, alert?: boolean }) {
   return (
     <div className={cn(
-      "saas-card p-4 flex flex-col relative overflow-hidden transition-all",
+      "saas-card p-4 flex flex-col justify-between transition-all hover:shadow-md hover:-translate-y-0.5 duration-200",
       alert ? "border-rose-200/60 bg-rose-50/10" : ""
     )}>
       <div className="flex justify-between items-start mb-1.5">
