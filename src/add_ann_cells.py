@@ -82,10 +82,11 @@ scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
 # ── 4. Training loop ──────────────────────────────────────────
 EPOCHS       = 30
 history_loss = []
+history_val_loss = []
 
 print(f"\\n🚀 Mulai training selama {EPOCHS} epoch...\\n")
-ann_model.train()
 for epoch in range(EPOCHS):
+    ann_model.train()
     epoch_loss = 0.0
     for X_batch, y_batch in train_dl:
         X_batch, y_batch = X_batch.to(device), y_batch.to(device)
@@ -98,22 +99,31 @@ for epoch in range(EPOCHS):
     scheduler.step()
     avg_loss = epoch_loss / len(train_ds)
     history_loss.append(avg_loss)
+    
+    ann_model.eval()
+    with torch.no_grad():
+        val_logits = ann_model(X_test_t.to(device))
+        val_loss   = criterion(val_logits, y_test_t.to(device))
+        history_val_loss.append(val_loss.item())
+
     if (epoch + 1) % 5 == 0:
-        print(f"   Epoch [{epoch+1:02d}/{EPOCHS}] | Loss: {avg_loss:.4f}")
+        print(f"   Epoch [{epoch+1:02d}/{EPOCHS}] | Train Loss: {avg_loss:.4f} | Val Loss: {val_loss.item():.4f}")
 
 print("\\n✅ Training ANN selesai!")
 
-# ── 5. Plot training loss ──────────────────────────────────────
+# ── 5. Plot training & validation loss ──────────────────────────
 import matplotlib.pyplot as plt
 plt.figure(figsize=(8, 4))
-plt.plot(range(1, EPOCHS+1), history_loss, marker='o', color='steelblue', linewidth=2)
-plt.title('Training Loss ANN per Epoch', fontweight='bold')
+plt.plot(range(1, EPOCHS+1), history_loss, marker='o', color='steelblue', linewidth=2, label='Train Loss')
+plt.plot(range(1, EPOCHS+1), history_val_loss, marker='s', color='darkorange', linewidth=2, label='Val Loss')
+plt.title('Training & Validation Loss ANN per Epoch', fontweight='bold')
 plt.xlabel('Epoch')
 plt.ylabel('BCE Loss (with Logits)')
+plt.legend()
 plt.grid(True, linestyle='--', alpha=0.5)
 plt.tight_layout()
 plt.show()
-print("\\n💡 Grafik menunjukkan konvergensi loss ANN selama training.")
+print("\\n💡 Grafik menunjukkan pergerakan loss (Train vs Val) untuk menganalisis konvergensi/divergensi dan potensi early stopping.")
 """
 
 # ────────────────────────────────────────────────────────────────

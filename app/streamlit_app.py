@@ -1,4 +1,4 @@
-﻿"""ChurnSight – Clean SaaS Dashboard"""
+"""ChurnSight – Clean SaaS Dashboard"""
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import streamlit as st
@@ -8,21 +8,21 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, roc_curve, precision_recall_curve, f1_score
-import shap
+# shap is imported lazily inside compute_shap_values() to avoid numba startup crash
 from utils import load_artifacts, MODELS_DIR
 from predict import predict_batch
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # PAGE CONFIG
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-st.set_page_config(page_title="ChurnSense", page_icon="ðŸ›¡ï¸", layout="wide")
+st.set_page_config(page_title="ChurnSense", page_icon="🛡️", layout="wide")
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-# CUSTOM CSS â€“ Professional Dark Sidebar + Clean Light Content
+# CUSTOM CSS - Professional Dark Sidebar + Clean Light Content
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+st.markdown('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />', unsafe_allow_html=True)
 st.markdown("""<style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
 
 /* â”€â”€ Reset & Global â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -32,13 +32,14 @@ st.markdown("""<style>
 
 /* â•â• SIDEBAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 section[data-testid="stSidebar"] {
-    background: #0f172a !important;
+    background: #ffffff !important;
     min-width: 260px !important;
     max-width: 260px !important;
+    border-right: 1px solid #e5e7eb !important;
 }
 section[data-testid="stSidebar"] > div:first-child {
     padding: 0 !important;
-    background: #0f172a !important;
+    background: #ffffff !important;
 }
 
 /* Hide sidebar collapse button + its wrapper completely */
@@ -63,7 +64,7 @@ section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
     margin: 0 12px !important;
     font-size: 0.875rem !important;
     font-weight: 500 !important;
-    color: #94a3b8 !important;
+    color: #6b7280 !important;
     cursor: pointer !important;
     transition: background 0.15s, color 0.15s !important;
     display: flex !important;
@@ -72,8 +73,8 @@ section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
     background: transparent !important;
 }
 section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
-    background: rgba(255,255,255,0.06) !important;
-    color: #e2e8f0 !important;
+    background: #f3f4f6 !important;
+    color: #111827 !important;
 }
 /* Hide radio circles */
 section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] { order: 2; }
@@ -83,14 +84,14 @@ section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label > div:fir
 /* Active item */
 section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-checked="true"],
 section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[data-checked] label {
-    background: rgba(99, 102, 241, 0.15) !important;
-    color: #a5b4fc !important;
+    background: #eef2ff !important;
+    color: #4f46e5 !important;
     font-weight: 600 !important;
 }
 
 /* Sidebar divider */
 section[data-testid="stSidebar"] hr {
-    border-color: rgba(255,255,255,0.08) !important;
+    border-color: #e5e7eb !important;
     margin: 12px 16px !important;
 }
 
@@ -103,11 +104,25 @@ h3 { color: #1f2937 !important; font-weight: 600 !important; font-size: 1rem !im
 .kpi-card {
     background: #ffffff;
     border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 20px;
-    transition: box-shadow 0.2s ease;
+    border-radius: 14px;
+    padding: 22px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
 }
-.kpi-card:hover { box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa);
+    border-radius: 14px 14px 0 0;
+}
+.kpi-card:hover {
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.1);
+    transform: translateY(-2px);
+    border-color: rgba(99, 102, 241, 0.2);
+}
 .kpi-header {
     display: flex;
     justify-content: space-between;
@@ -115,26 +130,31 @@ h3 { color: #1f2937 !important; font-weight: 600 !important; font-size: 1rem !im
     margin-bottom: 10px;
 }
 .kpi-label {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #6b7280;
-    font-weight: 500;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.05em;
 }
 .kpi-icon {
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem;
-    color: #9ca3af;
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    font-size: 0.95rem;
 }
-.kpi-icon.blue, .kpi-icon.amber, .kpi-icon.green,
-.kpi-icon.purple, .kpi-icon.red, .kpi-icon.teal { background: none; color: #9ca3af; }
+.kpi-icon.blue   { background: #eef2ff; color: #6366f1; }
+.kpi-icon.amber  { background: #fef3c7; color: #d97706; }
+.kpi-icon.green  { background: #d1fae5; color: #059669; }
+.kpi-icon.purple { background: #ede9fe; color: #7c3aed; }
+.kpi-icon.red    { background: #fee2e2; color: #dc2626; }
+.kpi-icon.teal   { background: #ccfbf1; color: #0d9488; }
 .kpi-val {
-    font-size: 1.75rem;
-    font-weight: 700;
+    font-size: 1.85rem;
+    font-weight: 800;
     color: #111827;
-    margin: 2px 0 4px;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
+    margin: 4px 0 6px;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
 }
 .kpi-change {
     font-size: 0.75rem;
@@ -151,9 +171,13 @@ h3 { color: #1f2937 !important; font-weight: 600 !important; font-size: 1rem !im
 .card {
     background: #ffffff;
     border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 14px;
+    padding: 24px;
     margin-bottom: 12px;
+    transition: box-shadow 0.3s ease;
+}
+.card:hover {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 .card-header { margin-bottom: 14px; }
 .card-title {
@@ -169,13 +193,20 @@ h3 { color: #1f2937 !important; font-weight: 600 !important; font-size: 1rem !im
 }
 
 /* â”€â”€ Page Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.page-header { margin-bottom: 24px; }
+.page-header {
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f3f4f6;
+}
 .page-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #111827;
-    letter-spacing: -0.02em;
-    margin-bottom: 2px;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, #111827 40%, #4f46e5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 .page-subtitle {
     font-size: 0.85rem;
@@ -186,20 +217,20 @@ h3 { color: #1f2937 !important; font-weight: 600 !important; font-size: 1rem !im
 /* â”€â”€ Sidebar Branding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .sidebar-brand {
     padding: 24px 20px 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid #e5e7eb;
     margin-bottom: 8px;
 }
 .sidebar-brand .brand-name {
     font-size: 1.05rem;
     font-weight: 700;
-    color: #f1f5f9;
+    color: #111827;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 .sidebar-brand .brand-sub {
     font-size: 0.7rem;
-    color: #64748b;
+    color: #9ca3af;
     font-weight: 400;
     margin-top: 4px;
     margin-left: 36px;
@@ -243,16 +274,17 @@ h3 { color: #1f2937 !important; font-weight: 600 !important; font-size: 1rem !im
 
 /* â”€â”€ Prediction Result â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pred-result {
-    border-radius: 12px;
-    padding: 28px;
+    border-radius: 16px;
+    padding: 36px 28px;
     text-align: center;
+    transition: all 0.3s ease;
 }
-.pred-result.danger { background: #fef2f2; border: 1px solid #fecaca; }
-.pred-result.safe   { background: #ecfdf5; border: 1px solid #a7f3d0; }
-.pred-result .big   { font-size: 1.3rem; font-weight: 700; }
+.pred-result.danger { background: linear-gradient(135deg, #fef2f2, #fee2e2); border: 1px solid #fecaca; }
+.pred-result.safe   { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 1px solid #a7f3d0; }
+.pred-result .big   { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
 .pred-result.danger .big { color: #b91c1c; }
 .pred-result.safe .big   { color: #047857; }
-.pred-result .prob-val   { font-size: 2.5rem; font-weight: 800; margin: 6px 0; letter-spacing: -0.02em; }
+.pred-result .prob-val   { font-size: 2.8rem; font-weight: 800; margin: 8px 0; letter-spacing: -0.02em; }
 .pred-result.danger .prob-val { color: #dc2626; }
 .pred-result.safe .prob-val   { color: #059669; }
 .pred-result .sub { font-size: 0.8rem; color: #6b7280; }
@@ -320,16 +352,19 @@ h3 { color: #1f2937 !important; font-weight: 600 !important; font-size: 1rem !im
 
 /* â”€â”€ Primary Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .stButton > button[kind="primary"] {
-    background: #4f46e5 !important;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
     border: none !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     font-weight: 600 !important;
     font-size: 0.85rem !important;
-    padding: 8px 20px !important;
-    transition: background 0.15s !important;
+    padding: 10px 24px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25) !important;
 }
 .stButton > button[kind="primary"]:hover {
-    background: #4338ca !important;
+    background: linear-gradient(135deg, #4338ca, #6d28d9) !important;
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35) !important;
+    transform: translateY(-1px) !important;
 }
 
 /* â”€â”€ Metrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -349,13 +384,13 @@ h3 { color: #1f2937 !important; font-weight: 600 !important; font-size: 1rem !im
 .sys-status {
     margin: 0 12px;
     padding: 10px 14px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.06);
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
     border-radius: 8px;
 }
 .sys-status .status-label {
     font-size: 0.68rem;
-    color: #64748b;
+    color: #9ca3af;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -366,15 +401,66 @@ h3 { color: #1f2937 !important; font-weight: 600 !important; font-size: 1rem !im
     align-items: center;
     gap: 6px;
     font-size: 0.8rem;
-    color: #34d399;
+    color: #059669;
     font-weight: 600;
 }
 .sys-status .status-dot {
     width: 6px; height: 6px;
-    background: #34d399;
+    background: #059669;
     border-radius: 50%;
     display: inline-block;
+    animation: pulse-dot 2s infinite;
 }
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* -- File Uploader Cleanup -- */
+.stFileUploader label { font-size: 0.85rem !important; font-weight: 500 !important; }
+
+/* -- Page Header Enhancement -- */
+.page-header {
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f3f4f6;
+}
+.page-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #111827;
+    letter-spacing: -0.025em;
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, #111827, #4f46e5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* -- Smooth transitions for all interactive elements -- */
+button, [role="button"], input, select {
+    transition: all 0.2s ease !important;
+}
+
+/* -- Sidebar active indicator with left border -- */
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-checked="true"]::before,
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[data-checked] label::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 25%;
+    height: 50%;
+    width: 3px;
+    background: linear-gradient(180deg, #6366f1, #8b5cf6);
+    border-radius: 0 2px 2px 0;
+}
+
+/* -- Better scrollbar -- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
 </style>""", unsafe_allow_html=True)
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -383,11 +469,11 @@ h3 { color: #1f2937 !important; font-weight: 600 !important; font-size: 1rem !im
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 PROC = os.path.join(ROOT, "data", "processed", "cleaned_churn_data.csv")
 
-@st.cache_resource(show_spinner="Loading modelâ€¦")
+@st.cache_resource(show_spinner="Loading model...")
 def get_pipeline():
     return load_artifacts(MODELS_DIR)
 
-@st.cache_data(show_spinner="Loading dataâ€¦")
+@st.cache_data(show_spinner="Loading data...")
 def get_data():
     return pd.read_csv(PROC) if os.path.exists(PROC) else None
 
@@ -440,7 +526,7 @@ with st.sidebar:
     st.markdown("""
     <div class="sidebar-brand">
         <div class="brand-name">
-            <div class="brand-mark"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="brand-mark">🛡</div>
             ChurnSense
         </div>
         <div class="brand-sub">Retention Intelligence</div>
@@ -471,7 +557,7 @@ with st.sidebar:
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # HELPER: Compute predictions on full dataset
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-@st.cache_data(show_spinner="Computing model predictionsâ€¦")
+@st.cache_data(show_spinner="Computing model predictions...")
 def compute_predictions(_df, _feature_names, _label_encoders, _scaler, _model_bytes):
     """Compute predictions and probabilities on the full dataset."""
     from feature_engineering import encode_inference, apply_scaler as sc_apply
@@ -482,10 +568,14 @@ def compute_predictions(_df, _feature_names, _label_encoders, _scaler, _model_by
     y_proba = model.predict_proba(X_scaled)[:, 1]
     return y_pred, y_proba
 
-@st.cache_data(show_spinner="Computing SHAP values (this may take a moment)â€¦")
+@st.cache_data(show_spinner="Computing SHAP values (this may take a moment)...")
 def compute_shap_values(_df, _feature_names, _label_encoders, _scaler, _model_hash):
     """Compute SHAP values using TreeExplainer on a sample for performance."""
     from feature_engineering import encode_inference, apply_scaler as sc_apply
+    # Workaround for numba circular import bug
+    import numba.core.config
+    import numba.core.errors
+    import shap
     model = pipeline["model"]
     df_enc = encode_inference(_df.drop(columns=["churn"], errors="ignore"), _label_encoders, _feature_names)
     X_scaled = sc_apply(_scaler, df_enc)
@@ -568,10 +658,10 @@ if "Dashboard" in page:
     # â”€â”€ KPI Row â”€â”€
     c1, c2, c3, c4 = st.columns(4)
     kpi_data = [
-        (c1, "CHURN RATE", f"{churn_rate_f:.1f}%", f"{churned_f:,} of {total_f:,} customers", "down" if churn_rate_f > 10 else "up", "<i class='fa-solid fa-arrow-trend-down'></i>", "blue"),
-        (c2, "AT-RISK", f"{at_risk:,}", f"{high_risk} critical risk", "down", "<i class='fa-solid fa-triangle-exclamation'></i>", "amber"),
-        (c3, "RETAINED", f"{retained_f:,}", f"{retained_f/total_f*100:.1f}% retention rate" if total_f else "N/A", "up", "<i class='fa-solid fa-circle-check'></i>", "green"),
-        (c4, "TOTAL CUSTOMERS", f"{total_f:,}", "Active in dataset", "neutral", "<i class='fa-solid fa-users'></i>", "purple"),
+        (c1, "CHURN RATE", f"{churn_rate_f:.1f}%", f"{churned_f:,} of {total_f:,} customers", "down" if churn_rate_f > 10 else "up", "📉", "blue"),
+        (c2, "AT-RISK", f"{at_risk:,}", f"{high_risk} critical risk", "down", "⚠️", "amber"),
+        (c3, "RETAINED", f"{retained_f:,}", f"{retained_f/total_f*100:.1f}% retention rate" if total_f else "N/A", "up", "✅", "green"),
+        (c4, "TOTAL CUSTOMERS", f"{total_f:,}", "Active in dataset", "neutral", "👥", "purple"),
     ]
     for col, label, value, change, direction, icon, icon_cls in kpi_data:
         col.markdown(f'''<div class="kpi-card">
@@ -597,7 +687,7 @@ if "Dashboard" in page:
 
         df_cohort = df_filtered.copy()
         cohort_bins = [0, 90, 180, 365, 545, 730, 1100]
-        cohort_labels = ['0â€“3 mo', '3â€“6 mo', '6â€“12 mo', '12â€“18 mo', '18â€“24 mo', '24+ mo']
+        cohort_labels = ['0-3 mo', '3-6 mo', '6-12 mo', '12-18 mo', '18-24 mo', '24+ mo']
         df_cohort['tenure_cohort'] = pd.cut(df_cohort['days_since_joined'], bins=cohort_bins, labels=cohort_labels)
 
         cohort_stats = df_cohort.groupby('tenure_cohort', observed=True).agg(
@@ -805,17 +895,17 @@ if "Dashboard" in page:
         pc = CHART_COLORS['primary']
         dc = CHART_COLORS['danger']
 
-        html = '<div class="card"><div class="card-header"><div class="card-title">Behavioral Comparison</div><div class="card-subtitle">Average metrics â€” retained vs churned customers</div></div>'
+        html = '<div class="card"><div class="card-header"><div class="card-title">Behavioral Comparison</div><div class="card-subtitle">Average metrics  -  retained vs churned customers</div></div>'
         for label, col_name in behavior_cols.items():
             if col_name in df_filtered.columns:
                 rv = df_filtered[df_filtered["churn"] == 0][col_name].mean()
                 cv = df_filtered[df_filtered["churn"] == 1][col_name].mean()
                 dp = ((cv - rv) / rv * 100) if rv != 0 else 0
                 dc2 = "color:#dc2626" if dp < -5 else ("color:#059669" if dp > 5 else "color:#9ca3af")
-                arr = "â†“" if dp < 0 else "â†‘"
+                arr = "v" if dp < 0 else "^"
                 html += f'<div class="stat-row"><span class="stat-label">{label}</span><span style="display:flex;gap:10px;align-items:center;"><span style="font-size:0.8rem;color:{pc};font-weight:600;">{rv:,.0f}</span><span style="font-size:0.8rem;color:{dc};font-weight:600;">{cv:,.0f}</span><span style="font-size:0.7rem;{dc2};font-weight:500;">{arr}{abs(dp):.0f}%</span></span></div>'
 
-        html += f'<div style="display:flex;gap:14px;padding-top:8px;border-top:1px solid #f3f4f6;margin-top:4px;"><span style="font-size:0.7rem;color:{pc};font-weight:600;">â— Retained</span><span style="font-size:0.7rem;color:{dc};font-weight:600;">â— Churned</span><span style="font-size:0.7rem;color:#9ca3af;">â†• Difference</span></div></div>'
+        html += f'<div style="display:flex;gap:14px;padding-top:8px;border-top:1px solid #f3f4f6;margin-top:4px;"><span style="font-size:0.7rem;color:{pc};font-weight:600;">* Retained</span><span style="font-size:0.7rem;color:{dc};font-weight:600;">* Churned</span><span style="font-size:0.7rem;color:#9ca3af;"><> Difference</span></div></div>'
 
         st.markdown(html, unsafe_allow_html=True)
 
@@ -854,10 +944,10 @@ elif "Analytics" in page:
 
     c1, c2, c3, c4 = st.columns(4)
     kpi_data_analytics = [
-        (c1, "TOTAL CUSTOMERS", f"{total:,}", "In dataset", "neutral", "<i class='fa-solid fa-database'></i>", "blue"),
-        (c2, "ACCURACY", f"{accuracy:.0f}%", "Model performance", "up", "<i class='fa-solid fa-bullseye'></i>", "green"),
-        (c3, "RETENTION RATE", f"{retained/total*100:.1f}%", f"{retained:,} customers", "up", "<i class='fa-solid fa-user-check'></i>", "purple"),
-        (c4, "ROC-AUC", f"{auc:.3f}", "Model quality", "up", "<i class='fa-solid fa-wave-square'></i>", "teal"),
+        (c1, "TOTAL CUSTOMERS", f"{total:,}", "In dataset", "neutral", "🗃️", "blue"),
+        (c2, "ACCURACY", f"{accuracy:.0f}%", "Model performance", "up", "🎯", "green"),
+        (c3, "RETENTION RATE", f"{retained/total*100:.1f}%", f"{retained:,} customers", "up", "👤", "purple"),
+        (c4, "ROC-AUC", f"{auc:.3f}", "Model quality", "up", "📊", "teal"),
     ]
     for col, label, value, change, direction, icon, icon_cls in kpi_data_analytics:
         col.markdown(f'''<div class="kpi-card">
@@ -910,10 +1000,11 @@ elif "Analytics" in page:
             st.markdown('''<div class="card">
             <div class="card-header">
                 <div class="card-title">SHAP Summary Plot</div>
-                <div class="card-subtitle">Each dot is one customer â€” color = feature value (red=high, blue=low), position = SHAP impact on prediction</div>
+                <div class="card-subtitle">Each dot is one customer  -  color = feature value (red=high, blue=low), position = SHAP impact on prediction</div>
             </div>''', unsafe_allow_html=True)
 
             fig_summary, ax_summary = plt.subplots(figsize=(11, 6))
+            import shap
             shap.summary_plot(shap_vals, X_shap, feature_names=feature_names_display,
                              show=False, max_display=15, plot_size=None)
             # Style the current figure produced by shap
@@ -1117,7 +1208,7 @@ elif "Analytics" in page:
                         "Retained": "{:,}",
                         "Churn Rate": "{:.1f}%"
                     }).background_gradient(subset=["Churn Rate"], cmap="Reds"),
-                    use_container_width=True, height=350
+                    width='stretch', height=350
                 )
         else:
             st.info("No categorical columns for segmentation.")
@@ -1154,7 +1245,7 @@ elif "Customers" in page:
         else:
             plan_sel = "All"
     with f4:
-        sort_by = st.selectbox("Sort By", ["Churn Probability (Highâ†’Low)", "Churn Probability (Lowâ†’High)", "Points in Wallet", "API Calls"])
+        sort_by = st.selectbox("Sort By", ["Churn Probability (High->Low)", "Churn Probability (Low->High)", "Points in Wallet", "API Calls"])
 
     df_display = df.copy()
     if y_proba_full is not None:
@@ -1178,9 +1269,9 @@ elif "Customers" in page:
     if plan_sel != "All" and "plan_tier" in df_display.columns:
         df_display = df_display[df_display["plan_tier"] == plan_sel]
 
-    if "Highâ†’Low" in sort_by:
+    if "High->Low" in sort_by:
         df_display = df_display.sort_values("churn_probability", ascending=False)
-    elif "Lowâ†’High" in sort_by:
+    elif "Low->High" in sort_by:
         df_display = df_display.sort_values("churn_probability", ascending=True)
     elif "Points" in sort_by and "points_in_wallet" in df_display.columns:
         df_display = df_display.sort_values("points_in_wallet", ascending=False)
@@ -1206,8 +1297,8 @@ elif "Customers" in page:
             "churn_probability": "{:.2%}",
             "avg_transaction_value": "{:,.1f}",
             "points_in_wallet": "{:,.1f}",
-        }).background_gradient(subset=["churn_probability"], cmap="RdYlGn_r"),
-        use_container_width=True, height=500
+        }).background_gradient(subset=["churn_probability"], cmap="RdYlGn_r", vmin=0.0, vmax=1.0),
+        width='stretch', height=500
     )
 
 
@@ -1261,14 +1352,14 @@ elif "Prediction" in page:
             ])
             dc = p2.selectbox("Discount", ["Yes", "No"])
             op = p3.selectbox("Offer Pref", ["Yes", "No"])
-            sub = st.form_submit_button("Predict Churn Risk", use_container_width=True, type="primary")
+            sub = st.form_submit_button("Predict Churn Risk", width='stretch', type="primary")
 
     with cr:
         st.markdown('<div class="card-title">Result</div>', unsafe_allow_html=True)
         st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
         if not sub:
             st.markdown('''<div class="card" style="text-align:center; padding:48px 20px;">
-                <p style="font-size:2.5rem; opacity:0.2; margin-bottom:8px;">ðŸŽ¯</p>
+                <p style="font-size:2.5rem; opacity:0.2; margin-bottom:8px;">🎯</p>
                 <p style="color:#9ca3af; font-size:0.85rem;">Fill in the profile and click predict</p>
             </div>''', unsafe_allow_html=True)
         else:
@@ -1285,7 +1376,7 @@ elif "Prediction" in page:
                 session_minutes_90d=sm, days_since_active=da,
                 days_since_joined=dj
             )
-            with st.spinner("Analyzingâ€¦"):
+            with st.spinner("Analyzing..."):
                 res = predict_batch(pd.DataFrame([row]), pipeline)
             p = int(res["prediction"].iloc[0])
             prob = float(res["probability"].iloc[0])
@@ -1300,7 +1391,7 @@ elif "Prediction" in page:
 
             st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-            risk = "ðŸ”´ Critical" if prob > 0.7 else "ðŸŸ¡ Moderate" if prob > 0.4 else "ðŸŸ¢ Low"
+            risk = "🔴 Critical" if prob > 0.7 else "🟡 Moderate" if prob > 0.4 else "🟢 Low"
             action = "Immediate intervention" if prob > 0.7 else "Monitor closely" if prob > 0.4 else "No action needed"
 
             m1, m2 = st.columns(2)
@@ -1319,35 +1410,236 @@ elif "Batch Upload" in page:
     </div>
     """, unsafe_allow_html=True)
 
+    # ── Expected schema from training data ──
+    EXPECTED_COLUMNS = [
+        'age', 'gender', 'region_category', 'joined_through_referral',
+        'preferred_offer_types', 'medium_of_operation', 'internet_option',
+        'days_since_last_login', 'avg_session_duration', 'avg_transaction_value',
+        'avg_frequency_login_days', 'points_in_wallet', 'used_special_discount',
+        'offer_application_preference', 'past_complaint', 'complaint_status',
+        'feedback', 'plan_tier', 'logins_90d', 'active_days_90d',
+        'api_calls_90d', 'session_minutes_90d', 'days_since_active',
+        'days_since_joined',
+    ]
+    VALID_VALUES = {
+        'gender': ['F', 'M'],
+        'region_category': ['City', 'Town', 'Village'],
+        'joined_through_referral': ['No', 'Yes'],
+        'preferred_offer_types': ['Credit/Debit Card Offers', 'Gift Vouchers/Coupons', 'Without Offers'],
+        'medium_of_operation': ['Both', 'Desktop', 'Smartphone'],
+        'internet_option': ['Fiber_Optic', 'Mobile_Data', 'Wi-Fi'],
+        'used_special_discount': ['No', 'Yes'],
+        'offer_application_preference': ['No', 'Yes'],
+        'past_complaint': ['No', 'Yes'],
+        'complaint_status': ['No Information Available', 'Not Applicable', 'Solved', 'Solved in Follow-up', 'Unsolved'],
+        'feedback': ['No reason specified', 'Poor Customer Service', 'Poor Product Quality', 'Poor Website', 'Products always in Stock', 'Quality Customer Care', 'Reasonable Price', 'Too many ads', 'User Friendly Website'],
+        'plan_tier': ['Basic', 'Enterprise', 'Pro'],
+    }
+    NUMERIC_COLUMNS = [
+        'age', 'days_since_last_login', 'avg_session_duration',
+        'avg_transaction_value', 'avg_frequency_login_days', 'points_in_wallet',
+        'logins_90d', 'active_days_90d', 'api_calls_90d',
+        'session_minutes_90d', 'days_since_active', 'days_since_joined',
+    ]
+
+    # ── Layout: Template + Upload side-by-side ──
+    st.markdown("""<div class="card">
+        <div class="card-header">
+            <div class="card-title">📥 Upload Customer Data</div>
+            <div class="card-subtitle">Upload a CSV file matching the required format to predict churn for multiple customers at once</div>
+        </div>
+    </div>""", unsafe_allow_html=True)
+
+    tmpl_col, spacer = st.columns([1, 2])
+    with tmpl_col:
+        template_df = pd.DataFrame({c: pd.Series(dtype='str') for c in EXPECTED_COLUMNS})
+        sample_row = {
+            'age': 30, 'gender': 'M', 'region_category': 'City',
+            'joined_through_referral': 'Yes', 'preferred_offer_types': 'Gift Vouchers/Coupons',
+            'medium_of_operation': 'Desktop', 'internet_option': 'Wi-Fi',
+            'days_since_last_login': 5, 'avg_session_duration': 300.0,
+            'avg_transaction_value': 5000.0, 'avg_frequency_login_days': 15.0,
+            'points_in_wallet': 700.0, 'used_special_discount': 'Yes',
+            'offer_application_preference': 'Yes', 'past_complaint': 'No',
+            'complaint_status': 'Not Applicable', 'feedback': 'Quality Customer Care',
+            'plan_tier': 'Pro', 'logins_90d': 30, 'active_days_90d': 25,
+            'api_calls_90d': 5000, 'session_minutes_90d': 800.0,
+            'days_since_active': 3, 'days_since_joined': 365,
+        }
+        template_df = pd.concat([template_df, pd.DataFrame([sample_row])], ignore_index=True)
+        st.download_button(
+            "📋 Download CSV Template",
+            template_df.to_csv(index=False).encode('utf-8'),
+            "churn_prediction_template.csv", "text/csv",
+            type="primary",
+        )
+
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
     up = st.file_uploader("Upload CSV file", type="csv")
+
     if up:
         du = pd.read_csv(up)
-        st.success(f"Loaded {du.shape[0]:,} rows Ã— {du.shape[1]} columns")
-        with st.expander("Data Preview", expanded=True):
-            st.dataframe(du.head(10), use_container_width=True)
 
-        if st.button("Run Batch Prediction", use_container_width=True, type="primary"):
-            with st.spinner("Processingâ€¦"):
-                r = predict_batch(du, pipeline).sort_values("probability", ascending=False)
+        # ── VALIDATION ──
+        errors = []
+        warnings = []
 
-            cn = int((r.prediction == 1).sum())
-            tot = len(r)
+        # 1. Check for missing required columns
+        uploaded_cols = set(du.columns.str.strip())
+        expected_set = set(EXPECTED_COLUMNS)
+        missing = expected_set - uploaded_cols
+        if missing:
+            errors.append(f"**Missing columns ({len(missing)}):** {', '.join(sorted(missing))}")
 
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Total", f"{tot:,}")
-            c2.metric("Predicted Churn", f"{cn:,}")
-            c3.metric("Predicted Retained", f"{tot - cn:,}")
-            c4.metric("Churn Rate", f"{cn/tot*100:.1f}%")
+        # 2. Check for extra/unexpected columns (warning, not error)
+        extra = uploaded_cols - expected_set - {'churn'}
+        if extra:
+            warnings.append(f"**Extra columns ({len(extra)}) will be ignored:** {', '.join(sorted(extra))}")
 
-            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-            mp = st.slider("Min probability filter", 0.0, 1.0, 0.0, 0.05)
-            fl = r[r.probability >= mp]
-            st.write(f"**{len(fl):,}** customers shown (â‰¥ {mp:.0%})")
-            st.dataframe(fl, use_container_width=True, height=400)
-            st.download_button("Download CSV",
-                             fl.to_csv(index=False).encode(),
-                             "churn_predictions.csv", "text/csv",
-                             use_container_width=True)
+        # 3. Check for empty file
+        if len(du) == 0:
+            errors.append("**Empty file:** The uploaded CSV contains no data rows.")
+
+        # 4. Validate categorical values (only if columns exist)
+        if not missing or len(missing) < len(EXPECTED_COLUMNS) // 2:
+            for col, valid in VALID_VALUES.items():
+                if col in du.columns:
+                    actual = set(du[col].dropna().unique())
+                    invalid = actual - set(valid)
+                    if invalid:
+                        examples = list(invalid)[:5]
+                        errors.append(
+                            f"**Invalid values in `{col}`:** found {examples}. "
+                            f"Allowed: {valid}"
+                        )
+
+        # 5. Validate numeric columns
+        for col in NUMERIC_COLUMNS:
+            if col in du.columns:
+                if not pd.to_numeric(du[col], errors='coerce').notna().all():
+                    non_num = du[~pd.to_numeric(du[col], errors='coerce').notna()][col].unique()[:3]
+                    errors.append(
+                        f"**Non-numeric values in `{col}`:** found {list(non_num)}. Expected numbers only."
+                    )
+
+        # 6. Check for NaN ratio
+        if len(du) > 0:
+            nan_ratio = du[list(expected_set & uploaded_cols)].isna().sum()
+            high_nan = nan_ratio[nan_ratio > len(du) * 0.5]
+            if len(high_nan) > 0:
+                for col_name, cnt in high_nan.items():
+                    warnings.append(f"**High missing rate in `{col_name}`:** {cnt}/{len(du)} rows ({cnt/len(du)*100:.0f}%) are empty.")
+
+        # ── Display validation results ──
+        if errors:
+            st.markdown(f"""<div style="background:linear-gradient(135deg,#fef2f2,#fee2e2);border:1px solid #fca5a5;
+                border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                    <span style="font-size:1.3rem">🚫</span>
+                    <span style="font-weight:700;color:#991b1b;font-size:1rem;">Validation Failed — {len(errors)} error(s) found</span>
+                </div>
+                <div style="color:#7f1d1d;font-size:0.85rem;line-height:1.8;">
+                    {'<br>'.join(['• ' + e for e in errors])}
+                </div>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid #fecaca;color:#991b1b;font-size:0.8rem;">
+                    💡 <b>Tip:</b> Download the template above and ensure your data matches the required format.
+                </div>
+            </div>""", unsafe_allow_html=True)
+
+        if warnings:
+            st.markdown(f"""<div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1px solid #fcd34d;
+                border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                    <span style="font-size:1.3rem">⚠️</span>
+                    <span style="font-weight:700;color:#92400e;font-size:1rem;">Warnings — {len(warnings)} issue(s) detected</span>
+                </div>
+                <div style="color:#78350f;font-size:0.85rem;line-height:1.8;">
+                    {'<br>'.join(['• ' + w for w in warnings])}
+                </div>
+            </div>""", unsafe_allow_html=True)
+
+        if not errors:
+            # ── Success: show preview ──
+            st.markdown(f"""<div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #6ee7b7;
+                border-radius:12px;padding:16px 24px;margin-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:1.3rem">✅</span>
+                    <span style="font-weight:700;color:#065f46;font-size:0.95rem;">
+                        Validation Passed — {du.shape[0]:,} rows x {du.shape[1]} columns loaded
+                    </span>
+                </div>
+            </div>""", unsafe_allow_html=True)
+
+            with st.expander("📄 Data Preview", expanded=False):
+                st.dataframe(du.head(10), width='stretch')
+
+            if st.button("🚀 Run Batch Prediction", type="primary"):
+                with st.spinner("Processing predictions..."):
+                    try:
+                        r = predict_batch(du, pipeline).sort_values("probability", ascending=False)
+                    except Exception as e:
+                        st.markdown(f"""<div style="background:linear-gradient(135deg,#fef2f2,#fee2e2);border:1px solid #fca5a5;
+                            border-radius:12px;padding:20px 24px;margin:16px 0;">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                <span style="font-size:1.3rem">❌</span>
+                                <span style="font-weight:700;color:#991b1b;">Prediction Failed</span>
+                            </div>
+                            <div style="color:#7f1d1d;font-size:0.85rem;">{str(e)}</div>
+                        </div>""", unsafe_allow_html=True)
+                        st.stop()
+
+                cn = int((r.prediction == 1).sum())
+                tot = len(r)
+                ret = tot - cn
+                high_risk = int((r.probability > 0.8).sum())
+
+                # ── KPI cards ──
+                c1, c2, c3, c4 = st.columns(4)
+                batch_kpis = [
+                    (c1, "TOTAL PROCESSED", f"{tot:,}", "Customers analyzed", "neutral", "📊", "blue"),
+                    (c2, "PREDICTED CHURN", f"{cn:,}", f"{cn/tot*100:.1f}% churn rate" if tot else "N/A", "down", "🔴", "red"),
+                    (c3, "PREDICTED RETAINED", f"{ret:,}", f"{ret/tot*100:.1f}% retention" if tot else "N/A", "up", "🟢", "green"),
+                    (c4, "HIGH RISK", f"{high_risk:,}", ">80% churn probability", "down", "⚠️", "amber"),
+                ]
+                for col, label, value, change, direction, icon, icon_cls in batch_kpis:
+                    col.markdown(f'''<div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-label">{label}</div>
+                        <div class="kpi-icon {icon_cls}">{icon}</div>
+                    </div>
+                    <div class="kpi-val">{value}</div>
+                    <div class="kpi-change {direction}">{change}</div>
+                    </div>''', unsafe_allow_html=True)
+
+                st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+                # ── Filter + Table ──
+                mp = st.slider("Minimum probability filter", 0.0, 1.0, 0.0, 0.05)
+                fl = r[r.probability >= mp]
+                st.write(f"**{len(fl):,}** customers shown (>= {mp:.0%})")
+                st.dataframe(
+                    fl.style.format({"probability": "{:.2%}"}).background_gradient(
+                        subset=["probability"], cmap="RdYlGn_r", vmin=0.0, vmax=1.0
+                    ),
+                    width='stretch', height=400,
+                )
+
+                # ── Download ──
+                dl_col1, dl_col2 = st.columns(2)
+                with dl_col1:
+                    st.download_button(
+                        "⬇️ Download All Predictions (CSV)",
+                        r.to_csv(index=False).encode(),
+                        "churn_predictions_all.csv", "text/csv",
+                    )
+                with dl_col2:
+                    churn_only = r[r.prediction == 1]
+                    st.download_button(
+                        "⬇️ Download Churn-Risk Only (CSV)",
+                        churn_only.to_csv(index=False).encode(),
+                        "churn_predictions_risk.csv", "text/csv",
+                    )
 
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1385,7 +1677,7 @@ elif "Performance" in page:
         col.markdown(f'''<div class="kpi-card">
         <div class="kpi-header">
             <div class="kpi-label">{label}</div>
-            <div class="kpi-icon {icon_cls}"><i class='fa-solid fa-chart-simple'></i></div>
+            <div class="kpi-icon {icon_cls}">📊</div>
         </div>
         <div class="kpi-val">{value}</div>
         <div class="kpi-change neutral">{subtitle}</div>
@@ -1482,7 +1774,7 @@ elif "Performance" in page:
             "f1-score": "{:.4f}",
             "support": "{:.0f}",
         }).background_gradient(subset=["precision", "recall", "f1-score"], cmap="Blues"),
-        use_container_width=True
+        width='stretch'
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
