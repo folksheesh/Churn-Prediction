@@ -1,3 +1,4 @@
+import io
 import os
 import sys
 import math
@@ -334,7 +335,7 @@ async def batch_upload_csv(file: UploadFile = File(...)):
     try:
         contents = await file.read()
         # Decode and load
-        df_uploaded = pd.read_csv(pd.compat.StringIO(contents.decode('utf-8')))
+        df_uploaded = pd.read_csv(io.StringIO(contents.decode('utf-8')))
         
         # Validation checks
         errors = []
