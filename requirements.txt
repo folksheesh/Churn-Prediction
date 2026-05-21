@@ -13,3 +13,4 @@ uvicorn
 pydantic
 python-multipart
 joblib
+sqlalchemy
