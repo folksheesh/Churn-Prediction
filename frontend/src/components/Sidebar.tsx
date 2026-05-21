@@ -11,7 +11,8 @@ export default function Sidebar() {
 
   const mainNavItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    { name: 'Analysis', href: '/analysis', icon: BarChart3 },
+    { name: 'Analytics', href: '/analytics', icon: Activity },
     { name: 'Customers', href: '/customers', icon: Users },
   ];
 

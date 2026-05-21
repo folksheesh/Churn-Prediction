@@ -139,13 +139,38 @@ def get_csv_template():
 
 @router.post("/import")
 async def import_customers_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.filename.endswith('.csv'):
-        raise HTTPException(status_code=400, detail="Only CSV files are allowed")
+    if not (file.filename.endswith('.csv') or file.filename.endswith('.xlsx')):
+        raise HTTPException(status_code=400, detail="Only CSV and XLSX files are allowed")
     
     try:
         contents = await file.read()
-        df = pd.read_csv(io.BytesIO(contents))
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(io.BytesIO(contents))
+        else:
+            df = pd.read_excel(io.BytesIO(contents))
         
+        # REQUIRED COLUMNS VALIDATION
+        required_cols = [
+            'age', 'gender', 'security_no', 'region_category', 'joining_date', 
+            'joined_through_referral', 'referral_id', 'preferred_offer_types', 
+            'medium_of_operation', 'internet_option', 'last_visit_time', 
+            'days_since_last_login', 'avg_session_duration', 'avg_transaction_value', 
+            'avg_frequency_login_days', 'points_in_wallet', 'used_special_discount', 
+            'offer_application_preference', 'past_complaint', 'complaint_status', 
+            'feedback', 'plan_tier', 'logins_90d', 'active_days_90d', 
+            'api_calls_90d', 'session_minutes_90d', 'days_since_active'
+        ]
+        
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            raise HTTPException(
+                status_code=422, 
+                detail={
+                    "message": "Data validation failed: Missing required columns.",
+                    "errors": missing_cols
+                }
+            )
+
         # We need an id column. If missing, generate.
         if 'id' not in df.columns:
             df['id'] = [f"CUST-{str(uuid.uuid4())[:8].upper()}" for _ in range(len(df))]
@@ -154,7 +179,7 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         if 'name' not in df.columns:
             df['name'] = [f"Customer {i}" for i in df['id']]
             
-        # Data Validation
+        # Data Validation for values
         errors = []
         for index, row in df.iterrows():
             row_num = index + 2 # +2 because 0-index and header
