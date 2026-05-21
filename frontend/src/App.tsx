@@ -5,10 +5,10 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminLayout from '@/layouts/AdminLayout';
 import AuthLayout from '@/layouts/AuthLayout';
 
-import Dashboard from '@/pages/Dashboard';
-import Customers from '@/pages/Customers';
-import Admin from '@/pages/Admin';
-import Analytics from '@/pages/Analytics';
+import Dashboard from '@/pages/admin/Dashboard';
+import Customers from '@/pages/admin/Customers';
+import Admin from '@/pages/admin/Admin';
+import Analytics from '@/pages/admin/Analytics';
 import Login from '@/pages/auth/Login';
 import Register from '@/pages/auth/Register';
 import UserPlaceholder from '@/pages/user/Placeholder';
