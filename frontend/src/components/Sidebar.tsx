@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown } from 'lucide-react';
+import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Sidebar() {
   const { pathname } = useLocation();
+  const { user, logout } = useAuth();
   const [adminOpen, setAdminOpen] = useState(true);
 
   const mainNavItems = [
@@ -101,21 +103,23 @@ export default function Sidebar() {
       
       {/* Footer User Profile */}
       <div className="p-3 border-t border-zinc-200/60 bg-zinc-50/50">
-        <Link to="/settings" className="flex items-center justify-between p-2 rounded-md hover:bg-zinc-100/80 transition-colors cursor-pointer group">
+        <div className="flex items-center justify-between p-2 rounded-md hover:bg-zinc-100/80 transition-colors group">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-zinc-200/50 border border-zinc-200 text-zinc-700 flex items-center justify-center font-bold text-[10px]">
-              JD
+            <div className="w-7 h-7 rounded-full bg-zinc-200/50 border border-zinc-200 text-zinc-700 flex items-center justify-center font-bold text-[10px] uppercase">
+              {user?.name?.substring(0, 2) || 'AD'}
             </div>
             <div className="flex flex-col">
-              <span className="text-[13px] font-semibold text-zinc-900 leading-none">Jane Doe</span>
+              <span className="text-[13px] font-semibold text-zinc-900 leading-none">{user?.name || 'Admin'}</span>
               <span className="text-[10px] text-zinc-500 flex items-center gap-1 mt-0.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                 System Active
               </span>
             </div>
           </div>
-          <Settings size={14} className="text-zinc-400 group-hover:text-zinc-600 transition-colors" />
-        </Link>
+          <button onClick={logout} className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors" title="Logout">
+            <LogOut size={14} />
+          </button>
+        </div>
       </div>
     </aside>
   );

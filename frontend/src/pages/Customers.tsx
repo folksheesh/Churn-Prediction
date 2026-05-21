@@ -83,7 +83,7 @@ export default function Customers() {
         age: parseInt(formData.age as string) || 30,
         id: formData.id || `CUST-${Math.floor(Math.random()*10000)}`
       });
-      setIsModalOpen(false);
+      setIsAddDrawerOpen(false);
       fetchCustomers();
     } catch (err) {
       console.error("Failed to add customer", err);
