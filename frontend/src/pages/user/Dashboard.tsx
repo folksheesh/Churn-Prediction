@@ -138,7 +138,11 @@ export default function Home() {
           sentimentKategori: c.feedback ? 'Neutral' : 'N/A',
           feedback: c.feedback || 'No recent feedback',
           lastActive: c.days_since_active ? `${c.days_since_active} days ago` : '2 days ago',
-          recommendations: c.churn_risk === 'High' ? ['Offer discount', 'Personal outreach'] : ['Monitor usage']
+          recommendations: c.churn_risk === 'High' ? ['Offer discount', 'Personal outreach'] : ['Monitor usage'],
+          age: c.age || 0,
+          gender: c.gender === 'Female' || c.gender === 'F' ? 'F' : c.gender === 'Male' || c.gender === 'M' ? 'M' : 'O',
+          apiCalls: c.api_calls_90d || 0,
+          sessionLogins: c.logins_90d || 0
         };
       });
 
@@ -813,11 +817,6 @@ export default function Home() {
         {activeTab === "prediction" && (
           <div className="flex flex-col gap-6 animate-fadeIn">
             
-            {/* Header */}
-            <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 font-outfit">Customer Churn Prediction</h2>
-              <p className="text-sm text-slate-500 mt-1">Use our AI model to predict if a customer is likely to stop using our service</p>
-            </div>
 
             {/* Info Banner */}
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 flex items-start gap-4">
@@ -853,7 +852,7 @@ export default function Home() {
                 <div className="space-y-5">
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Customer Name <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                      Customer Name
                     </label>
                     <input
                       type="text"
@@ -866,7 +865,7 @@ export default function Home() {
 
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Gender <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                      Gender
                     </label>
                     <div className="relative">
                       <select
@@ -885,7 +884,7 @@ export default function Home() {
 
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Geographic Region <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                      Geographic Region
                     </label>
                     <input
                       type="text"
@@ -898,7 +897,7 @@ export default function Home() {
 
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Customer Tenure (months) <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                      Customer Tenure (months)
                     </label>
                     <input
                       type="number"
@@ -912,7 +911,7 @@ export default function Home() {
 
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Monthly Subscription Value (USD) <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                      Monthly Subscription Value (USD)
                     </label>
                     <input
                       type="number"
@@ -926,7 +925,7 @@ export default function Home() {
 
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Login Frequency <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                      Login Frequency
                     </label>
                     <div className="relative">
                       <select
@@ -946,7 +945,7 @@ export default function Home() {
 
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Support Tickets (last 30 days) <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                      Support Tickets (last 30 days)
                     </label>
                     <input
                       type="number"
@@ -960,7 +959,7 @@ export default function Home() {
 
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Days Since Last Activity <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                      Days Since Last Activity
                     </label>
                     <input
                       type="number"
@@ -1074,7 +1073,7 @@ export default function Home() {
                     <div className="border border-slate-100 rounded-2xl p-5">
                       <div className="flex justify-between items-center mb-3">
                         <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                          Prediction Confidence <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                          Prediction Confidence
                         </div>
                         <div className="text-xs font-bold text-brand-600">92%</div>
                       </div>
@@ -1087,7 +1086,7 @@ export default function Home() {
                     {/* Top Contributing Factors */}
                     <div className="bg-[#f8fafc] border border-slate-100 rounded-2xl p-6">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 mb-4">
-                        Top Contributing Factors <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                        Top Contributing Factors
                       </div>
                       <div className="space-y-3">
                         {predictionResult.mockFactors?.map((factor: any, i: number) => (
@@ -1359,15 +1358,38 @@ export default function Home() {
                 </a>
               </div>
 
-              {/* Required Columns Card */}
+              {/* CSV Column Guide Card */}
               <div className="bg-[#f5f6fb] border border-slate-200/60 rounded-2xl p-6 shadow-sm">
-                <h4 className="text-sm font-extrabold text-slate-900 mb-4">Required Columns (27)</h4>
-                <ul className="space-y-2 text-xs font-medium text-slate-600">
-                  <li className="flex items-center gap-2 before:content-['•'] before:text-slate-400">age, gender, region_category</li>
-                  <li className="flex items-center gap-2 before:content-['•'] before:text-slate-400">days_since_active, logins_90d</li>
-                  <li className="flex items-center gap-2 before:content-['•'] before:text-slate-400">avg_transaction_value</li>
-                  <li className="flex items-center gap-2 before:content-['•'] before:text-slate-400">plan_tier, feedback</li>
-                  <li className="flex items-center gap-2 before:content-['•'] before:text-slate-400 font-bold italic text-slate-500 mt-2">+ 19 more (see template)</li>
+                <h4 className="text-sm font-extrabold text-slate-900 mb-4">CSV Format Guide</h4>
+                <ul className="space-y-3 text-xs font-medium text-slate-600">
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-400 mt-0.5">•</span>
+                    <div><span className="font-bold text-slate-700">Customer Name</span>: nama customer, contoh <span className="bg-slate-200 px-1 rounded">John Smith</span></div>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-400 mt-0.5">•</span>
+                    <div><span className="font-bold text-slate-700">Region</span>: wilayah customer, contoh <span className="bg-slate-200 px-1 rounded">North America</span></div>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-400 mt-0.5">•</span>
+                    <div><span className="font-bold text-slate-700">Tenure</span>: lama berlangganan dalam bulan, contoh <span className="bg-slate-200 px-1 rounded">18</span></div>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-400 mt-0.5">•</span>
+                    <div><span className="font-bold text-slate-700">Monthly Value</span>: nilai langganan bulanan, contoh <span className="bg-slate-200 px-1 rounded">149</span></div>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-400 mt-0.5">•</span>
+                    <div><span className="font-bold text-slate-700">Login Frequency</span>: frekuensi login, contoh <span className="bg-slate-200 px-1 rounded">Daily</span></div>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-400 mt-0.5">•</span>
+                    <div><span className="font-bold text-slate-700">Support Tickets</span>: jumlah tiket bantuan, contoh <span className="bg-slate-200 px-1 rounded">3</span></div>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-400 mt-0.5">•</span>
+                    <div><span className="font-bold text-slate-700">Last Activity</span>: aktivitas terakhir, contoh <span className="bg-slate-200 px-1 rounded">2026-05-12</span></div>
+                  </li>
                 </ul>
               </div>
 
@@ -1382,74 +1404,89 @@ export default function Home() {
             <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-2xl overflow-hidden animate-scaleUp">
               
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-100">
-                <div className="flex items-center gap-4">
-                  <span className="w-12 h-12 rounded-full bg-[#5955f2] text-white flex items-center justify-center font-outfit font-black text-lg shrink-0">
+              <div className="flex items-start justify-between p-6 border-b border-slate-100">
+                <div className="flex items-start gap-4">
+                  <span className="w-16 h-16 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-outfit font-black text-2xl shrink-0 border border-slate-200">
                     {selectedCustomer.initials}
                   </span>
                   <div>
-                    <h3 className="font-outfit font-black text-xl text-slate-900 leading-tight">
+                    <h3 className="font-outfit font-black text-2xl text-slate-900 leading-tight">
                       {selectedCustomer.name}
                     </h3>
-                    <p className="text-sm text-slate-500">{selectedCustomer.email}</p>
+                    <p className="text-sm font-medium text-slate-500 mt-1">
+                      {selectedCustomer.customerId} • {selectedCustomer.planTier} Plan
+                    </p>
+                    <div className="flex items-center gap-2 mt-3">
+                      <span className="px-3 py-1 border border-slate-500 rounded text-xs font-bold text-slate-600">
+                        {selectedCustomer.age} Yrs
+                      </span>
+                      <span className="px-3 py-1 border border-slate-500 rounded text-xs font-bold text-slate-600">
+                        {selectedCustomer.gender}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <button 
-                  onClick={closeCustomerModal}
-                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                
+                <div className="flex items-start gap-6">
+                  <div className="text-right mt-1">
+                    <span className="block text-[10px] font-bold text-slate-400 tracking-wider uppercase mb-1">Health Score</span>
+                    <span className={`text-4xl font-black ${
+                      selectedCustomer.riskLevel === "High Risk" ? "text-rose-600" :
+                      selectedCustomer.riskLevel === "Medium Risk" ? "text-amber-500" : "text-[#00a86b]"
+                    }`}>
+                      {100 - selectedCustomer.churnProbability}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={closeCustomerModal}
+                    className="p-2 -mr-2 -mt-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="p-6 overflow-y-auto max-h-[70vh]">
                 
                 {/* Risk Assessment Banner */}
-                <div className={`rounded-xl p-5 mb-6 border ${
-                  selectedCustomer.riskLevel === "High Risk" 
-                    ? "bg-rose-50 border-rose-100" 
-                    : selectedCustomer.riskLevel === "Medium Risk"
-                    ? "bg-amber-50 border-amber-100"
-                    : "bg-emerald-50 border-emerald-100"
-                }`}>
+                <div className="rounded-xl p-5 mb-6 border bg-slate-50 border-slate-200">
                   <div className="flex items-center gap-2 mb-3">
-                    {selectedCustomer.riskLevel === "High Risk" ? (
-                      <AlertTriangle className="w-4 h-4 text-rose-600" />
-                    ) : selectedCustomer.riskLevel === "Medium Risk" ? (
-                      <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    ) : (
-                      <CheckCircle className="w-4 h-4 text-emerald-600" />
-                    )}
-                    <span className="font-bold text-sm text-slate-900">Churn Risk Assessment</span>
+                    <AlertTriangle className="w-4 h-4 text-slate-500" />
+                    <span className="font-bold text-[11px] uppercase tracking-wider text-slate-900">Risk Assessment</span>
                   </div>
-                  
-                  <div className="flex justify-between items-end mb-2">
-                    <span className="text-xs font-semibold text-slate-600">Probability of Leaving</span>
-                    <span className={`text-base font-black ${
-                      selectedCustomer.riskLevel === "High Risk" ? "text-rose-600" :
-                      selectedCustomer.riskLevel === "Medium Risk" ? "text-amber-600" : "text-emerald-600"
-                    }`}>{selectedCustomer.churnProbability}%</span>
-                  </div>
-                  
-                  {/* Progress bar */}
-                  <div className="h-2 w-full bg-slate-200/50 rounded-full overflow-hidden mb-3">
-                    <div 
-                      className={`h-full rounded-full ${
-                        selectedCustomer.riskLevel === "High Risk" ? "bg-rose-500" :
-                        selectedCustomer.riskLevel === "Medium Risk" ? "bg-amber-500" : "bg-emerald-500"
-                      }`}
-                      style={{ width: `${selectedCustomer.churnProbability}%` }}
-                    />
-                  </div>
-                  
-                  <p className="text-[11px] font-medium text-slate-600">
+                  <p className="text-sm font-medium text-slate-700">
                     {selectedCustomer.riskLevel === "High Risk" 
-                      ? "This customer is at high risk of churning. Immediate action recommended."
+                      ? "Customer exhibits unstable usage patterns and declining engagement."
                       : selectedCustomer.riskLevel === "Medium Risk"
-                      ? "This customer shows some signs of decreasing engagement. Monitor closely."
-                      : "This customer appears healthy and engaged. They are currently at low risk of churning."
+                      ? "Customer shows some signs of decreasing engagement recently."
+                      : "Customer exhibits normal usage patterns and stable sentiment."
                     }
                   </p>
+                </div>
+
+                {/* Behavioral Telemetry */}
+                <div className="mb-6">
+                  <h4 className="text-[11px] uppercase tracking-wider font-bold text-slate-400 mb-3">Behavioral Telemetry (90D)</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                      <span className="block text-xs font-bold text-slate-500 mb-2">API Calls</span>
+                      <span className="text-2xl font-black text-slate-900">{selectedCustomer.apiCalls?.toLocaleString() || 0}</span>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                      <span className="block text-xs font-bold text-slate-500 mb-2">Session Logins</span>
+                      <span className="text-2xl font-black text-slate-900">{selectedCustomer.sessionLogins?.toLocaleString() || 0}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Feedback */}
+                <div className="mb-6">
+                  <h4 className="text-[11px] uppercase tracking-wider font-bold text-slate-400 mb-3">Recent Feedback</h4>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                    <p className="text-sm font-medium text-slate-700 italic">
+                      "{selectedCustomer.feedback}"
+                    </p>
+                  </div>
                 </div>
 
                 {/* Contact Info */}
@@ -1485,7 +1522,7 @@ export default function Home() {
                     </div>
                     <div className="bg-[#f8fafc] border border-slate-100 rounded-xl p-3.5">
                       <span className="block text-[10px] text-slate-400 mb-1">Total Spent</span>
-                      <span className="text-sm font-bold text-slate-800">${selectedCustomer.totalSpent.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-slate-800">${selectedCustomer.totalSpent?.toLocaleString() || 0}</span>
                     </div>
                   </div>
                 </div>
