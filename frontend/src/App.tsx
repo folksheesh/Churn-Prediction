@@ -11,6 +11,7 @@ import Admin from '@/pages/admin/Admin';
 import Analytics from '@/pages/admin/Analytics';
 import Login from '@/pages/auth/Login';
 import Register from '@/pages/auth/Register';
+import Landing from '@/pages/Landing';
 import UserPlaceholder from '@/pages/user/Placeholder';
 
 export default function App() {
@@ -24,10 +25,13 @@ export default function App() {
             <Route path="/register" element={<Register />} />
           </Route>
 
+          {/* Public Landing Page */}
+          <Route path="/" element={<Landing />} />
+
           {/* Protected Admin Routes */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AdminLayout />}>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/analytics" element={<Analytics />} />

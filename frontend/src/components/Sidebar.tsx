@@ -10,7 +10,7 @@ export default function Sidebar() {
   const [adminOpen, setAdminOpen] = useState(true);
 
   const mainNavItems = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Customers', href: '/customers', icon: Users },
   ];

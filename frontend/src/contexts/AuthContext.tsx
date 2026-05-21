@@ -12,18 +12,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<any>(null);
-  
-  // This is a simple mock using localStorage for now.
-  // In the future, this can easily be replaced by an actual API call.
-  useEffect(() => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => !!localStorage.getItem('churn_user'));
+  const [user, setUser] = useState<any>(() => {
     const storedUser = localStorage.getItem('churn_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
-    }
-  }, []);
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
 
   const login = (email: string, pass: string) => {
     // Mock login logic
