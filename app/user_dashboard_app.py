@@ -533,6 +533,396 @@ st.markdown(
 
 
 # =============================================================================
+# LANDING PAGE - FIRST SCREEN BEFORE USER DASHBOARD
+# =============================================================================
+def _render_landing_page():
+    """Render the first public page before the user enters the dashboard."""
+    st.markdown(
+        """
+        <style>
+        html, body, .stApp {
+            background: #ffffff !important;
+            color: #111827 !important;
+            scroll-behavior: smooth;
+        }
+        section[data-testid="stSidebar"] {
+            display: none !important;
+            visibility: hidden !important;
+            width: 0 !important;
+            min-width: 0 !important;
+        }
+        div[data-testid="stAppViewContainer"] > .main,
+        div[data-testid="stAppViewContainer"] main,
+        div[data-testid="stMain"] {
+            margin-left: 0 !important;
+            padding-left: 0 !important;
+        }
+        .block-container {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+        header, footer, #MainMenu {
+            visibility: hidden !important;
+            display: none !important;
+        }
+        .landing-hero {
+            min-height: 88vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 70px 24px 34px;
+            background:
+                radial-gradient(circle at top, rgba(37, 99, 235, 0.06), transparent 38%),
+                linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+        }
+        .landing-hero-inner {
+            width: min(980px, 92vw);
+            margin: 0 auto;
+        }
+        .landing-product-name {
+            font-size: clamp(42px, 5vw, 72px);
+            font-weight: 900;
+            line-height: .98;
+            letter-spacing: -0.06em;
+            color: #111827;
+            margin-bottom: 14px;
+        }
+        .landing-hero-title {
+            font-size: clamp(46px, 5.7vw, 84px);
+            font-weight: 900;
+            line-height: .98;
+            letter-spacing: -0.055em;
+            color: #2563eb;
+            margin-bottom: 24px;
+        }
+        .landing-hero-subtitle {
+            width: min(820px, 92vw);
+            margin: 0 auto 34px;
+            color: #4b5563;
+            font-size: clamp(17px, 1.55vw, 24px);
+            font-weight: 500;
+            line-height: 1.55;
+            letter-spacing: .01em;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.landing-button-anchor) {
+            margin-top: -165px !important;
+            margin-bottom: 135px !important;
+        }
+        .landing-button-anchor { display: none; }
+        .stButton > button {
+            background: #2563eb !important;
+            color: #ffffff !important;
+            border: 0 !important;
+            border-radius: 7px !important;
+            height: 58px !important;
+            padding: 0 38px !important;
+            min-width: 176px !important;
+            font-size: 16px !important;
+            font-weight: 800 !important;
+            box-shadow: 0 14px 30px rgba(37,99,235,.18) !important;
+        }
+        .stButton > button:hover {
+            background: #1d4ed8 !important;
+            color: #ffffff !important;
+            transform: translateY(-1px);
+            box-shadow: 0 16px 34px rgba(37,99,235,.24) !important;
+        }
+        .landing-feature-section {
+            padding: 18px 7vw 90px;
+            background: #ffffff;
+        }
+        .landing-kicker {
+            text-align: center;
+            color: #7d8a7f;
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: .28em;
+            margin-bottom: 18px;
+        }
+        .landing-section-title {
+            width: min(1180px, 92vw);
+            margin: 0 auto 26px;
+            color: #334f3d;
+            text-align: center;
+            font-size: clamp(36px, 4.7vw, 68px);
+            line-height: .98;
+            letter-spacing: .035em;
+            font-weight: 900;
+        }
+        .landing-section-subtitle {
+            width: min(760px, 92vw);
+            margin: 0 auto 70px;
+            text-align: center;
+            color: #4b5563;
+            font-size: clamp(16px, 1.4vw, 22px);
+            font-weight: 500;
+            line-height: 1.52;
+        }
+        .landing-card-grid {
+            width: min(1380px, 92vw);
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 30px;
+        }
+        .landing-feature-card {
+            min-height: 410px;
+            background: #ffffff;
+            border: 1px solid #eef0f2;
+            border-radius: 18px;
+            padding: 42px 40px 34px;
+            box-shadow: 0 18px 55px rgba(15, 23, 42, 0.035);
+            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+        }
+        .landing-feature-card:hover {
+            transform: translateY(-7px);
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.075);
+            border-color: #dfe5e8;
+        }
+        .landing-card-icon {
+            width: 68px;
+            height: 68px;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff5e8;
+            color: #f59e0b;
+            font-size: 28px;
+            font-weight: 900;
+            margin-bottom: 34px;
+        }
+        .landing-card-label {
+            color: #f59e0b;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+        }
+        .landing-card-title {
+            color: #334f3d;
+            font-size: 27px;
+            font-weight: 900;
+            line-height: 1.12;
+            letter-spacing: -.02em;
+            margin-bottom: 18px;
+        }
+        .landing-card-text {
+            color: #4b5563;
+            font-size: 17px;
+            line-height: 1.5;
+            font-weight: 500;
+            margin-bottom: 28px;
+        }
+        .landing-card-link {
+            color: #f59e0b;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: .03em;
+        }
+        .landing-mini-section {
+            background: #fbfcff;
+            border-top: 1px solid #edf1f7;
+            padding: 72px 7vw 90px;
+        }
+        .landing-mini-wrap {
+            width: min(1180px, 92vw);
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: .9fr 1.1fr;
+            gap: 36px;
+            align-items: center;
+        }
+        .landing-mini-title {
+            color: #111827;
+            font-size: clamp(30px, 3.2vw, 48px);
+            line-height: 1.05;
+            font-weight: 900;
+            letter-spacing: -.045em;
+        }
+        .landing-mini-text {
+            color: #4b5563;
+            font-size: 18px;
+            line-height: 1.65;
+            font-weight: 500;
+            margin-top: 18px;
+        }
+        .landing-process-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+        .landing-process-card {
+            background: #ffffff;
+            border: 1px solid #e8edf5;
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 14px 38px rgba(15,23,42,.04);
+        }
+        .landing-process-number {
+            color: #2563eb;
+            font-size: 14px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+        .landing-process-title {
+            color: #111827;
+            font-size: 18px;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+        .landing-process-text {
+            color: #667085;
+            font-size: 15px;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+        @media (max-width: 1200px) {
+            .landing-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .landing-feature-card { min-height: 360px; }
+        }
+        @media (max-width: 760px) {
+            .landing-hero { min-height: 78vh; padding: 64px 18px 18px; }
+            div[data-testid="stHorizontalBlock"]:has(.landing-button-anchor) {
+                margin-top: -120px !important;
+                margin-bottom: 95px !important;
+            }
+            .landing-card-grid { grid-template-columns: 1fr; gap: 18px; }
+            .landing-feature-card { min-height: auto; padding: 30px 26px; }
+            .landing-mini-wrap { grid-template-columns: 1fr; }
+            .landing-process-grid { grid-template-columns: 1fr; }
+            .landing-feature-section { padding: 18px 4vw 64px; }
+            .landing-mini-section { padding: 56px 4vw 70px; }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+        <section class="landing-hero">
+            <div class="landing-hero-inner">
+                <div class="landing-product-name">ChurnSight</div>
+                <div class="landing-hero-title">Reduce Customer Churn</div>
+                <div class="landing-hero-subtitle">
+                    Analyze, predict, and prevent customer churn with our powerful analytics platform.
+                    Make data-driven decisions to improve customer retention.
+                </div>
+            </div>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    c1, c2, c3 = st.columns([4.5, 1.15, 4.5])
+    with c2:
+        st.markdown('<span class="landing-button-anchor"></span>', unsafe_allow_html=True)
+        if st.button("Get Started", key="landing_get_started", use_container_width=True):
+            st.session_state["landing_entered"] = True
+            st.rerun()
+
+    st.markdown(
+        """
+        <section class="landing-feature-section">
+            <div class="landing-kicker">OUR FEATURES</div>
+            <div class="landing-section-title">Customer Churn Analytics, Prediction & Batch Processing</div>
+            <div class="landing-section-subtitle">
+                This page introduces the main modules available in the user dashboard.
+                Each container is a visual guide so users understand what every feature does before entering the system.
+            </div>
+            <div class="landing-card-grid">
+                <div class="landing-feature-card">
+                    <div class="landing-card-icon">↗</div>
+                    <div class="landing-card-label">Overview & Monitoring</div>
+                    <div class="landing-card-title">Dashboard Analytics</div>
+                    <div class="landing-card-text">
+                        Displays customer health summary, churn rate, at-risk customer counts, retention trends,
+                        and key insights from the uploaded or existing dataset.
+                    </div>
+                    <div class="landing-card-link">View insight flow →</div>
+                </div>
+                <div class="landing-feature-card">
+                    <div class="landing-card-icon">◫</div>
+                    <div class="landing-card-label">Customer Data</div>
+                    <div class="landing-card-title">Customer Management</div>
+                    <div class="landing-card-text">
+                        Helps users review customer records, filter customer segments, compare risk levels,
+                        and identify accounts that need follow-up action.
+                    </div>
+                    <div class="landing-card-link">Explore customer list →</div>
+                </div>
+                <div class="landing-feature-card">
+                    <div class="landing-card-icon">✓</div>
+                    <div class="landing-card-label">Single Prediction</div>
+                    <div class="landing-card-title">Churn Prediction</div>
+                    <div class="landing-card-text">
+                        Allows users to input one customer profile, validate each field clearly,
+                        and generate churn probability with readable risk interpretation.
+                    </div>
+                    <div class="landing-card-link">Check prediction logic →</div>
+                </div>
+                <div class="landing-feature-card">
+                    <div class="landing-card-icon">⇪</div>
+                    <div class="landing-card-label">CSV Processing</div>
+                    <div class="landing-card-title">Batch Upload</div>
+                    <div class="landing-card-text">
+                        Supports CSV template download, file upload, column validation, row checking,
+                        and bulk processing for multiple customer predictions.
+                    </div>
+                    <div class="landing-card-link">Review upload format →</div>
+                </div>
+            </div>
+        </section>
+        <section class="landing-mini-section">
+            <div class="landing-mini-wrap">
+                <div>
+                    <div class="landing-mini-title">Simple flow for user dashboard usage</div>
+                    <div class="landing-mini-text">
+                        The landing page gives a clean first impression, while the dashboard keeps the main project features focused:
+                        monitor data, manage customers, run predictions, and process CSV files.
+                    </div>
+                </div>
+                <div class="landing-process-grid">
+                    <div class="landing-process-card">
+                        <div class="landing-process-number">01</div>
+                        <div class="landing-process-title">Read customer overview</div>
+                        <div class="landing-process-text">Users start from summary metrics and visual insights to understand current churn conditions.</div>
+                    </div>
+                    <div class="landing-process-card">
+                        <div class="landing-process-number">02</div>
+                        <div class="landing-process-title">Inspect customer records</div>
+                        <div class="landing-process-text">The customer page helps users find customers by region, risk, and profile information.</div>
+                    </div>
+                    <div class="landing-process-card">
+                        <div class="landing-process-number">03</div>
+                        <div class="landing-process-title">Predict individual risk</div>
+                        <div class="landing-process-text">Prediction input is validated field by field so error messages are easier to understand.</div>
+                    </div>
+                    <div class="landing-process-card">
+                        <div class="landing-process-number">04</div>
+                        <div class="landing-process-title">Upload many customers</div>
+                        <div class="landing-process-text">Batch upload validates CSV columns and processes valid rows into dashboard data.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+if "landing_entered" not in st.session_state:
+    st.session_state["landing_entered"] = False
+
+if not st.session_state["landing_entered"]:
+    _render_landing_page()
+    st.stop()
+
+
+# =============================================================================
 # DATA HELPERS
 # =============================================================================
 
