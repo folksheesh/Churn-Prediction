@@ -540,7 +540,11 @@ def _render_landing_page():
     st.markdown(
         """
         <style>
-        html, body, .stApp {
+        html, body, .stApp,
+        div[data-testid="stAppViewContainer"],
+        div[data-testid="stAppViewContainer"] > .main,
+        div[data-testid="stMain"],
+        main {
             background: #ffffff !important;
             color: #111827 !important;
             scroll-behavior: smooth;
@@ -561,9 +565,11 @@ def _render_landing_page():
             max-width: 100% !important;
             padding: 0 !important;
         }
-        header, footer, #MainMenu {
+        header, footer, #MainMenu,
+        div[data-testid="stDecoration"] {
             visibility: hidden !important;
             display: none !important;
+            height: 0 !important;
         }
         .landing-hero {
             min-height: 88vh;
@@ -572,9 +578,17 @@ def _render_landing_page():
             justify-content: center;
             text-align: center;
             padding: 70px 24px 34px;
-            background:
-                radial-gradient(circle at top, rgba(37, 99, 235, 0.06), transparent 38%),
-                linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+            background: #ffffff !important;
+        }
+
+        /* Keep the first landing screen fully white without the previous pale blue top gradient. */
+        [data-testid="stAppViewContainer"]::before,
+        [data-testid="stAppViewContainer"]::after,
+        .landing-hero::before,
+        .landing-hero::after {
+            background: #ffffff !important;
+            box-shadow: none !important;
+            border: 0 !important;
         }
         .landing-hero-inner {
             width: min(980px, 92vw);
@@ -842,7 +856,6 @@ def _render_landing_page():
                         Displays customer health summary, churn rate, at-risk customer counts, retention trends,
                         and key insights from the uploaded or existing dataset.
                     </div>
-                    <div class="landing-card-link">View insight flow →</div>
                 </div>
                 <div class="landing-feature-card">
                     <div class="landing-card-icon">◫</div>
@@ -852,7 +865,6 @@ def _render_landing_page():
                         Helps users review customer records, filter customer segments, compare risk levels,
                         and identify accounts that need follow-up action.
                     </div>
-                    <div class="landing-card-link">Explore customer list →</div>
                 </div>
                 <div class="landing-feature-card">
                     <div class="landing-card-icon">✓</div>
@@ -862,7 +874,6 @@ def _render_landing_page():
                         Allows users to input one customer profile, validate each field clearly,
                         and generate churn probability with readable risk interpretation.
                     </div>
-                    <div class="landing-card-link">Check prediction logic →</div>
                 </div>
                 <div class="landing-feature-card">
                     <div class="landing-card-icon">⇪</div>
@@ -872,7 +883,6 @@ def _render_landing_page():
                         Supports CSV template download, file upload, column validation, row checking,
                         and bulk processing for multiple customer predictions.
                     </div>
-                    <div class="landing-card-link">Review upload format →</div>
                 </div>
             </div>
         </section>
