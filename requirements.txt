@@ -8,5 +8,8 @@ openpyxl
 textblob
 transformers
 torch
-streamlit
+fastapi
+uvicorn
+pydantic
+python-multipart
 joblib
