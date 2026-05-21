@@ -12,7 +12,7 @@ import Analytics from '@/pages/admin/Analytics';
 import Login from '@/pages/auth/Login';
 import Register from '@/pages/auth/Register';
 import Landing from '@/pages/Landing';
-import UserPlaceholder from '@/pages/user/Placeholder';
+import UserDashboard from '@/pages/user/Dashboard';
 
 export default function App() {
   return (
@@ -39,7 +39,7 @@ export default function App() {
           </Route>
           
           {/* Public or Protected User routes could go here later */}
-          <Route path="/user-demo" element={<UserPlaceholder />} />
+          <Route path="/user-demo" element={<UserDashboard />} />
         </Routes>
       </Router>
     </AuthProvider>
