@@ -1,4 +1,4 @@
-import { ShieldCheck, Activity, Database, Server, PieChart as PieChartIcon, MessageSquareWarning } from 'lucide-react';
+import { ShieldCheck, Activity, PieChart as PieChartIcon, MessageSquareWarning } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
@@ -37,7 +37,7 @@ export default function Admin() {
       <div className="p-8 max-w-[1200px] mx-auto w-full space-y-6">
         
         {/* Top Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-emerald-100 text-emerald-700 rounded-md">
@@ -59,29 +59,6 @@ export default function Admin() {
                 <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-medium bg-emerald-50 px-2 py-0.5 rounded">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Online
                 </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-blue-100 text-blue-700 rounded-md">
-                <Database size={18} />
-              </div>
-              <h3 className="font-semibold text-zinc-900 text-sm">Data Pipeline</h3>
-            </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Storage Backend</span>
-                <span className="font-medium text-zinc-900">SQLite (churn.db)</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Data Source</span>
-                <span className="font-medium text-zinc-900">Live DB Connect</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-500">Sync Status</span>
-                <span className="text-zinc-900 font-medium">Real-time</span>
               </div>
             </div>
           </div>

@@ -1,24 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut } from 'lucide-react';
+import { Users, LayoutDashboard, BarChart3, ChevronDown, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Sidebar() {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
-  const [adminOpen, setAdminOpen] = useState(true);
 
   const mainNavItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Customers', href: '/customers', icon: Users },
-  ];
-
-  const adminNavItems = [
-    { name: 'Model Health', href: '/admin', icon: Activity },
-    { name: 'Data Pipeline', href: '/admin/data', icon: Database },
-    { name: 'Alerts', href: '/admin/alerts', icon: ShieldAlert },
   ];
 
   return (
@@ -63,40 +55,6 @@ export default function Sidebar() {
                 );
               })}
             </nav>
-          </div>
-
-          {/* Admin Navigation */}
-          <div className="mt-6">
-            <div 
-              className="flex items-center justify-between px-3 mb-2 cursor-pointer group"
-              onClick={() => setAdminOpen(!adminOpen)}
-            >
-              <div className="text-[10px] font-semibold text-zinc-400/80 uppercase tracking-wider group-hover:text-zinc-600 transition-colors">Administration</div>
-              <ChevronDown size={14} className={cn("text-zinc-400 transition-transform", !adminOpen && "-rotate-90")} />
-            </div>
-            {adminOpen && (
-              <nav className="space-y-0.5 px-2">
-                {adminNavItems.map((item) => {
-                  const isActive = pathname.startsWith(item.href) && item.href !== '/admin' || (item.href === '/admin' && pathname === '/admin');
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={cn(
-                        "flex items-center gap-2.5 px-2 py-1.5 text-[13px] font-medium rounded-md transition-colors group relative",
-                        isActive 
-                          ? "bg-zinc-100/80 text-zinc-900" 
-                          : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100/50"
-                      )}
-                    >
-                      <Icon size={15} className={isActive ? "text-zinc-900" : "text-zinc-400 group-hover:text-zinc-600"} /> 
-                      {item.name}
-                    </Link>
-                  );
-                })}
-              </nav>
-            )}
           </div>
         </div>
       </div>

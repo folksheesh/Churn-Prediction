@@ -6,8 +6,6 @@ scikit-learn
 xgboost
 openpyxl
 textblob
-transformers
-torch
 fastapi
 uvicorn
 pydantic
