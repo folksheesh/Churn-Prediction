@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut } from 'lucide-react';
+import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,6 +19,7 @@ export default function Sidebar() {
     { name: 'Model Health', href: '/admin', icon: Activity },
     { name: 'Data Pipeline', href: '/admin/data', icon: Database },
     { name: 'Alerts', href: '/admin/alerts', icon: ShieldAlert },
+    { name: 'Manage Admins', href: '/manage-admins', icon: ShieldCheck },
   ];
 
   return (
