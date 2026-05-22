@@ -1166,7 +1166,7 @@ export default function Home() {
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} domain={[0, 60]} />
                       <Tooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: number) => [`${value}%`, 'Churn Rate']}
+                        formatter={(value: any) => [`${value}%`, 'Churn Rate']}
                       />
                       <Line type="monotone" dataKey="val" stroke="#6366f1" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
                     </LineChart>
@@ -1242,8 +1242,8 @@ export default function Home() {
                         label={({ cx, cy, midAngle, innerRadius, outerRadius, value, index }) => {
                           const RADIAN = Math.PI / 180;
                           const radius = outerRadius + 20;
-                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          const x = cx + radius * Math.cos(-(midAngle || 0) * RADIAN);
+                          const y = cy + radius * Math.sin(-(midAngle || 0) * RADIAN);
                           return (
                             <text x={x} y={y} fill={riskGroupData[index].fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={10} fontWeight="bold">
                               {riskGroupData[index].name}: {value}
@@ -1257,7 +1257,7 @@ export default function Home() {
                       </Pie>
                       <Tooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: number) => [value, 'Customers']}
+                        formatter={(value: any) => [value, 'Customers']}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -1319,7 +1319,7 @@ export default function Home() {
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} domain={[0, 100]} />
                       <Tooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: number) => [`${value}%`, 'Retention']}
+                        formatter={(value: any) => [`${value}%`, 'Retention']}
                         cursor={{ fill: '#f1f5f9' }}
                       />
                       <Bar dataKey="val" fill="#06b6d4" radius={[4, 4, 0, 0]} maxBarSize={60} />

@@ -19,7 +19,6 @@ export default function Sidebar() {
   const adminNavItems = [
     { name: 'Model Health', href: '/admin', icon: Zap },
     { name: 'Data Pipeline', href: '/admin/data', icon: Database },
-    { name: 'Batch Upload', href: '/admin/batch-upload', icon: Upload },
     { name: 'Alerts', href: '/admin/alerts', icon: ShieldAlert },
     { name: 'Manage Admins', href: '/manage-admins', icon: ShieldCheck },
   ];

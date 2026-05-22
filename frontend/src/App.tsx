@@ -10,7 +10,6 @@ import Customers from '@/pages/admin/Customers';
 import Admin from '@/pages/admin/Admin';
 import Analytics from '@/pages/admin/Analytics';
 import Analysis from '@/pages/admin/Analysis';
-import BatchUpload from '@/pages/admin/BatchUpload';
 import Login from '@/pages/auth/Login';
 import AdminManagement from '@/pages/admin/AdminManagement';
 import Landing from '@/pages/Landing';
@@ -39,7 +38,6 @@ export default function App() {
               <Route path="/manage-admins" element={<AdminManagement />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/analysis" element={<Analysis />} />
-              <Route path="/admin/batch-upload" element={<BatchUpload />} />
             </Route>
           </Route>
           
