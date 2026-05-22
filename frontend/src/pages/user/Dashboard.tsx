@@ -57,7 +57,7 @@ import {
 const API_BASE = "http://localhost:8000/api/v1";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "upload" | "analysis">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis">("dashboard");
   const [summary, setSummary] = useState<any>(null);
   const [customerData, setCustomerData] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -77,13 +77,11 @@ export default function Home() {
   const [predicting, setPredicting] = useState(false);
   const [predictError, setPredictError] = useState<string | null>(null);
 
-  // Batch upload state
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadStatus, setUploadStatus] = useState<{ success: boolean; message: string; errors: string[], data?: any[] } | null>(null);
-  const [uploading, setUploading] = useState(false);
-
   // Modal tracking
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+
+  // Send Offer state
+  const [sendingOffer, setSendingOffer] = useState<string | null>(null);
 
   // Fetch Customers and compute summary
   const fetchCustomers = async () => {
@@ -163,7 +161,7 @@ export default function Home() {
       });
 
       const totalCustomers = overviewRes.data.total_customers;
-      const avgChurnRate = overviewRes.data.churn_rate;
+      const avgChurnRate = Math.round((data.reduce((acc: number, c: any) => acc + (c.churn_probability || 0), 0) / (data.length || 1)) * 100);
       const atRiskCount = riskRes.data.high_risk + riskRes.data.medium_risk;
       const lowRiskCount = riskRes.data.low_risk;
       const mediumRiskCount = riskRes.data.medium_risk;
@@ -191,6 +189,10 @@ export default function Home() {
         sparkline: [88, 89, 90, 92, 94, 93, 95],
         regionStats: realRegionStats.slice(0, 5),
         lowRiskCustomers: mappedCustomers.filter((c: any) => c.riskLevel === 'Low Risk').slice(0, 4),
+        highRiskCustomers: mappedCustomers
+          .filter((c: any) => c.riskLevel === 'High Risk' || c.churnProbability >= 70)
+          .sort((a: any, b: any) => b.churnProbability - a.churnProbability)
+          .slice(0, 3),
         activities: [
           { time: '10:45 AM', text: 'System triggered XGBoost batch prediction on live data.' },
           { time: '09:30 AM', text: 'Daily pipeline refresh completed.' }
@@ -225,8 +227,20 @@ export default function Home() {
   // Single Predict handler
   const handlePredict = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPredicting(true);
     setPredictError(null);
+
+    // Form Validation
+    if (!predName) return setPredictError("Customer Name is required.");
+    if (!predGender) return setPredictError("Gender is required.");
+    if (!predRegion) return setPredictError("Geographic Region is required.");
+    
+    if (predTenure === "" || (predTenure as number) < 0) return setPredictError("Customer Tenure cannot be negative.");
+    if (predValue === "" || (predValue as number) < 0) return setPredictError("Monthly Subscription Value cannot be negative.");
+    if (!predFreq) return setPredictError("Login Frequency is required.");
+    if (predTickets === "" || (predTickets as number) < 0) return setPredictError("Support Tickets cannot be negative.");
+    if (predInactive === "" || (predInactive as number) < 0) return setPredictError("Days Since Last Activity cannot be negative.");
+
+    setPredicting(true);
     try {
       const res = await axios.post(`${API_BASE}/predictions/single`, {
         gender: predGender || undefined,
@@ -291,61 +305,14 @@ export default function Home() {
     }
   };
 
-  // Batch Upload handler
-  const handleFileUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!uploadFile) return;
-    setUploading(true);
-    setUploadStatus(null);
-    
-    const formData = new FormData();
-    formData.append("file", uploadFile);
-
-    try {
-      const res = await axios.post(`${API_BASE}/customers/import`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
-      if (res.data.count) {
-        setUploadStatus({
-          success: true,
-          message: `Successfully validated and imported ${res.data.count} customer rows!`,
-          errors: [],
-          data: res.data.data
-        });
-        setUploadFile(null);
-        // Refresh customer list
-        fetchCustomers();
-      } else {
-        setUploadStatus({
-          success: false,
-          message: "Validation failed. Please correct the errors below and try again.",
-          errors: res.data.errors || []
-        });
-      }
-    } catch (err: any) {
-      const detail = err.response?.data?.detail;
-      let errMsg = "Network error. Make sure your FastAPI backend is running.";
-      let errList: string[] = [];
-      
-      if (typeof detail === 'string') {
-        errMsg = detail;
-      } else if (detail && typeof detail === 'object') {
-        errMsg = detail.message || "Validation failed";
-        errList = detail.errors || [];
-      } else if (err.message) {
-        errMsg = err.message;
-      }
-
-      setUploadStatus({
-        success: false,
-        message: errMsg,
-        errors: errList
-      });
-    } finally {
-      setUploading(false);
-    }
+  const handleSendOffer = (customerId: string) => {
+    setSendingOffer(customerId);
+    setTimeout(() => {
+      setSendingOffer(customerId + "_success");
+      setTimeout(() => {
+        setSendingOffer(null);
+      }, 2000);
+    }, 1500);
   };
 
   const { isAuthenticated, user, logout } = useAuth();
@@ -361,120 +328,111 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen font-sans bg-[#f5f6fb]">
+    <div className="flex flex-col min-h-screen font-sans bg-[#fcfcfd]">
       
-      {/* 1. SIDEBAR NAVIGATION */}
-      <aside className="w-[280px] bg-[#0b1220] text-white flex flex-col border-r border-white/10 shrink-0">
-        <div className="p-8 border-b border-slate-700/40 flex items-center gap-3.5">
-          <div className="w-11 h-11 bg-brand-500 rounded-xl flex items-center justify-center font-outfit text-xl font-bold text-white glow-brand">
+      {/* 1. TOP NAVBAR */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 px-6 h-16 flex items-center justify-between shrink-0 shadow-sm transition-all">
+        {/* Left: Logo */}
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-tr from-brand-600 to-brand-500 rounded-lg flex items-center justify-center font-outfit text-sm font-bold text-white shadow-[0_2px_10px_rgba(37,99,235,0.2)]">
             CS
           </div>
-          <div>
-            <h1 className="font-outfit font-bold text-lg leading-tight">ChurnSense</h1>
-            <p className="text-xs text-slate-400">Retention Intelligence</p>
-          </div>
+          <h1 className="font-outfit font-bold text-lg leading-tight text-slate-900 hidden sm:block">ChurnSense</h1>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2">
+        {/* Center: Navigation Links */}
+        <div className="hidden md:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl border border-slate-200/50">
           <button
             onClick={() => setActiveTab("dashboard")}
-            className={`w-full h-14 px-5 rounded-2xl flex items-center gap-4 text-[15px] font-semibold transition-all duration-200 ${
+            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
               activeTab === "dashboard"
-                ? "bg-brand-500 text-white glow-brand shadow-lg"
-                : "text-slate-400 hover:bg-white/5 hover:text-white"
+                ? "bg-white text-brand-700 shadow-sm border border-slate-200/60 ring-1 ring-slate-100/50"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent"
             }`}
           >
-            <LayoutDashboard className="w-5 h-5 shrink-0" />
+            <LayoutDashboard className={`w-4 h-4 shrink-0 transition-colors ${activeTab === "dashboard" ? "text-brand-600" : ""}`} />
             <span>Dashboard</span>
           </button>
-
+          
           <button
             onClick={() => setActiveTab("customers")}
-            className={`w-full h-14 px-5 rounded-2xl flex items-center gap-4 text-[15px] font-semibold transition-all duration-200 ${
+            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
               activeTab === "customers"
-                ? "bg-brand-500 text-white glow-brand shadow-lg"
-                : "text-slate-400 hover:bg-white/5 hover:text-white"
+                ? "bg-white text-brand-700 shadow-sm border border-slate-200/60 ring-1 ring-slate-100/50"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent"
             }`}
           >
-            <Users className="w-5 h-5 shrink-0" />
+            <Users className={`w-4 h-4 shrink-0 transition-colors ${activeTab === "customers" ? "text-brand-600" : ""}`} />
             <span>Customers</span>
           </button>
 
           <button
             onClick={() => setActiveTab("prediction")}
-            className={`w-full h-14 px-5 rounded-2xl flex items-center gap-4 text-[15px] font-semibold transition-all duration-200 ${
+            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
               activeTab === "prediction"
-                ? "bg-brand-500 text-white glow-brand shadow-lg"
-                : "text-slate-400 hover:bg-white/5 hover:text-white"
+                ? "bg-white text-brand-700 shadow-sm border border-slate-200/60 ring-1 ring-slate-100/50"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent"
             }`}
           >
-            <Percent className="w-5 h-5 shrink-0" />
-            <span>Prediction</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("upload")}
-            className={`w-full h-14 px-5 rounded-2xl flex items-center gap-4 text-[15px] font-semibold transition-all duration-200 ${
-              activeTab === "upload"
-                ? "bg-brand-500 text-white glow-brand shadow-lg"
-                : "text-slate-400 hover:bg-white/5 hover:text-white"
-            }`}
-          >
-            <Upload className="w-5 h-5 shrink-0" />
-            <span>Batch Upload</span>
+            <Percent className={`w-4 h-4 shrink-0 transition-colors ${activeTab === "prediction" ? "text-brand-600" : ""}`} />
+            <span>Customer Insights</span>
           </button>
 
           <button
             onClick={() => setActiveTab("analysis")}
-            className={`w-full h-14 px-5 rounded-2xl flex items-center gap-4 text-[15px] font-semibold transition-all duration-200 ${
+            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
               activeTab === "analysis"
-                ? "bg-brand-500 text-white glow-brand shadow-lg"
-                : "text-slate-400 hover:bg-white/5 hover:text-white"
+                ? "bg-white text-brand-700 shadow-sm border border-slate-200/60 ring-1 ring-slate-100/50"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent"
             }`}
           >
-            <Activity className="w-5 h-5 shrink-0" />
+            <Activity className={`w-4 h-4 shrink-0 transition-colors ${activeTab === "analysis" ? "text-brand-600" : ""}`} />
             <span>Analysis</span>
           </button>
-        </nav>
-
-        <div className="p-6 border-t border-white/10 text-xs text-slate-500 flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span>Active ML Pipeline (XGBoost)</span>
         </div>
-      </aside>
+
+        {/* Right: Session & Avatar (Removed as requested) */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          {/* Mobile Menu Dropdown Wrapper */}
+          <div className="md:hidden relative group">
+            <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            {/* Simple CSS-based mobile menu */}
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 shadow-lg rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col p-2 gap-1 z-50">
+              <button onClick={() => setActiveTab("dashboard")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "dashboard" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Dashboard</button>
+              <button onClick={() => setActiveTab("customers")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "customers" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Customers</button>
+              <button onClick={() => setActiveTab("prediction")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "prediction" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Customer Insights</button>
+              <button onClick={() => setActiveTab("analysis")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "analysis" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Analysis</button>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       {/* 2. MAIN WINDOW CONTENT */}
-      <main className="flex-1 flex flex-col min-w-0 max-w-[1280px] mx-auto px-8 py-6">
+      <main className="flex-1 flex flex-col w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-8">
         
         {/* TOP BAR / HEADER */}
-        <header className="flex justify-between items-center mb-8 shrink-0">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8 shrink-0">
           <div>
             <div className="text-[11px] font-bold text-brand-500 tracking-wider uppercase mb-1">
-              ChurnSense • Customer Intelligence
+              {activeTab === "dashboard" && "Overview"}
+              {activeTab === "customers" && "Directory"}
+              {activeTab === "prediction" && "Calculator"}
+              {activeTab === "analysis" && "Analytics"}
             </div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight font-outfit">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-outfit">
               {activeTab === "dashboard" && "Dashboard Overview"}
               {activeTab === "customers" && "Customer Health Directory"}
-              {activeTab === "prediction" && "Single Customer Churn Risk Calculator"}
-              {activeTab === "upload" && "Batch Customer Validation & Upload"}
+              {activeTab === "prediction" && "Customer Insights Calculator"}
               {activeTab === "analysis" && "Visual Analytics"}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
               {activeTab === "dashboard" && "Welcome back! Here is your custom customer health analysis."}
               {activeTab === "customers" && "Real-time list of customers filterable by risk and location categories."}
-              {activeTab === "prediction" && "Calculate simulated churn probability using pre-trained customer weight boundaries."}
-              {activeTab === "upload" && "Import CSV batch documents to validate and add custom rows to your live dashboard."}
+              {activeTab === "prediction" && "Calculate simulated customer insights using pre-trained boundaries."}
               {activeTab === "analysis" && "These charts help you see patterns and trends in your customer data. Don't worry if you're not familiar with charts - each one includes a guide on how to read it!"}
             </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-slate-500 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
-              Session Live
-            </span>
-            <div className="w-9 h-9 rounded-full bg-brand-100 border border-brand-300 text-brand-700 flex items-center justify-center font-outfit font-black text-xs">
-              {isAuthenticated ? user?.name?.substring(0, 2).toUpperCase() : 'GS'}
-            </div>
           </div>
         </header>
 
@@ -486,7 +444,7 @@ export default function Home() {
             {/* STATS MATRIX */}
             {summary ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="glass-card hover-scale rounded-3xl p-6 flex flex-col justify-between min-h-[140px]">
+                <div className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 rounded-xl p-6 flex flex-col justify-between min-h-[140px]">
                   <div>
                     <span className="text-xs font-bold text-slate-400 uppercase">Total Customers</span>
                     <h3 className="text-3xl font-extrabold text-slate-900 font-outfit mt-2">{summary.totalCustomers?.toLocaleString()}</h3>
@@ -497,25 +455,32 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="glass-card hover-scale rounded-3xl p-6 flex flex-col justify-between min-h-[140px]">
+                <div className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 rounded-xl p-6 flex flex-col justify-between min-h-[140px]">
                   <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase">Average Churn Rate</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase">Customer Health Overview</span>
                     <h3 className="text-3xl font-extrabold text-slate-900 font-outfit mt-2">{summary.churnRate}%</h3>
                   </div>
                   <div className="text-xs text-slate-400 mt-2 flex items-center gap-1">
                     <TrendingDown className="w-3.5 h-3.5 text-rose-500" />
-                    <span>Average probability across regions</span>
+                    <span>Overall health score based on activity</span>
                   </div>
                 </div>
 
-                <div className="glass-card hover-scale rounded-3xl p-6 flex flex-col justify-between min-h-[140px]">
+                <div className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 rounded-xl p-6 flex flex-col justify-between min-h-[140px]">
                   <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase">Predicted At-Risk</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase">Customers Needing Attention</span>
                     <h3 className="text-3xl font-extrabold text-slate-900 font-outfit mt-2 text-rose-600">{summary.atRiskCount}</h3>
                   </div>
-                  <div className="text-xs text-slate-400 mt-2 flex items-center gap-1">
-                    <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
-                    <span>Probability risk &ge; 45%</span>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-600 font-bold bg-white border border-slate-100 shadow-sm px-2 py-1 rounded-md">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> High: {summary.highRiskCount?.toLocaleString()}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-600 font-bold bg-white border border-slate-100 shadow-sm px-2 py-1 rounded-md">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Med: {summary.mediumRiskCount?.toLocaleString()}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-600 font-bold bg-white border border-slate-100 shadow-sm px-2 py-1 rounded-md">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Low: {summary.lowRiskCount?.toLocaleString()}
+                    </div>
                   </div>
                 </div>
 
@@ -530,11 +495,11 @@ export default function Home() {
             <div className="grid grid-cols-1 gap-8">
               
               {/* Churn Forecast Line Chart */}
-              <div className="glass-card rounded-3xl p-6">
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-6">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h4 className="text-base font-extrabold text-slate-900 font-outfit">Churn Trend Projection</h4>
-                    <p className="text-xs text-slate-400">Projected 7-day baseline churn rate forecast.</p>
+                    <h4 className="text-base font-extrabold text-slate-900 font-outfit">Customer Activity Trend</h4>
+                    <p className="text-xs text-slate-400">Projected 7-day customer engagement trend.</p>
                   </div>
                 </div>
                 {summary && summary.churnForecast ? (
@@ -566,10 +531,10 @@ export default function Home() {
             <div className="grid grid-cols-1 gap-8">
               
               {/* Region Retention and table list */}
-              <div className="glass-card rounded-3xl p-6">
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-6">
                 <div className="mb-6">
-                  <h4 className="text-base font-extrabold text-slate-900 font-outfit">Region Analytics & Top Retention Candidates</h4>
-                  <p className="text-xs text-slate-400">At-risk metrics grouped by geographical sectors and accounts.</p>
+                  <h4 className="text-base font-extrabold text-slate-900 font-outfit">Regional Customer Insights</h4>
+                  <p className="text-xs text-slate-400">Engagement metrics grouped by geographic region.</p>
                 </div>
 
                 {summary && summary.regionStats ? (
@@ -588,39 +553,69 @@ export default function Home() {
                   <div className="h-[200px] flex items-center justify-center text-slate-400">Loading region statistics...</div>
                 )}
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase">
-                        <th className="pb-3 font-semibold">Customer</th>
-                        <th className="pb-3 font-semibold">Tenure</th>
-                        <th className="pb-3 font-semibold">Priority</th>
-                        <th className="pb-3 font-semibold">Monthly Value</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {summary && summary.lowRiskCustomers && summary.lowRiskCustomers.map((c: any, i: number) => (
-                        <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="py-3 flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold font-outfit text-xs">
-                              {c.initials}
-                            </span>
-                            <div>
-                              <div className="font-bold text-slate-900">{c.name}</div>
-                              <div className="text-[10px] text-slate-400">{c.region}</div>
+                {/* Customer Attention Cards */}
+                <div className="mt-8">
+                  <h4 className="text-sm font-extrabold text-slate-900 mb-4">Customers Needing Attention</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {summary?.highRiskCustomers?.length > 0 ? summary.highRiskCustomers.map((c: any, i: number) => {
+                      const isHigh = c.churnProbability >= 75;
+                      const isMed = !isHigh;
+                      const btnClass = isHigh ? "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-100" : "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-100";
+                      const textClass = isHigh ? "text-rose-600 bg-rose-50 border-rose-100" : "text-amber-600 bg-amber-50 border-amber-100";
+                      const dotClass = isHigh ? "bg-rose-500 shadow-rose-200" : "bg-amber-500 shadow-amber-200";
+                      const avatarClass = isHigh ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700";
+                      
+                      const btnState = sendingOffer === c.customerId ? "loading" : sendingOffer === c.customerId + "_success" ? "success" : "idle";
+                      
+                      return (
+                        <div key={c.customerId} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                          <div 
+                            className="cursor-pointer group flex-1"
+                            onClick={() => openCustomerModal(c)}
+                          >
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm shrink-0 transition-transform group-hover:scale-105 ${avatarClass}`}>
+                                  {c.initials}
+                                </div>
+                                <div>
+                                  <h5 className="font-bold text-slate-900 text-sm truncate max-w-[120px] group-hover:text-brand-600 transition-colors">{c.name}</h5>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${textClass}`}>
+                                    {isHigh ? "High Attention" : "Medium Attention"}
+                                  </span>
+                                </div>
+                              </div>
+                              <span className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 shadow-sm ${dotClass}`}></span>
                             </div>
-                          </td>
-                          <td className="py-3 text-slate-500 font-medium">{c.tenure} months</td>
-                          <td className="py-3">
-                            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                              {c.riskLevel}
-                            </span>
-                          </td>
-                          <td className="py-3 font-bold text-slate-900">${c.monthlyValue}/mo</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            <p className="text-xs text-slate-600 mb-5 leading-relaxed h-8 line-clamp-2">
+                              {c.recommendations?.[0] || "Engagement decreasing recently."}
+                            </p>
+                          </div>
+                          <button 
+                            onClick={() => handleSendOffer(c.customerId)}
+                            disabled={btnState !== "idle"}
+                            className={`w-full py-2.5 font-bold text-xs rounded-xl transition-all border flex justify-center items-center gap-2 ${
+                              btnState === "success" 
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
+                                : btnClass
+                            }`}
+                          >
+                            {btnState === "loading" ? (
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            ) : btnState === "success" ? (
+                              "Offer Sent!"
+                            ) : (
+                              "Send Offer"
+                            )}
+                          </button>
+                        </div>
+                      );
+                    }) : (
+                      <div className="col-span-3 text-center py-8 text-sm text-slate-400">
+                        No high risk customers at this time.
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -631,7 +626,7 @@ export default function Home() {
         {activeTab === "customers" && (
           <div className="space-y-6 animate-fadeIn">
             {/* Filter Search Bar Container */}
-            <div className="glass-card rounded-3xl p-5 flex flex-col md:flex-row gap-4 items-center">
+            <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-5 flex flex-col md:flex-row gap-4 items-center">
               <div className="relative flex-1 w-full">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
@@ -682,7 +677,7 @@ export default function Home() {
                   return (
                     <div
                       key={i}
-                      className="glass-card rounded-3xl p-6 transition-all duration-200 hover:shadow-md border border-slate-200/60"
+                      className="bg-white border border-slate-100 shadow-sm rounded-xl p-6 transition-all duration-200 hover:shadow-md border border-slate-200/60"
                     >
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         
@@ -778,7 +773,7 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               
               {/* Left Column: Input Form */}
-              <form onSubmit={handlePredict} className="glass-card rounded-3xl p-8">
+              <form onSubmit={handlePredict} className="bg-white border border-slate-100 shadow-sm rounded-xl p-8">
                 <h3 className="text-lg font-extrabold text-slate-900 mb-6 font-outfit">Customer Information</h3>
                 
                 <div className="space-y-5">
@@ -808,7 +803,6 @@ export default function Home() {
                         <option value="" disabled>Select gender...</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
-                        <option value="Other">Other</option>
                       </select>
                       <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
@@ -818,13 +812,19 @@ export default function Home() {
                     <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
                       Geographic Region
                     </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., Europe"
-                      value={predRegion}
-                      onChange={(e) => setPredRegion(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors text-slate-700"
-                    />
+                    <div className="relative">
+                      <select
+                        value={predRegion}
+                        onChange={(e) => setPredRegion(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors appearance-none cursor-pointer text-slate-700"
+                      >
+                        <option value="" disabled>Select region...</option>
+                        {customerData?.regions?.map((r: string) => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
                   </div>
 
                   <div>
@@ -833,6 +833,7 @@ export default function Home() {
                     </label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="e.g., 18"
                       value={predTenure}
                       onChange={(e) => setPredTenure(e.target.value ? parseInt(e.target.value) : "")}
@@ -847,6 +848,7 @@ export default function Home() {
                     </label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="e.g., 149"
                       value={predValue}
                       onChange={(e) => setPredValue(e.target.value ? parseFloat(e.target.value) : "")}
@@ -881,6 +883,7 @@ export default function Home() {
                     </label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="e.g., 3"
                       value={predTickets}
                       onChange={(e) => setPredTickets(e.target.value ? parseInt(e.target.value) : "")}
@@ -895,6 +898,7 @@ export default function Home() {
                     </label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="e.g., 7"
                       value={predInactive}
                       onChange={(e) => setPredInactive(e.target.value ? parseInt(e.target.value) : "")}
@@ -915,7 +919,7 @@ export default function Home() {
               </form>
 
               {/* Right Column: Results */}
-              <div className="glass-card rounded-3xl p-8">
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8">
                 {!predictionResult ? (
                   // Initial Empty State
                   <div className="h-full flex flex-col items-center justify-center text-center animate-fadeIn">
@@ -1005,7 +1009,7 @@ export default function Home() {
                     <div className="border border-slate-100 rounded-2xl p-5">
                       <div className="flex justify-between items-center mb-3">
                         <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                          Prediction Confidence
+                          Customer Stability Level
                         </div>
                         <div className="text-xs font-bold text-brand-600">92%</div>
                       </div>
@@ -1018,7 +1022,7 @@ export default function Home() {
                     {/* Top Contributing Factors */}
                     <div className="bg-[#f8fafc] border border-slate-100 rounded-2xl p-6">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 mb-4">
-                        Top Contributing Factors
+                        Customer Behavior Insights
                       </div>
                       <div className="space-y-3">
                         {predictionResult.mockFactors?.map((factor: any, i: number) => (
@@ -1038,7 +1042,7 @@ export default function Home() {
 
                     {/* What This Prediction Means */}
                     <div className="bg-[#f8fafc] border border-slate-100 rounded-2xl p-6">
-                      <h4 className="text-xs font-bold text-slate-900 mb-3">What This Prediction Means</h4>
+                      <h4 className="text-xs font-bold text-slate-900 mb-3">What These Insights Mean</h4>
                       <p className="text-xs text-slate-600 leading-relaxed">
                         {predictionResult.riskLevel === "High Risk" 
                           ? "This customer shows strong warning signs of leaving. The prediction is based on behavioral patterns similar to customers who churned in the past. Immediate intervention is recommended to prevent churn."
@@ -1067,323 +1071,6 @@ export default function Home() {
                 )}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* VIEW D: BATCH UPLOAD TAB */}
-        {activeTab === "upload" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fadeIn">
-            
-            {/* Left Column: Upload Dropzone & History (or Error State) */}
-            <div className="md:col-span-2 space-y-6">
-              
-              {/* Conditional Upload or Error State */}
-              {uploadStatus?.success === false ? (
-                <div className="space-y-6 animate-fadeIn">
-                  {/* Error Alert Banner */}
-                  <div className="bg-rose-50 border border-rose-200 rounded-xl p-5 flex items-start gap-4">
-                    <XCircle className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">
-                        {uploadStatus.errors && uploadStatus.errors.length > 0 
-                          ? "Upload Failed: Missing required columns" 
-                          : "Upload Failed"}
-                      </h3>
-                      <p className="text-xs text-slate-600 mt-1">{uploadStatus.message}</p>
-                      {uploadFile && (
-                        <div className="mt-3 bg-white px-3 py-2 rounded-lg border border-slate-100 text-xs font-semibold text-slate-700 flex items-center gap-2 w-fit">
-                          <span className="text-slate-500">File:</span> {uploadFile.name}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Show missing columns UI ONLY if the error message is specifically about missing columns */}
-                  {uploadStatus.errors && uploadStatus.errors.length > 0 && uploadStatus.message.includes('Missing required columns') && (
-                    <>
-                      {/* Missing Required Columns Detail */}
-                      <div className="glass-card rounded-2xl p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                          <AlertCircle className="w-5 h-5 text-rose-500" />
-                          <h4 className="text-sm font-bold text-slate-900">Missing Required Columns</h4>
-                        </div>
-                        <p className="text-xs text-slate-500 mb-4">Your CSV file is missing the following required columns:</p>
-                        
-                        <div className="bg-rose-50/50 border border-rose-200 rounded-xl p-4 mb-4">
-                          <h5 className="text-xs font-bold text-rose-700 mb-3">Missing Columns ({uploadStatus.errors.length}):</h5>
-                          <div className="grid grid-cols-2 gap-y-2">
-                            {uploadStatus.errors.map((err, idx) => (
-                              <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-rose-600">
-                                <XCircle className="w-3.5 h-3.5" /> {err}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4">
-                          <h5 className="text-xs font-bold text-emerald-700 mb-3">All Required Columns (27):</h5>
-                          <p className="text-xs text-emerald-600 mb-2">Please ensure your file has all 27 columns defined in the template.</p>
-                          <div className="grid grid-cols-2 gap-y-2">
-                            {["age", "gender", "region_category", "logins_90d", "avg_transaction_value", "plan_tier"].map((col, idx) => (
-                              <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-emerald-600">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> {col}
-                              </div>
-                            ))}
-                            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 italic">
-                                + 21 more columns...
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Correct File Format Example */}
-                      <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                          <FileText className="w-5 h-5 text-blue-600" />
-                          <h4 className="text-sm font-bold text-slate-900">Correct Format Example</h4>
-                        </div>
-                        <pre className="bg-white border border-slate-200 rounded-xl p-4 text-[10px] sm:text-xs text-slate-600 overflow-x-auto font-mono leading-relaxed">
-{`age,gender,security_no,region_category,...,plan_tier
-35,Male,SEC123,North America,...,Premium
-28,Female,SEC124,Europe,...,Basic
-...`}
-                        </pre>
-                        <p className="text-xs text-slate-500 mt-4">Make sure your file has these exact column names in the first row. We recommend using our template.</p>
-                      </div>
-                    </>
-                  )}
-                  
-                  {/* Show Validation Errors if the error message is NOT about missing columns */}
-                  {uploadStatus.errors && uploadStatus.errors.length > 0 && !uploadStatus.message.includes('Missing required columns') && (
-                    <div className="bg-rose-50/50 border border-rose-200 rounded-xl p-4">
-                      <h5 className="text-xs font-bold text-rose-700 mb-3">Validation Errors:</h5>
-                      <div className="space-y-2">
-                        {uploadStatus.errors.map((err, idx) => (
-                          <div key={idx} className="flex items-start gap-2 text-xs font-semibold text-rose-600">
-                            <XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" /> {err}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Error Action Buttons */}
-                  <div className="flex gap-4">
-                    <button 
-                      onClick={() => { setUploadFile(null); setUploadStatus(null); }}
-                      className="flex-1 h-12 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl transition-colors"
-                    >
-                      Try Another File
-                    </button>
-                    <a href="/template_churn.xlsx" download className="flex-1 h-12 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
-                      <Download className="w-4 h-4" /> Download Template
-                    </a>
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={handleFileUpload} className="glass-card rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-slate-200 hover:border-brand-400 bg-slate-50/50 hover:bg-white transition-all cursor-pointer relative group animate-fadeIn">
-                  <input
-                    type="file"
-                    accept=".csv, .xlsx"
-                    onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  <div className="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <Upload className="w-8 h-8 text-brand-500" />
-                  </div>
-                  <h3 className="text-lg font-extrabold text-slate-900 mb-2">Drop your CSV file here</h3>
-                  <p className="text-sm text-slate-500 mb-6">or click to browse</p>
-                  
-                  {uploadFile ? (
-                    <div className="text-center z-20 relative">
-                      <p className="text-sm font-bold text-slate-800">{uploadFile.name}</p>
-                      <button
-                        type="submit"
-                        disabled={uploading}
-                        className="mt-4 px-8 py-2.5 bg-brand-500 hover:bg-brand-600 disabled:bg-slate-300 text-white font-bold rounded-xl transition-colors glow-brand cursor-pointer z-30 relative"
-                      >
-                        {uploading ? "Analyzing..." : "Upload File"}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="px-6 py-2.5 bg-brand-500 text-white font-bold rounded-xl relative z-20 pointer-events-none">
-                      Select File
-                    </div>
-                  )}
-
-                  {/* Success Alert overlay */}
-                  {uploadStatus?.success && (
-                    <div className="absolute inset-0 bg-white/95 rounded-2xl flex flex-col items-center justify-center z-30 animate-fadeIn border border-emerald-200 p-8">
-                      <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-4 shrink-0" />
-                      <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Upload Successful</h3>
-                      <p className="text-sm text-slate-500 mb-6 text-center">{uploadStatus.message}</p>
-                      <button
-                        type="button"
-                        onClick={() => { setUploadFile(null); setUploadStatus(null); }}
-                        className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors cursor-pointer shrink-0"
-                      >
-                        Upload Another
-                      </button>
-                    </div>
-                  )}
-                </form>
-              )}
-              
-              {/* Data Table of Prediction Results */}
-              {uploadStatus?.success && uploadStatus.data && (
-                <div className="glass-card rounded-2xl p-6 mt-6 animate-fadeIn overflow-x-auto">
-                  <h4 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-brand-500" />
-                    Prediction Results
-                  </h4>
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase">
-                        <th className="pb-3 font-semibold">Customer ID</th>
-                        <th className="pb-3 font-semibold">Tenure</th>
-                        <th className="pb-3 font-semibold">Monthly Value</th>
-                        <th className="pb-3 font-semibold">Risk Level</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {uploadStatus.data.slice(0, 10).map((row, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="py-3 font-medium text-slate-800">{row.id || row.name || 'Unknown'}</td>
-                          <td className="py-3 text-slate-500">{Math.round((row.days_since_joined || 0)/30)} mo</td>
-                          <td className="py-3 font-bold text-slate-800">${Math.round(row.avg_transaction_value || 0)}</td>
-                          <td className="py-3">
-                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                              row.churn_risk === "High" ? "bg-rose-50 text-rose-700 border-rose-100" :
-                              row.churn_risk === "Medium" ? "bg-amber-50 text-amber-700 border-amber-100" :
-                              "bg-emerald-50 text-emerald-700 border-emerald-100"
-                            }`}>
-                              {row.churn_risk} ({Math.round((row.churn_probability || 0)*100)}%)
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {uploadStatus.data.length > 10 && (
-                    <div className="text-center mt-4 text-xs text-slate-500 italic">
-                      Showing 10 of {uploadStatus.data.length} results. Go to Customers tab to view all.
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Upload History (Static) */}
-              <div className="glass-card rounded-2xl p-6 mt-6">
-                <h4 className="text-sm font-bold text-slate-900 mb-4">Upload History</h4>
-                <div className="space-y-3">
-                  {[
-                    { count: 1247, date: "May 8, 2026" },
-                    { count: 892, date: "May 5, 2026" },
-                    { count: 1563, date: "May 1, 2026" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between bg-slate-50 hover:bg-slate-100 p-4 rounded-xl border border-slate-100 transition-colors cursor-pointer group">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-slate-400 group-hover:text-brand-500 transition-colors" />
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">{item.count} customers</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{item.date}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-xs font-bold text-emerald-600">Completed</span>
-                        <Download className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-
-            {/* Right Column: Guides */}
-            <div className="space-y-6">
-              
-              {/* How to Use Card */}
-              <div className="glass-card rounded-2xl p-6">
-                <h4 className="text-base font-extrabold text-slate-900 font-outfit mb-6">How to Use</h4>
-                
-                <div className="space-y-6 relative">
-                  {/* Vertical Line */}
-                  <div className="absolute top-2 bottom-2 left-[11px] w-0.5 bg-slate-100 z-0"></div>
-                  
-                  <div className="flex gap-4 relative z-10">
-                    <div className="w-6 h-6 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm border-2 border-white">
-                      1
-                    </div>
-                    <div>
-                      <h5 className="text-sm font-bold text-slate-800">Prepare your CSV</h5>
-                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">Download our template and fill in customer data</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-4 relative z-10">
-                    <div className="w-6 h-6 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm border-2 border-white">
-                      2
-                    </div>
-                    <div>
-                      <h5 className="text-sm font-bold text-slate-800">Upload file</h5>
-                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">Drag and drop or click to select your CSV</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-4 relative z-10">
-                    <div className="w-6 h-6 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm border-2 border-white">
-                      3
-                    </div>
-                    <div>
-                      <h5 className="text-sm font-bold text-slate-800">Get predictions</h5>
-                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">Download results with churn probabilities</p>
-                    </div>
-                  </div>
-                </div>
-
-                <a href="/template_churn.xlsx" download className="block text-center w-full mt-8 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-200 transition-colors text-xs">
-                  Download Template
-                </a>
-              </div>
-
-              {/* CSV Column Guide Card */}
-              <div className="bg-[#f5f6fb] border border-slate-200/60 rounded-2xl p-6 shadow-sm">
-                <h4 className="text-sm font-extrabold text-slate-900 mb-4">CSV Format Guide</h4>
-                <ul className="space-y-3 text-xs font-medium text-slate-600">
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Customer Name</span>: the customer's name, e.g. <span className="bg-slate-200 px-1 rounded">John Smith</span></div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Region</span>: customer's geographic region, e.g. <span className="bg-slate-200 px-1 rounded">North America</span></div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Tenure</span>: subscription length in months, e.g. <span className="bg-slate-200 px-1 rounded">18</span></div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Monthly Value</span>: monthly subscription value, e.g. <span className="bg-slate-200 px-1 rounded">149</span></div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Login Frequency</span>: frequency of logins, e.g. <span className="bg-slate-200 px-1 rounded">Daily</span></div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Support Tickets</span>: support tickets count, e.g. <span className="bg-slate-200 px-1 rounded">3</span></div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-400 mt-0.5">•</span>
-                    <div><span className="font-bold text-slate-700">Last Activity</span>: last activity date, e.g. <span className="bg-slate-200 px-1 rounded">2026-05-12</span></div>
-                  </li>
-                </ul>
-              </div>
-
-            </div>
-
           </div>
         )}
 
@@ -1446,7 +1133,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
               
               {/* Card 1: Churn Rate by Age */}
-              <div className="glass-card rounded-3xl p-8 flex flex-col">
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
                 <h3 className="text-lg font-bold text-slate-900 mb-1">Churn Rate by Customer Age</h3>
                 <p className="text-xs text-slate-500 mb-6">Shows how likely customers are to leave based on how long they've been with us</p>
                 
@@ -1515,7 +1202,7 @@ export default function Home() {
               </div>
 
               {/* Card 2: Risk Groups */}
-              <div className="glass-card rounded-3xl p-8 flex flex-col">
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
                 <h3 className="text-lg font-bold text-slate-900 mb-1">Customer Risk Groups</h3>
                 <p className="text-xs text-slate-500 mb-6">How many customers are in each risk category</p>
                 
@@ -1601,7 +1288,7 @@ export default function Home() {
               </div>
 
               {/* Card 3: Loyalty by Location */}
-              <div className="glass-card rounded-3xl p-8 flex flex-col">
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
                 <h3 className="text-lg font-bold text-slate-900 mb-1">Customer Loyalty by Location</h3>
                 <p className="text-xs text-slate-500 mb-6">Compares how well we retain customers in different parts of the world</p>
                 
@@ -1665,7 +1352,7 @@ export default function Home() {
               </div>
 
               {/* Card 4: Active vs Inactive Over Time */}
-              <div className="glass-card rounded-3xl p-8 flex flex-col">
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
                 <h3 className="text-lg font-bold text-slate-900 mb-1">Active vs Inactive Customers Over Time</h3>
                 <p className="text-xs text-slate-500 mb-6">Tracks how many customers are actively using the service each month</p>
                 
