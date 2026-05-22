@@ -139,83 +139,140 @@ def get_csv_template():
 
 @router.post("/import")
 async def import_customers_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not (file.filename.endswith('.csv') or file.filename.endswith('.xlsx')):
-        raise HTTPException(status_code=400, detail="Only CSV and XLSX files are allowed")
+    allowed_extensions = ('.csv', '.xlsx', '.xls')
+    if not file.filename.lower().endswith(allowed_extensions):
+        raise HTTPException(status_code=400, detail="Only CSV or Excel (.xlsx/.xls) files are allowed.")
     
     try:
         contents = await file.read()
-        if file.filename.endswith('.csv'):
-            df = pd.read_csv(io.BytesIO(contents))
-        else:
+        # Read file based on extension
+        filename_lower = file.filename.lower()
+        if filename_lower.endswith('.xlsx') or filename_lower.endswith('.xls'):
             df = pd.read_excel(io.BytesIO(contents))
+        else:
+            df = pd.read_csv(io.BytesIO(contents))
         
-        # REQUIRED COLUMNS VALIDATION
-        required_cols = [
-            'age', 'gender', 'security_no', 'region_category', 'joining_date', 
-            'joined_through_referral', 'referral_id', 'preferred_offer_types', 
-            'medium_of_operation', 'internet_option', 'last_visit_time', 
-            'days_since_last_login', 'avg_session_duration', 'avg_transaction_value', 
-            'avg_frequency_login_days', 'points_in_wallet', 'used_special_discount', 
-            'offer_application_preference', 'past_complaint', 'complaint_status', 
-            'feedback', 'plan_tier', 'logins_90d', 'active_days_90d', 
-            'api_calls_90d', 'session_minutes_90d', 'days_since_active'
-        ]
-        
-        missing_cols = [col for col in required_cols if col not in df.columns]
-        if missing_cols:
-            raise HTTPException(
-                status_code=422, 
-                detail={
-                    "message": "Data validation failed: Missing required columns.",
-                    "errors": missing_cols
-                }
-            )
-
-        # We need an id column. If missing, generate.
+        # Auto-generate id column if missing
         if 'id' not in df.columns:
             df['id'] = [f"CUST-{str(uuid.uuid4())[:8].upper()}" for _ in range(len(df))]
         
-        # We need a name column.
+        # Auto-generate name column if missing
         if 'name' not in df.columns:
             df['name'] = [f"Customer {i}" for i in df['id']]
-            
-        # Data Validation for values
+
+        # ─── Human-readable field labels for error messages ───────────────────
+        FIELD_LABELS = {
+            "age":                      "Age",
+            "days_since_joined":        "Customer Tenure",
+            "days_since_last_login":    "Days Since Last Login",
+            "days_since_active":        "Days Since Last Activity",
+            "avg_session_duration":     "Avg Session Duration",
+            "avg_transaction_value":    "Avg Transaction Value (Monthly Subscription Value)",
+            "avg_frequency_login_days": "Avg Login Frequency (Days)",
+            "points_in_wallet":         "Points in Wallet",
+            "logins_90d":               "Logins (last 90 days)",
+            "active_days_90d":          "Active Days (last 90 days)",
+            "api_calls_90d":            "API Calls (last 90 days)",
+            "session_minutes_90d":      "Session Minutes (last 90 days)",
+            "tickets_opened_90d":       "Support Tickets (last 90 days)",
+        }
+
+        def lbl(col: str) -> str:
+            return FIELD_LABELS.get(col, f"'{col}'")
+
+        # ─── Per-row field validation ─────────────────────────────────────────
         errors = []
         for index, row in df.iterrows():
-            row_num = index + 2 # +2 because 0-index and header
-            
-            if 'age' in df.columns and pd.notna(row['age']):
-                if row['age'] < 0 or row['age'] > 120:
-                    errors.append(f"Row {row_num}: 'age' must be between 0 and 120 (got {row['age']})")
-                    
-            if 'days_since_joined' in df.columns and pd.notna(row['days_since_joined']):
-                # roughly 120 months max = 3600 days
-                if row['days_since_joined'] < 0 or row['days_since_joined'] > 3600:
-                    errors.append(f"Row {row_num}: Customer Tenure ('days_since_joined') harus berupa angka dengan rentang 0-120 bulan (0-3600 hari)")
-                    
-            if 'logins_90d' in df.columns and pd.notna(row['logins_90d']):
-                if row['logins_90d'] < 0:
-                    errors.append(f"Row {row_num}: 'logins_90d' cannot be negative (got {row['logins_90d']})")
-                    
-            if 'api_calls_90d' in df.columns and pd.notna(row['api_calls_90d']):
-                if row['api_calls_90d'] < 0:
-                    errors.append(f"Row {row_num}: 'api_calls_90d' cannot be negative")
-                    
+            row_num = index + 2  # +2: 0-indexed + header row
+
+            # Age: required, integer 0–120
+            if 'age' in df.columns:
+                if pd.isna(row['age']):
+                    errors.append(f"Row {row_num}: {lbl('age')} is required and cannot be empty.")
+                elif not isinstance(row['age'], (int, float)) or not (0 <= row['age'] <= 120):
+                    errors.append(f"Row {row_num}: {lbl('age')} must be a number between 0 and 120 (got '{row['age']}').")
+
+            # Customer Tenure: required, 0–3650 days (≈ 0–120 months)
+            if 'days_since_joined' in df.columns:
+                if pd.isna(row['days_since_joined']):
+                    errors.append(f"Row {row_num}: {lbl('days_since_joined')} is required and cannot be empty.")
+                elif not (0 <= row['days_since_joined'] <= 3650):
+                    errors.append(f"Row {row_num}: {lbl('days_since_joined')} must be between 0 and 3650 days (0–120 months) (got '{row['days_since_joined']}').")
+
+            # Days Since Last Login: non-negative
+            if 'days_since_last_login' in df.columns and pd.notna(row['days_since_last_login']):
+                if row['days_since_last_login'] < 0:
+                    errors.append(f"Row {row_num}: {lbl('days_since_last_login')} must be 0 or greater (got '{row['days_since_last_login']}').")
+
+            # Days Since Last Activity: non-negative
+            if 'days_since_active' in df.columns and pd.notna(row['days_since_active']):
+                if row['days_since_active'] < 0:
+                    errors.append(f"Row {row_num}: {lbl('days_since_active')} must be 0 or greater (got '{row['days_since_active']}').")
+
+            # Avg Session Duration: non-negative
             if 'avg_session_duration' in df.columns and pd.notna(row['avg_session_duration']):
                 if row['avg_session_duration'] < 0:
-                    errors.append(f"Row {row_num}: 'avg_session_duration' cannot be negative")
-                    
+                    errors.append(f"Row {row_num}: {lbl('avg_session_duration')} must be 0 or greater (got '{row['avg_session_duration']}').")
+
+            # Avg Transaction Value: non-negative
+            if 'avg_transaction_value' in df.columns and pd.notna(row['avg_transaction_value']):
+                if row['avg_transaction_value'] < 0:
+                    errors.append(f"Row {row_num}: {lbl('avg_transaction_value')} must be 0 or greater (got '{row['avg_transaction_value']}').")
+
+            # Avg Login Frequency: non-negative
+            if 'avg_frequency_login_days' in df.columns and pd.notna(row['avg_frequency_login_days']):
+                if row['avg_frequency_login_days'] < 0:
+                    errors.append(f"Row {row_num}: {lbl('avg_frequency_login_days')} must be 0 or greater (got '{row['avg_frequency_login_days']}').")
+
+            # Points in Wallet: non-negative
+            if 'points_in_wallet' in df.columns and pd.notna(row['points_in_wallet']):
+                if row['points_in_wallet'] < 0:
+                    errors.append(f"Row {row_num}: {lbl('points_in_wallet')} must be 0 or greater (got '{row['points_in_wallet']}').")
+
+            # Logins (90d): non-negative
+            if 'logins_90d' in df.columns and pd.notna(row['logins_90d']):
+                if row['logins_90d'] < 0:
+                    errors.append(f"Row {row_num}: {lbl('logins_90d')} must be 0 or greater (got '{row['logins_90d']}').")
+
+            # Active Days (90d): non-negative, cannot exceed logins_90d
+            if 'active_days_90d' in df.columns and pd.notna(row['active_days_90d']):
+                if row['active_days_90d'] < 0:
+                    errors.append(f"Row {row_num}: {lbl('active_days_90d')} must be 0 or greater (got '{row['active_days_90d']}').")
+                elif 'logins_90d' in df.columns and pd.notna(row['logins_90d']) and row['active_days_90d'] > row['logins_90d']:
+                    errors.append(
+                        f"Row {row_num}: {lbl('active_days_90d')} ({int(row['active_days_90d'])}) "
+                        f"cannot be greater than {lbl('logins_90d')} ({int(row['logins_90d'])})."
+                    )
+
+            # API Calls (90d): non-negative
+            if 'api_calls_90d' in df.columns and pd.notna(row['api_calls_90d']):
+                if row['api_calls_90d'] < 0:
+                    errors.append(f"Row {row_num}: {lbl('api_calls_90d')} must be 0 or greater (got '{row['api_calls_90d']}').")
+
+            # Session Minutes (90d): non-negative
+            if 'session_minutes_90d' in df.columns and pd.notna(row['session_minutes_90d']):
+                if row['session_minutes_90d'] < 0:
+                    errors.append(f"Row {row_num}: {lbl('session_minutes_90d')} must be 0 or greater (got '{row['session_minutes_90d']}').")
+
+            # Support Tickets (90d): non-negative
+            if 'tickets_opened_90d' in df.columns and pd.notna(row['tickets_opened_90d']):
+                if row['tickets_opened_90d'] < 0:
+                    errors.append(f"Row {row_num}: {lbl('tickets_opened_90d')} must be 0 or greater (got '{row['tickets_opened_90d']}').")
+
         if errors:
-            raise HTTPException(status_code=422, detail={"message": "Data validation failed: Invalid values", "errors": errors[:10]})
-            
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": "Validation failed. Please fix the errors below and re-upload your file.",
+                    "errors": errors[:15]
+                }
+            )
+
         # Run ML batch prediction
         result_df = run_batch_prediction(df)
         
         customers_to_add = []
-        ui_processed_data = []
-        
         for _, row in result_df.iterrows():
-            # For DB insertion, we drop na
             row_dict = row.dropna().to_dict()
             
             # Extract ML results
@@ -227,12 +284,6 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
                 row_dict['churn_probability'] = float(prob)
                 row_dict['churn_risk'] = "High" if prob > 0.7 else "Medium" if prob > 0.4 else "Low"
             
-            # Prepare data for UI
-            ui_row = {k: v for k, v in row.where(pd.notna(row), None).to_dict().items()}
-            ui_row['churn_probability'] = float(prob) if prob is not None else 0.0
-            ui_row['churn_risk'] = "High" if ui_row['churn_probability'] > 0.7 else "Medium" if ui_row['churn_probability'] > 0.4 else "Low"
-            ui_processed_data.append(ui_row)
-            
             # Check if customer exists
             cust_id = str(row_dict.get('id'))
             existing = db.query(Customer).filter(Customer.id == cust_id).first()
@@ -241,7 +292,7 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
                     if hasattr(existing, k):
                         setattr(existing, k, v)
             else:
-                # filter out dict keys not in Customer model
+                # Filter out dict keys not in Customer model
                 valid_keys = {c.name for c in Customer.__table__.columns}
                 filtered_dict = {k: v for k, v in row_dict.items() if k in valid_keys}
                 customers_to_add.append(Customer(**filtered_dict))
@@ -254,10 +305,39 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         db.add(log)
         
         db.commit()
+
+        # Build prediction results for frontend table display
+        prediction_rows = []
+        for _, row in result_df.iterrows():
+            prob = row.get('probability', None)
+            churn_prob_pct = round(float(prob) * 100, 1) if prob is not None else None
+            risk = "High Risk" if prob > 0.7 else "Medium Risk" if prob > 0.4 else "Low Risk" if prob is not None else "Unknown"
+            prediction_rows.append({
+                "name":             str(row.get('name', row.get('id', 'Unknown'))),
+                "churn_probability": churn_prob_pct,
+                "risk_level":       risk,
+                "region":           str(row.get('region_category', '-')),
+                "plan_tier":        str(row.get('plan_tier', '-')),
+                "age":              int(row['age']) if pd.notna(row.get('age')) else None,
+            })
+
+        total = len(prediction_rows)
+        high   = sum(1 for r in prediction_rows if r['risk_level'] == 'High Risk')
+        medium = sum(1 for r in prediction_rows if r['risk_level'] == 'Medium Risk')
+        low    = sum(1 for r in prediction_rows if r['risk_level'] == 'Low Risk')
+        avg_prob = round(sum(r['churn_probability'] for r in prediction_rows if r['churn_probability'] is not None) / total, 1) if total else 0
+
         return {
-            "message": f"Successfully imported {len(df)} customers.", 
-            "count": len(df),
-            "data": ui_processed_data
+            "message": f"Successfully imported and predicted {total} customer(s).",
+            "count":   total,
+            "summary": {
+                "total":        total,
+                "high_risk":    high,
+                "medium_risk":  medium,
+                "low_risk":     low,
+                "avg_churn_probability": avg_prob,
+            },
+            "results": prediction_rows,
         }
         
     except HTTPException as he:
