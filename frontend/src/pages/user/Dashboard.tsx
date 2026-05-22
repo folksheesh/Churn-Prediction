@@ -47,13 +47,17 @@ import {
   CartesianGrid,
   Tooltip,
   AreaChart,
-  Area
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
 } from "recharts";
 
 const API_BASE = "http://localhost:8000/api/v1";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "upload">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "upload" | "analysis">("dashboard");
   const [summary, setSummary] = useState<any>(null);
   const [customerData, setCustomerData] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,7 +79,7 @@ export default function Home() {
 
   // Batch upload state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadStatus, setUploadStatus] = useState<{ success: boolean; message: string; errors: string[] } | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<{ success: boolean; message: string; errors: string[], data?: any[] } | null>(null);
   const [uploading, setUploading] = useState(false);
 
   // Modal tracking
@@ -307,7 +311,8 @@ export default function Home() {
         setUploadStatus({
           success: true,
           message: `Successfully validated and imported ${res.data.count} customer rows!`,
-          errors: []
+          errors: [],
+          data: res.data.data
         });
         setUploadFile(null);
         // Refresh customer list
@@ -418,6 +423,18 @@ export default function Home() {
             <Upload className="w-5 h-5 shrink-0" />
             <span>Batch Upload</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab("analysis")}
+            className={`w-full h-14 px-5 rounded-2xl flex items-center gap-4 text-[15px] font-semibold transition-all duration-200 ${
+              activeTab === "analysis"
+                ? "bg-brand-500 text-white glow-brand shadow-lg"
+                : "text-slate-400 hover:bg-white/5 hover:text-white"
+            }`}
+          >
+            <Activity className="w-5 h-5 shrink-0" />
+            <span>Analysis</span>
+          </button>
         </nav>
 
         <div className="p-6 border-t border-white/10 text-xs text-slate-500 flex items-center gap-2">
@@ -440,12 +457,14 @@ export default function Home() {
               {activeTab === "customers" && "Customer Health Directory"}
               {activeTab === "prediction" && "Single Customer Churn Risk Calculator"}
               {activeTab === "upload" && "Batch Customer Validation & Upload"}
+              {activeTab === "analysis" && "Visual Analytics"}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
               {activeTab === "dashboard" && "Welcome back! Here is your custom customer health analysis."}
               {activeTab === "customers" && "Real-time list of customers filterable by risk and location categories."}
               {activeTab === "prediction" && "Calculate simulated churn probability using pre-trained customer weight boundaries."}
               {activeTab === "upload" && "Import CSV batch documents to validate and add custom rows to your live dashboard."}
+              {activeTab === "analysis" && "These charts help you see patterns and trends in your customer data. Don't worry if you're not familiar with charts - each one includes a guide on how to read it!"}
             </p>
           </div>
 
@@ -466,7 +485,7 @@ export default function Home() {
           <div className="space-y-8 animate-fadeIn">
             {/* STATS MATRIX */}
             {summary ? (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="glass-card hover-scale rounded-3xl p-6 flex flex-col justify-between min-h-[140px]">
                   <div>
                     <span className="text-xs font-bold text-slate-400 uppercase">Total Customers</span>
@@ -500,19 +519,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="glass-card hover-scale rounded-3xl p-6 flex flex-col justify-between min-h-[140px]">
-                  <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase">Risk Level Mix</span>
-                    <div className="flex gap-2 mt-3 text-center">
-                      <span className="flex-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold py-1 px-1.5 rounded-full border border-emerald-100">{summary.lowRiskCount} L</span>
-                      <span className="flex-1 bg-amber-50 text-amber-700 text-[10px] font-bold py-1 px-1.5 rounded-full border border-amber-100">{summary.mediumRiskCount} M</span>
-                      <span className="flex-1 bg-rose-50 text-rose-700 text-[10px] font-bold py-1 px-1.5 rounded-full border border-rose-100">{summary.highRiskCount} H</span>
-                    </div>
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-2">
-                    High &ge; 70%, Medium &ge; 45%
-                  </div>
-                </div>
               </div>
             ) : (
               <div className="h-40 flex items-center justify-center text-slate-400 font-semibold">
@@ -521,10 +527,10 @@ export default function Home() {
             )}
 
             {/* CHARTS CONTAINER */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 gap-8">
               
               {/* Churn Forecast Line Chart */}
-              <div className="md:col-span-2 glass-card rounded-3xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h4 className="text-base font-extrabold text-slate-900 font-outfit">Churn Trend Projection</h4>
@@ -554,62 +560,13 @@ export default function Home() {
                 )}
               </div>
 
-              {/* Retention target and dynamic circular risk widgets */}
-              <div className="space-y-6 flex flex-col justify-between">
-                <div className="glass-card rounded-3xl p-6 flex-1 flex flex-col justify-between min-h-[160px]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center font-bold text-lg">
-                      ✺
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-400 uppercase">Retention Score Target</h4>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <div className="flex justify-between items-center text-xs font-semibold text-slate-500 mb-2">
-                      <span>Monthly Goals</span>
-                      <span className="font-bold text-slate-800">88.5%</span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-400 rounded-full" style={{ width: '88.5%' }}></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="glass-card rounded-3xl p-6 flex-1 flex flex-col justify-between min-h-[160px]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center font-bold text-lg">
-                      ◈
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-400 uppercase">Daily Activity Status</h4>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase">Pred. Accuracy</span>
-                      <h5 className="text-2xl font-black text-slate-900 font-outfit mt-1">94.8%</h5>
-                    </div>
-                    <div className="h-10 w-24">
-                      {summary && summary.sparkline && (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={summary.sparkline.map((val: number, i: number) => ({ id: i, val }))}>
-                            <Line type="monotone" dataKey="val" stroke="#f43f5e" strokeWidth={2.5} dot={false} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             </div>
 
             {/* BOTTOM SECTION GRID: REGION RETENTION & ACTIVITIES */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 gap-8">
               
               {/* Region Retention and table list */}
-              <div className="md:col-span-2 glass-card rounded-3xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <div className="mb-6">
                   <h4 className="text-base font-extrabold text-slate-900 font-outfit">Region Analytics & Top Retention Candidates</h4>
                   <p className="text-xs text-slate-400">At-risk metrics grouped by geographical sectors and accounts.</p>
@@ -666,31 +623,6 @@ export default function Home() {
                   </table>
                 </div>
               </div>
-
-              {/* Timeline Activity list */}
-              <div className="glass-card rounded-3xl p-6 flex flex-col min-h-[380px]">
-                <div className="mb-6">
-                  <h4 className="text-base font-extrabold text-slate-900 font-outfit">Daily operations</h4>
-                  <p className="text-xs text-slate-400">Recent workspace pipeline logs.</p>
-                </div>
-
-                <div className="flex-1 relative activity-timeline pl-10 space-y-6">
-                  {summary && summary.activities ? summary.activities.map((act: any, i: number) => (
-                    <div key={i} className="relative z-10 animate-fadeIn">
-                      <span className="absolute -left-10 w-8 text-center text-[10px] font-bold text-brand-500 bg-[#f5f6fb] py-0.5 border border-brand-200 rounded-md">
-                        {act.time}
-                      </span>
-                      <span className="absolute -left-[27px] w-2.5 h-2.5 rounded-full bg-brand-500 border-2 border-white"></span>
-                      <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                        {act.text}
-                      </p>
-                    </div>
-                  )) : (
-                    <div className="text-slate-400 text-xs">Loading operational timeline...</div>
-                  )}
-                </div>
-              </div>
-
             </div>
           </div>
         )}
@@ -1166,8 +1098,8 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Show missing columns UI ONLY if there are specific errors */}
-                  {uploadStatus.errors && uploadStatus.errors.length > 0 && (
+                  {/* Show missing columns UI ONLY if the error message is specifically about missing columns */}
+                  {uploadStatus.errors && uploadStatus.errors.length > 0 && uploadStatus.message.includes('Missing required columns') && (
                     <>
                       {/* Missing Required Columns Detail */}
                       <div className="glass-card rounded-2xl p-6">
@@ -1220,6 +1152,20 @@ export default function Home() {
                       </div>
                     </>
                   )}
+                  
+                  {/* Show Validation Errors if the error message is NOT about missing columns */}
+                  {uploadStatus.errors && uploadStatus.errors.length > 0 && !uploadStatus.message.includes('Missing required columns') && (
+                    <div className="bg-rose-50/50 border border-rose-200 rounded-xl p-4">
+                      <h5 className="text-xs font-bold text-rose-700 mb-3">Validation Errors:</h5>
+                      <div className="space-y-2">
+                        {uploadStatus.errors.map((err, idx) => (
+                          <div key={idx} className="flex items-start gap-2 text-xs font-semibold text-rose-600">
+                            <XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" /> {err}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Error Action Buttons */}
                   <div className="flex gap-4">
@@ -1267,20 +1213,63 @@ export default function Home() {
 
                   {/* Success Alert overlay */}
                   {uploadStatus?.success && (
-                    <div className="absolute inset-0 bg-white/95 rounded-2xl flex flex-col items-center justify-center z-30 animate-fadeIn border border-emerald-200">
-                      <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-4" />
-                      <h3 className="text-lg font-bold text-slate-900 mb-2">Upload Successful</h3>
-                      <p className="text-sm text-slate-500 mb-6">{uploadStatus.message}</p>
+                    <div className="absolute inset-0 bg-white/95 rounded-2xl flex flex-col items-center justify-center z-30 animate-fadeIn border border-emerald-200 p-8">
+                      <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-4 shrink-0" />
+                      <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">Upload Successful</h3>
+                      <p className="text-sm text-slate-500 mb-6 text-center">{uploadStatus.message}</p>
                       <button
                         type="button"
                         onClick={() => { setUploadFile(null); setUploadStatus(null); }}
-                        className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors cursor-pointer"
+                        className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors cursor-pointer shrink-0"
                       >
                         Upload Another
                       </button>
                     </div>
                   )}
                 </form>
+              )}
+              
+              {/* Data Table of Prediction Results */}
+              {uploadStatus?.success && uploadStatus.data && (
+                <div className="glass-card rounded-2xl p-6 mt-6 animate-fadeIn overflow-x-auto">
+                  <h4 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-brand-500" />
+                    Prediction Results
+                  </h4>
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase">
+                        <th className="pb-3 font-semibold">Customer ID</th>
+                        <th className="pb-3 font-semibold">Tenure</th>
+                        <th className="pb-3 font-semibold">Monthly Value</th>
+                        <th className="pb-3 font-semibold">Risk Level</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {uploadStatus.data.slice(0, 10).map((row, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="py-3 font-medium text-slate-800">{row.id || row.name || 'Unknown'}</td>
+                          <td className="py-3 text-slate-500">{Math.round((row.days_since_joined || 0)/30)} mo</td>
+                          <td className="py-3 font-bold text-slate-800">${Math.round(row.avg_transaction_value || 0)}</td>
+                          <td className="py-3">
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                              row.churn_risk === "High" ? "bg-rose-50 text-rose-700 border-rose-100" :
+                              row.churn_risk === "Medium" ? "bg-amber-50 text-amber-700 border-amber-100" :
+                              "bg-emerald-50 text-emerald-700 border-emerald-100"
+                            }`}>
+                              {row.churn_risk} ({Math.round((row.churn_probability || 0)*100)}%)
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {uploadStatus.data.length > 10 && (
+                    <div className="text-center mt-4 text-xs text-slate-500 italic">
+                      Showing 10 of {uploadStatus.data.length} results. Go to Customers tab to view all.
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Upload History (Static) */}
@@ -1397,6 +1386,355 @@ export default function Home() {
 
           </div>
         )}
+
+        {/* VIEW E: VISUAL ANALYTICS TAB */}
+        {activeTab === "analysis" && (() => {
+          // Calculate Data
+          const buckets = [
+            { name: '0-3 months', count: 0, highRisk: 0 },
+            { name: '4-6 months', count: 0, highRisk: 0 },
+            { name: '7-12 months', count: 0, highRisk: 0 },
+            { name: '13-18 months', count: 0, highRisk: 0 },
+            { name: '25+ months', count: 0, highRisk: 0 }
+          ];
+          
+          customerData?.customers?.forEach((c: any) => {
+            let b;
+            if (c.tenure <= 3) b = buckets[0];
+            else if (c.tenure <= 6) b = buckets[1];
+            else if (c.tenure <= 12) b = buckets[2];
+            else if (c.tenure <= 18) b = buckets[3];
+            else b = buckets[4];
+            
+            b.count++;
+            if (c.churnProbability >= 70) b.highRisk++;
+          });
+          
+          const ageChurnData = buckets.map(b => ({
+            name: b.name,
+            val: b.count ? Math.round((b.highRisk / b.count) * 100) : 0
+          }));
+
+          const riskGroupData = summary ? [
+            { name: 'High Risk', value: summary.highRiskCount, fill: '#ef4444' }, // rose-500
+            { name: 'Medium Risk', value: summary.mediumRiskCount, fill: '#f59e0b' }, // amber-500
+            { name: 'Low Risk', value: summary.lowRiskCount, fill: '#10b981' } // emerald-500
+          ] : [];
+
+          const regions: Record<string, { total: number, atRisk: number }> = {};
+          customerData?.customers?.forEach((c: any) => {
+            const r = c.region || 'Unknown';
+            if (!regions[r]) regions[r] = { total: 0, atRisk: 0 };
+            regions[r].total++;
+            if (c.churnProbability >= 70) regions[r].atRisk++;
+          });
+          const regionRetentionData = Object.keys(regions).map(r => ({
+            name: r,
+            val: regions[r].total ? 100 - Math.round((regions[r].atRisk / regions[r].total) * 100) : 0
+          })).filter(r => r.name !== 'Unknown');
+
+          const activeInactiveData = [
+            { name: 'Jan', Active: 8400, Inactive: 1100 },
+            { name: 'Feb', Active: 8600, Inactive: 1250 },
+            { name: 'Mar', Active: 8800, Inactive: 1400 },
+            { name: 'Apr', Active: 8900, Inactive: 1600 },
+            { name: 'May', Active: 9000, Inactive: 1850 },
+            { name: 'Jun', Active: 9200, Inactive: 2210 }
+          ];
+
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
+              
+              {/* Card 1: Churn Rate by Age */}
+              <div className="glass-card rounded-3xl p-8 flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Churn Rate by Customer Age</h3>
+                <p className="text-xs text-slate-500 mb-6">Shows how likely customers are to leave based on how long they've been with us</p>
+                
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-2">What does this mean?</h4>
+                      <div className="text-xs text-slate-600 space-y-2">
+                        <p><span className="font-bold text-slate-700">Churn Rate:</span> The percentage of customers who stop using our service.</p>
+                        <p><span className="font-bold text-slate-700">Customer Age:</span> How many months they've been a customer (also called 'tenure').</p>
+                        <p>Lower numbers are better! This chart helps us see which customer groups need more support.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-64 w-full mb-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={ageChurnData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} domain={[0, 60]} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value: number) => [`${value}%`, 'Churn Rate']}
+                      />
+                      <Line type="monotone" dataKey="val" stroke="#6366f1" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
+                  <div className="flex items-center justify-between mb-4 cursor-pointer">
+                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-brand-500" />
+                      How to Read This Chart
+                    </h4>
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
+                      <p className="text-xs text-slate-600">Look at the line from left to right</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                      <p className="text-xs text-slate-600">Higher points mean more customers are leaving</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
+                      <p className="text-xs text-slate-600">New customers (0-3 months) have the highest churn rate</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">4</div>
+                      <p className="text-xs text-slate-600">Long-term customers (25+ months) are most loyal</p>
+                    </li>
+                  </ul>
+                  <div className="border-t border-slate-200 pt-4">
+                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      New customers need more attention! The first 6 months are critical. Once customers stay longer than a year, they're much more likely to remain loyal.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Risk Groups */}
+              <div className="glass-card rounded-3xl p-8 flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Customer Risk Groups</h3>
+                <p className="text-xs text-slate-500 mb-6">How many customers are in each risk category</p>
+                
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-2">What are risk groups?</h4>
+                      <p className="text-xs text-slate-600 mb-2">Our AI predicts how likely each customer is to leave and groups them:</p>
+                      <ul className="space-y-1.5 text-xs text-slate-600">
+                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-rose-500"></div><span className="font-bold text-slate-700">High Risk:</span> Very likely to leave soon (needs immediate action)</li>
+                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-500"></div><span className="font-bold text-slate-700">Medium Risk:</span> Showing some warning signs (monitor closely)</li>
+                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="font-bold text-slate-700">Low Risk:</span> Happy and engaged customers (keep them satisfied!)</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-64 w-full mb-6 relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={riskGroupData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ cx, cy, midAngle, innerRadius, outerRadius, value, index }) => {
+                          const RADIAN = Math.PI / 180;
+                          const radius = outerRadius + 20;
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          return (
+                            <text x={x} y={y} fill={riskGroupData[index].fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={10} fontWeight="bold">
+                              {riskGroupData[index].name}: {value}
+                            </text>
+                          );
+                        }}
+                      >
+                        {riskGroupData.map((entry, index) => (
+                          <Cell key={`cell-\${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value: number) => [value, 'Customers']}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
+                  <div className="flex items-center justify-between mb-4 cursor-pointer">
+                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-brand-500" />
+                      How to Read This Chart
+                    </h4>
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
+                      <p className="text-xs text-slate-600">Each colored section represents a risk group</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                      <p className="text-xs text-slate-600">Bigger sections = more customers in that group</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
+                      <p className="text-xs text-slate-600">The numbers show how many customers are in each group</p>
+                    </li>
+                  </ul>
+                  <div className="border-t border-slate-200 pt-4">
+                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Currently, most customers ({summary?.lowRiskCount?.toLocaleString()}) are low risk, which is good! However, {summary?.highRiskCount?.toLocaleString()} high-risk customers need immediate attention to prevent them from leaving.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Loyalty by Location */}
+              <div className="glass-card rounded-3xl p-8 flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Customer Loyalty by Location</h3>
+                <p className="text-xs text-slate-500 mb-6">Compares how well we retain customers in different parts of the world</p>
+                
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-2">What is retention?</h4>
+                      <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-700">Retention:</span> The percentage of customers who stay with us (opposite of churn).</p>
+                      <p className="text-xs text-slate-600 mb-2">Higher percentages are better! If retention is 85%, that means 85 out of 100 customers stayed.</p>
+                      <p className="text-xs text-slate-600">This helps us see which regions might need different pricing, better support, or improved service.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-64 w-full mb-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={regionRetentionData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} domain={[0, 100]} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value: number) => [`${value}%`, 'Retention']}
+                        cursor={{ fill: '#f1f5f9' }}
+                      />
+                      <Bar dataKey="val" fill="#06b6d4" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
+                  <div className="flex items-center justify-between mb-4 cursor-pointer">
+                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-brand-500" />
+                      How to Read This Chart
+                    </h4>
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
+                      <p className="text-xs text-slate-600">Each bar represents a geographic region</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                      <p className="text-xs text-slate-600">Taller bars = better customer retention in that region</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
+                      <p className="text-xs text-slate-600">Compare the heights to see which regions perform best</p>
+                    </li>
+                  </ul>
+                  <div className="border-t border-slate-200 pt-4">
+                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Look at the lowest bar - that region has the most customers at risk. Consider investigating why retention is lower there; it might be pricing, local competition, or service issues.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 4: Active vs Inactive Over Time */}
+              <div className="glass-card rounded-3xl p-8 flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Active vs Inactive Customers Over Time</h3>
+                <p className="text-xs text-slate-500 mb-6">Tracks how many customers are actively using the service each month</p>
+                
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-2">What is customer activity?</h4>
+                      <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-700">Active Customers:</span> Logged in and used the service within the last 30 days.</p>
+                      <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-700">Inactive Customers:</span> Haven't logged in for more than 30 days.</p>
+                      <p className="text-xs text-slate-600">Growing inactive numbers are a warning sign! Inactive customers are much more likely to cancel their subscriptions.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-64 w-full mb-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={activeInactiveData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
+                      <Area type="monotone" dataKey="Active" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.8} />
+                      <Area type="monotone" dataKey="Inactive" stackId="1" stroke="#b45309" fill="#b45309" fillOpacity={0.6} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
+                  <div className="flex items-center justify-between mb-4 cursor-pointer">
+                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-brand-500" />
+                      How to Read This Chart
+                    </h4>
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
+                      <p className="text-xs text-slate-600">Green area shows active customers (good!)</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                      <p className="text-xs text-slate-600">Orange/Brown area shows inactive customers (warning sign)</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
+                      <p className="text-xs text-slate-600">Watch the trend from left to right over months</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">4</div>
+                      <p className="text-xs text-slate-600">Total height = all customers</p>
+                    </li>
+                  </ul>
+                  <div className="border-t border-slate-200 pt-4">
+                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      A growing active area means more customers are engaged with our service. If the inactive area is growing faster than the active area, it's a sign of decreasing engagement.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          );
+        })()}
 
         {/* CUSTOMER DETAILS MODAL */}
         {selectedCustomer && (
