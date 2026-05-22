@@ -49,3 +49,12 @@ class ActivityLog(Base):
     user = Column(String)
     details = Column(String, nullable=True)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+class AdminUser(Base):
+    __tablename__ = "admin_users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True)
+    name = Column(String)
+    hashed_password = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -2,9 +2,8 @@
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![XGBoost](https://img.shields.io/badge/XGBoost-Machine%20Learning-orange.svg)
-![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red.svg)
 
-**ChurnSight** adalah proyek machine learning *end-to-end* yang dirancang untuk memprediksi probabilitas *churn* pelanggan (berhenti berlangganan/menggunakan layanan). Proyek ini menggabungkan pemodelan prediktif **XGBoost**, analisis sentimen adaptif berbasis NLP, dan dilengkapi dengan **Dashboard SaaS Profesional** berbasis Streamlit.
+**ChurnSight** adalah proyek machine learning *end-to-end* yang dirancang untuk memprediksi probabilitas *churn* pelanggan (berhenti berlangganan/menggunakan layanan). Proyek ini menggabungkan pemodelan prediktif **XGBoost**, analisis sentimen adaptif berbasis NLP, dan dilengkapi dengan **Dashboard SaaS Profesional**.
 
 ---
 
@@ -49,12 +48,17 @@ python src/train_model.py
 ```
 *Tunggu hingga proses selesai dan muncul konfirmasi bahwa artefak telah tersimpan.*
 
-### 2. Menjalankan Dashboard (Streamlit)
-Setelah model berhasil dilatih, jalankan dashboard analitik dengan perintah berikut:
+### 2. Menjalankan Dashboard
+Setelah model berhasil dilatih, Anda dapat menjalankan backend dan frontend (React/Vite).
 ```bash
-python -m streamlit run app/streamlit_app.py
+# Jalankan backend FastAPI
+cd backend
+uvicorn app.main:app --reload
+
+# Di terminal lain, jalankan frontend
+cd frontend
+npm run dev
 ```
-Dashboard akan otomatis terbuka di browser melalui alamat `http://localhost:8501`.
 
 ---
 
@@ -62,8 +66,6 @@ Dashboard akan otomatis terbuka di browser melalui alamat `http://localhost:8501
 
 ```text
 churn_project/
-├── app/
-│   └── streamlit_app.py       # Aplikasi Dashboard Streamlit (UI/UX)
 ├── data/
 │   ├── raw/                   # Data mentah asli (churn_data.csv)
 │   └── processed/             # Data bersih hasil pipeline
@@ -97,5 +99,5 @@ churn_project/
 - **Machine Learning**: `scikit-learn`, `xgboost`
 - **NLP / Text Analysis**: `textblob`, HuggingFace `transformers`
 - **Data Visualization**: `matplotlib`, `seaborn`
-- **Web App / Dashboard**: `streamlit`
+- **Web App / Dashboard**: `React`, `FastAPI`
 - **Serialization**: `joblib`

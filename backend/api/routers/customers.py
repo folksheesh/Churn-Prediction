@@ -163,46 +163,22 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         # ─── Human-readable field labels for error messages ───────────────────
         FIELD_LABELS = {
             "age":                      "Age",
-            "gender":                   "Gender",
-            "region_category":          "Region Category",
-            "joining_date":             "Joining Date",
-            "joined_through_referral":  "Joined Through Referral",
-            "preferred_offer_types":    "Preferred Offer Types",
-            "medium_of_operation":      "Medium of Operation",
-            "internet_option":          "Internet Option",
+            "days_since_joined":        "Customer Tenure",
             "days_since_last_login":    "Days Since Last Login",
+            "days_since_active":        "Days Since Last Activity",
             "avg_session_duration":     "Avg Session Duration",
             "avg_transaction_value":    "Avg Transaction Value (Monthly Subscription Value)",
             "avg_frequency_login_days": "Avg Login Frequency (Days)",
             "points_in_wallet":         "Points in Wallet",
-            "used_special_discount":    "Used Special Discount",
-            "offer_application_preference": "Offer Application Preference",
-            "past_complaint":           "Past Complaint",
-            "complaint_status":         "Complaint Status",
-            "feedback":                 "Feedback",
-            "plan_tier":                "Plan Tier",
             "logins_90d":               "Logins (last 90 days)",
             "active_days_90d":          "Active Days (last 90 days)",
             "api_calls_90d":            "API Calls (last 90 days)",
             "session_minutes_90d":      "Session Minutes (last 90 days)",
-            "days_since_active":        "Days Since Last Activity",
+            "tickets_opened_90d":       "Support Tickets (last 90 days)",
         }
 
         def lbl(col: str) -> str:
             return FIELD_LABELS.get(col, f"'{col}'")
-
-        # ─── Missing columns validation ───────────────────────────────────────
-        required_cols = list(FIELD_LABELS.keys())
-        missing_cols = [col for col in required_cols if col not in df.columns]
-        
-        if missing_cols:
-            raise HTTPException(
-                status_code=422,
-                detail={
-                    "message": "File format error: Missing required columns.",
-                    "errors": [f"Missing column header: '{c}' ({lbl(c)})" for c in missing_cols]
-                }
-            )
 
         # ─── Per-row field validation ─────────────────────────────────────────
         errors = []
@@ -216,10 +192,12 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
                 elif not isinstance(row['age'], (int, float)) or not (0 <= row['age'] <= 120):
                     errors.append(f"Row {row_num}: {lbl('age')} must be a number between 0 and 120 (got '{row['age']}').")
 
-            # Joining Date check (we expect format dd-mm-yyyy or similar, just check it's not null)
-            if 'joining_date' in df.columns:
-                if pd.isna(row['joining_date']):
-                    errors.append(f"Row {row_num}: {lbl('joining_date')} is required and cannot be empty.")
+            # Customer Tenure: required, 0–3650 days (≈ 0–120 months)
+            if 'days_since_joined' in df.columns:
+                if pd.isna(row['days_since_joined']):
+                    errors.append(f"Row {row_num}: {lbl('days_since_joined')} is required and cannot be empty.")
+                elif not (0 <= row['days_since_joined'] <= 3650):
+                    errors.append(f"Row {row_num}: {lbl('days_since_joined')} must be between 0 and 3650 days (0–120 months) (got '{row['days_since_joined']}').")
 
             # Days Since Last Login: non-negative
             if 'days_since_last_login' in df.columns and pd.notna(row['days_since_last_login']):

@@ -1,30 +1,29 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Activity, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (email !== 'admin@gmail.com') {
-      setError('Akun email tidak ditemukan.');
-      return;
+    setLoading(true);
+    try {
+      await login(email, password);
+      navigate('/dashboard'); // Redirect to dashboard
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
-    
-    if (password !== 'admin123') {
-      setError('Password yang Anda masukkan salah.');
-      return;
-    }
-
-    login(email, password);
-    navigate('/'); // Redirect to dashboard
   };
 
   return (
@@ -34,45 +33,66 @@ export default function Login() {
         <p className="mt-2 text-sm text-slate-500 font-medium">Please enter your credentials to access your workspace.</p>
       </div>
 
-      {error && (
-        <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-3 animate-fadeIn">
-          <span className="text-rose-500 font-bold">!</span>
-          <p className="text-sm font-semibold text-rose-700">{error}</p>
-        </div>
-      )}
+      <div className="bg-white py-8 px-4 shadow-sm border border-zinc-200/80 sm:rounded-xl sm:px-10">
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-900">Sign in to your workspace</h2>
+            <p className="mt-1 text-sm text-zinc-500">Welcome back! Please enter your details.</p>
+          </div>
+          
+          {error && <div className="p-3 bg-rose-50 text-rose-700 text-sm rounded-md border border-rose-200">{error}</div>}
 
-      <form className="space-y-5" onSubmit={handleSubmit}>
-        <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Email Address</label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-medium text-slate-900 placeholder-slate-400 transition-all"
-            placeholder="admin@example.com"
-          />
-        </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-zinc-700">Email Address</label>
+              <div className="mt-1">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-zinc-200 rounded-md shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900/20 focus:border-zinc-400 sm:text-sm transition-colors"
+                  placeholder="admin@example.com"
+                />
+              </div>
+            </div>
 
-        <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Password</label>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-medium text-slate-900 placeholder-slate-400 transition-all"
-            placeholder="••••••••"
-          />
-        </div>
+            <div>
+              <label className="block text-xs font-semibold text-zinc-700">Password</label>
+              <div className="mt-1 relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-zinc-200 rounded-md shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900/20 focus:border-zinc-400 sm:text-sm transition-colors pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowPassword(prev => !prev);
+                  }}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 transition-colors z-10 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+          </div>
 
-        <button
-          type="submit"
-          className="w-full mt-2 py-3.5 px-4 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl transition-colors glow-brand shadow-md text-sm"
-        >
-          Sign In
-        </button>
-      </form>
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-zinc-900 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-900 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

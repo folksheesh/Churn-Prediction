@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
@@ -333,12 +333,12 @@ export default function Home() {
       {/* 1. TOP NAVBAR */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 px-6 h-16 flex items-center justify-between shrink-0 shadow-sm transition-all">
         {/* Left: Logo */}
-        <div className="flex items-center gap-3">
+        <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <div className="w-8 h-8 bg-gradient-to-tr from-brand-600 to-brand-500 rounded-lg flex items-center justify-center font-outfit text-sm font-bold text-white shadow-[0_2px_10px_rgba(37,99,235,0.2)]">
             CS
           </div>
           <h1 className="font-outfit font-bold text-lg leading-tight text-slate-900 hidden sm:block">ChurnSense</h1>
-        </div>
+        </Link>
 
         {/* Center: Navigation Links */}
         <div className="hidden md:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl border border-slate-200/50">
@@ -391,8 +391,15 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Right: Session & Avatar (Removed as requested) */}
+        {/* Right: Auth Action */}
         <div className="flex items-center gap-3 sm:gap-4">
+          <button 
+            onClick={handleAuthAction}
+            className="hidden sm:block text-sm font-semibold bg-brand-600 text-white px-5 py-2 rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-600/20"
+          >
+            {isAuthenticated ? "Logout" : "Admin Login"}
+          </button>
+          
           {/* Mobile Menu Dropdown Wrapper */}
           <div className="md:hidden relative group">
             <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200">
@@ -1159,7 +1166,7 @@ export default function Home() {
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} domain={[0, 60]} />
                       <Tooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: number) => [`${value}%`, 'Churn Rate']}
+                        formatter={(value: any) => [`${value}%`, 'Churn Rate']}
                       />
                       <Line type="monotone" dataKey="val" stroke="#6366f1" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
                     </LineChart>
@@ -1235,8 +1242,8 @@ export default function Home() {
                         label={({ cx, cy, midAngle, innerRadius, outerRadius, value, index }) => {
                           const RADIAN = Math.PI / 180;
                           const radius = outerRadius + 20;
-                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          const x = cx + radius * Math.cos(-(midAngle || 0) * RADIAN);
+                          const y = cy + radius * Math.sin(-(midAngle || 0) * RADIAN);
                           return (
                             <text x={x} y={y} fill={riskGroupData[index].fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={10} fontWeight="bold">
                               {riskGroupData[index].name}: {value}
@@ -1250,7 +1257,7 @@ export default function Home() {
                       </Pie>
                       <Tooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: number) => [value, 'Customers']}
+                        formatter={(value: any) => [value, 'Customers']}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -1312,7 +1319,7 @@ export default function Home() {
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} domain={[0, 100]} />
                       <Tooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: number) => [`${value}%`, 'Retention']}
+                        formatter={(value: any) => [`${value}%`, 'Retention']}
                         cursor={{ fill: '#f1f5f9' }}
                       />
                       <Bar dataKey="val" fill="#06b6d4" radius={[4, 4, 0, 0]} maxBarSize={60} />

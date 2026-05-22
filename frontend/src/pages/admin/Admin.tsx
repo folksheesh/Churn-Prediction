@@ -106,7 +106,7 @@ export default function Admin() {
                     outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(1)}%`}
                     labelLine={false}
                   >
                     {svmDistributionData.map((entry, index) => (
@@ -128,9 +128,9 @@ export default function Admin() {
           <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm flex flex-col">
             <div className="flex items-center gap-2 mb-4">
               <MessageSquareWarning size={18} className="text-zinc-500" />
-              <h3 className="font-semibold text-zinc-900 text-sm">Dampak Feedback terhadap Churn</h3>
+              <h3 className="font-semibold text-zinc-900 text-sm">Feedback Impact on Churn</h3>
             </div>
-            <p className="text-xs text-zinc-500 mb-4">Rata-rata probabilitas churn berdasarkan keluhan pelanggan</p>
+            <p className="text-xs text-zinc-500 mb-4">Average churn probability based on customer complaints</p>
             <div className="flex-1 min-h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={feedbackImpactData} layout="vertical" margin={{ top: 0, right: 30, left: 50, bottom: 0 }}>
@@ -140,7 +140,7 @@ export default function Admin() {
                   <RechartsTooltip 
                     cursor={{ fill: '#f4f4f5' }}
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
-                    formatter={(value: number) => [`${value}%`, 'Risiko Churn']}
+                    formatter={(value: any) => [`${value}%`, 'Risiko Churn']}
                   />
                   <Bar dataKey="churnProb" radius={[0, 4, 4, 0]} barSize={24}>
                     {feedbackImpactData.map((entry, index) => (
