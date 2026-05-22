@@ -391,8 +391,15 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Right: Session & Avatar (Removed as requested) */}
+        {/* Right: Auth Action */}
         <div className="flex items-center gap-3 sm:gap-4">
+          <button 
+            onClick={handleAuthAction}
+            className="hidden sm:block text-sm font-semibold bg-brand-600 text-white px-5 py-2 rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-600/20"
+          >
+            {isAuthenticated ? "Logout" : "Admin Login"}
+          </button>
+          
           {/* Mobile Menu Dropdown Wrapper */}
           <div className="md:hidden relative group">
             <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200">
