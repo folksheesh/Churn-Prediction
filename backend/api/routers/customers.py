@@ -139,13 +139,38 @@ def get_csv_template():
 
 @router.post("/import")
 async def import_customers_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.filename.endswith('.csv'):
-        raise HTTPException(status_code=400, detail="Only CSV files are allowed")
+    if not (file.filename.endswith('.csv') or file.filename.endswith('.xlsx')):
+        raise HTTPException(status_code=400, detail="Only CSV and XLSX files are allowed")
     
     try:
         contents = await file.read()
-        df = pd.read_csv(io.BytesIO(contents))
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(io.BytesIO(contents))
+        else:
+            df = pd.read_excel(io.BytesIO(contents))
         
+        # REQUIRED COLUMNS VALIDATION
+        required_cols = [
+            'age', 'gender', 'security_no', 'region_category', 'joining_date', 
+            'joined_through_referral', 'referral_id', 'preferred_offer_types', 
+            'medium_of_operation', 'internet_option', 'last_visit_time', 
+            'days_since_last_login', 'avg_session_duration', 'avg_transaction_value', 
+            'avg_frequency_login_days', 'points_in_wallet', 'used_special_discount', 
+            'offer_application_preference', 'past_complaint', 'complaint_status', 
+            'feedback', 'plan_tier', 'logins_90d', 'active_days_90d', 
+            'api_calls_90d', 'session_minutes_90d', 'days_since_active'
+        ]
+        
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            raise HTTPException(
+                status_code=422, 
+                detail={
+                    "message": "Data validation failed: Missing required columns.",
+                    "errors": missing_cols
+                }
+            )
+
         # We need an id column. If missing, generate.
         if 'id' not in df.columns:
             df['id'] = [f"CUST-{str(uuid.uuid4())[:8].upper()}" for _ in range(len(df))]
@@ -154,7 +179,7 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         if 'name' not in df.columns:
             df['name'] = [f"Customer {i}" for i in df['id']]
             
-        # Data Validation
+        # Data Validation for values
         errors = []
         for index, row in df.iterrows():
             row_num = index + 2 # +2 because 0-index and header
@@ -162,6 +187,11 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
             if 'age' in df.columns and pd.notna(row['age']):
                 if row['age'] < 0 or row['age'] > 120:
                     errors.append(f"Row {row_num}: 'age' must be between 0 and 120 (got {row['age']})")
+                    
+            if 'days_since_joined' in df.columns and pd.notna(row['days_since_joined']):
+                # roughly 120 months max = 3600 days
+                if row['days_since_joined'] < 0 or row['days_since_joined'] > 3600:
+                    errors.append(f"Row {row_num}: Customer Tenure ('days_since_joined') harus berupa angka dengan rentang 0-120 bulan (0-3600 hari)")
                     
             if 'logins_90d' in df.columns and pd.notna(row['logins_90d']):
                 if row['logins_90d'] < 0:
@@ -176,13 +206,16 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
                     errors.append(f"Row {row_num}: 'avg_session_duration' cannot be negative")
                     
         if errors:
-            raise HTTPException(status_code=422, detail={"message": "Data validation failed", "errors": errors[:10]})
+            raise HTTPException(status_code=422, detail={"message": "Data validation failed: Invalid values", "errors": errors[:10]})
             
         # Run ML batch prediction
         result_df = run_batch_prediction(df)
         
         customers_to_add = []
+        ui_processed_data = []
+        
         for _, row in result_df.iterrows():
+            # For DB insertion, we drop na
             row_dict = row.dropna().to_dict()
             
             # Extract ML results
@@ -193,6 +226,12 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
             if prob is not None:
                 row_dict['churn_probability'] = float(prob)
                 row_dict['churn_risk'] = "High" if prob > 0.7 else "Medium" if prob > 0.4 else "Low"
+            
+            # Prepare data for UI
+            ui_row = {k: v for k, v in row.where(pd.notna(row), None).to_dict().items()}
+            ui_row['churn_probability'] = float(prob) if prob is not None else 0.0
+            ui_row['churn_risk'] = "High" if ui_row['churn_probability'] > 0.7 else "Medium" if ui_row['churn_probability'] > 0.4 else "Low"
+            ui_processed_data.append(ui_row)
             
             # Check if customer exists
             cust_id = str(row_dict.get('id'))
@@ -215,7 +254,11 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         db.add(log)
         
         db.commit()
-        return {"message": f"Successfully imported {len(df)} customers.", "count": len(df)}
+        return {
+            "message": f"Successfully imported {len(df)} customers.", 
+            "count": len(df),
+            "data": ui_processed_data
+        }
         
     except HTTPException as he:
         raise he
