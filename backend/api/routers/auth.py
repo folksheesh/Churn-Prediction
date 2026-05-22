@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
+from typing import Optional
 import re
 
 from backend.core.database import get_db
@@ -25,6 +26,11 @@ class AdminCreate(BaseModel):
     email: EmailStr
     name: str
     password: str
+
+class AdminUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    password: Optional[str] = None
 
 class AdminResponse(BaseModel):
     id: int
@@ -114,3 +120,43 @@ def create_admin(admin_data: AdminCreate, current_admin: AdminUser = Depends(get
     db.commit()
     db.refresh(new_admin)
     return new_admin
+
+@router.put("/admins/{admin_id}", response_model=AdminResponse)
+def update_admin(admin_id: int, admin_data: AdminUpdate, current_admin: AdminUser = Depends(get_current_admin), db: Session = Depends(get_db)):
+    admin = db.query(AdminUser).filter(AdminUser.id == admin_id).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+        
+    if admin_data.email and admin_data.email != admin.email:
+        if admin.email == "admin@churnsense.com":
+            raise HTTPException(status_code=400, detail="Cannot change email of default admin")
+        if db.query(AdminUser).filter(AdminUser.email == admin_data.email).first():
+            raise HTTPException(status_code=400, detail="Email already registered")
+        admin.email = admin_data.email
+        
+    if admin_data.name:
+        admin.name = admin_data.name
+        
+    if admin_data.password:
+        validate_password_strength(admin_data.password)
+        admin.hashed_password = get_password_hash(admin_data.password)
+        
+    db.commit()
+    db.refresh(admin)
+    return admin
+
+@router.delete("/admins/{admin_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_admin(admin_id: int, current_admin: AdminUser = Depends(get_current_admin), db: Session = Depends(get_db)):
+    admin = db.query(AdminUser).filter(AdminUser.id == admin_id).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+        
+    if admin.email == "admin@churnsense.com":
+        raise HTTPException(status_code=400, detail="Cannot delete default admin")
+        
+    if current_admin.id == admin.id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+        
+    db.delete(admin)
+    db.commit()
+    return None

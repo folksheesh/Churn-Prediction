@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
-import { ShieldCheck, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { ShieldCheck, Plus, Trash2, CheckCircle, XCircle, Edit2, Eye, EyeOff, X } from 'lucide-react';
 
 export default function AdminManagement() {
   const { token } = useAuth();
@@ -14,6 +14,10 @@ export default function AdminManagement() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Edit & UI State
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Password validation state
   const valLength = password.length >= 8;
@@ -22,6 +26,9 @@ export default function AdminManagement() {
   const valNum = /\d/.test(password);
   const valSpec = /[@$!%*?&]/.test(password);
   const isPasswordValid = valLength && valUpper && valLower && valNum && valSpec;
+  
+  // Password is required for creating, but optional for editing
+  const isFormValid = email && name && (editingId ? (!password || isPasswordValid) : isPasswordValid);
 
   const fetchAdmins = async () => {
     try {
@@ -40,32 +47,67 @@ export default function AdminManagement() {
     if (token) fetchAdmins();
   }, [token]);
 
-  const handleAddAdmin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     
-    if (!isPasswordValid) {
+    if (password && !isPasswordValid) {
       setError('Password does not meet the requirements.');
       return;
     }
 
     try {
-      await axios.post('http://localhost:8000/api/v1/auth/admins', {
-        email,
-        name,
-        password
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const payload: any = { email, name };
+      if (password) payload.password = password;
+
+      if (editingId) {
+        await axios.put(`http://localhost:8000/api/v1/auth/admins/${editingId}`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setSuccess('Admin successfully updated!');
+      } else {
+        await axios.post('http://localhost:8000/api/v1/auth/admins', payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setSuccess('Admin successfully added!');
+      }
       
-      setSuccess('Admin successfully added!');
-      setEmail('');
-      setName('');
-      setPassword('');
+      handleCancelEdit();
       fetchAdmins();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to add admin');
+      setError(err.response?.data?.detail || (editingId ? 'Failed to update admin' : 'Failed to add admin'));
+    }
+  };
+
+  const handleEditClick = (admin: any) => {
+    setEditingId(admin.id);
+    setName(admin.name);
+    setEmail(admin.email);
+    setPassword('');
+    setError('');
+    setSuccess('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setName('');
+    setEmail('');
+    setPassword('');
+    setError('');
+    setSuccess('');
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this admin?")) return;
+    
+    try {
+      await axios.delete(`http://localhost:8000/api/v1/auth/admins/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchAdmins();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "Failed to delete admin");
     }
   };
 
@@ -103,9 +145,21 @@ export default function AdminManagement() {
                     <td className="px-6 py-3 font-medium text-zinc-900">{admin.name}</td>
                     <td className="px-6 py-3 text-zinc-600">{admin.email}</td>
                     <td className="px-6 py-3 text-right">
-                      <button className="text-rose-500 hover:text-rose-700 disabled:opacity-50" disabled={admin.email === 'admin@churnsense.com'}>
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={() => handleEditClick(admin)}
+                          className="text-zinc-400 hover:text-zinc-600 transition-colors"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(admin.id)}
+                          className="text-rose-400 hover:text-rose-600 disabled:opacity-50 transition-colors" 
+                          disabled={admin.email === 'admin@churnsense.com'}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -116,12 +170,19 @@ export default function AdminManagement() {
 
         {/* Add Admin Form */}
         <div className="w-[400px] bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden shrink-0">
-          <div className="px-6 py-4 border-b border-zinc-100 flex items-center gap-2">
-            <Plus size={18} className="text-zinc-500" />
-            <h2 className="text-sm font-semibold text-zinc-900">Add New Admin</h2>
+          <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {editingId ? <Edit2 size={18} className="text-zinc-500" /> : <Plus size={18} className="text-zinc-500" />}
+              <h2 className="text-sm font-semibold text-zinc-900">{editingId ? 'Edit Admin' : 'Add New Admin'}</h2>
+            </div>
+            {editingId && (
+              <button onClick={handleCancelEdit} className="text-zinc-400 hover:text-zinc-600 transition-colors">
+                <X size={16} />
+              </button>
+            )}
           </div>
           
-          <form onSubmit={handleAddAdmin} className="p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {error && <div className="p-3 bg-rose-50 text-rose-700 text-xs rounded border border-rose-200">{error}</div>}
             {success && <div className="p-3 bg-emerald-50 text-emerald-700 text-xs rounded border border-emerald-200">{success}</div>}
             
@@ -150,15 +211,27 @@ export default function AdminManagement() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-700">Password</label>
-              <input 
-                type="password" 
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900/10" 
-                placeholder="••••••••"
-              />
+              <label className="text-xs font-semibold text-zinc-700">Password {editingId && <span className="text-zinc-400 font-normal">(leave blank to keep current)</span>}</label>
+              <div className="relative">
+                <input 
+                  type={showPassword ? "text" : "password"}
+                  required={!editingId}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900/10 pr-10" 
+                  placeholder={editingId ? "••••••••" : "••••••••"}
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowPassword(prev => !prev);
+                  }}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 transition-colors z-10 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             {/* Password Validation Requirements */}
@@ -183,10 +256,10 @@ export default function AdminManagement() {
 
             <button 
               type="submit" 
-              disabled={!isPasswordValid || !email || !name}
+              disabled={!isFormValid}
               className="w-full mt-4 bg-zinc-900 hover:bg-zinc-800 text-white font-medium py-2 rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Admin
+              {editingId ? 'Save Changes' : 'Add Admin'}
             </button>
           </form>
         </div>
