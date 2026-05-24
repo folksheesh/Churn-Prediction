@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Plus, MoreHorizontal, UserX, UserCheck, X, Lightbulb, AlertTriangle, CheckCircle, MessageSquare, TrendingDown, TrendingUp, BarChart2, Activity, UploadCloud, Download } from 'lucide-react';
+import { Search, Filter, Plus, MoreHorizontal, UserX, UserCheck, X, Lightbulb, AlertTriangle, MessageSquare, TrendingDown, TrendingUp, BarChart2, Activity, UploadCloud, Download, CheckCircle2, XCircle, AlertCircle, Upload, Info, FileText, ArrowLeft } from 'lucide-react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -12,11 +12,11 @@ export default function Customers() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<{success: boolean, message: string, errors?: string[], summary?: any, results?: any[]} | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
-  const [activeTab, setActiveTab] = useState<'churn_data' | 'user_feedback'>('churn_data');
-  const [importError, setImportError] = useState<string | null>(null);
-  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'churn_data' | 'user_feedback' | 'import_csv'>('churn_data');
   const [currentPage, setCurrentPage] = useState(1);
+  const [uploadHistory, setUploadHistory] = useState<any[]>([]);
   const itemsPerPage = 50;
 
   const [formData, setFormData] = useState({
@@ -37,6 +37,29 @@ export default function Customers() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterRisk]);
+
+  useEffect(() => {
+    if (activeTab === 'import_csv') fetchHistory();
+  }, [activeTab]);
+
+  const fetchHistory = async () => {
+    try {
+      const res = await api.get('/analytics/activity-logs');
+      const logs = Array.isArray(res.data) ? res.data : (res.data.history || []);
+      const formatted = logs
+        .filter((log: any) => log.action === 'CSV Import')
+        .map((log: any) => {
+          // Extract count from "Imported X customers"
+          const match = log.details?.match(/(\d+)/);
+          const count = match ? match[0] : '0';
+          const dateStr = log.timestamp ? new Date(log.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Unknown Date';
+          return { count, date: dateStr };
+        });
+      setUploadHistory(formatted);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const [nlpInsights, setNlpInsights] = useState<{positive: number, negative: number, neutral: number, total: number, feedbacks: any[]}>({
     positive: 0, negative: 0, neutral: 0, total: 0, feedbacks: []
@@ -98,75 +121,43 @@ export default function Customers() {
     }
   };
 
-  const validateFileName = (file: File): string | null => {
-    const name = file.name;
-    // Check for special characters (anything other than letters, numbers, hyphens, underscores, dots)
-    const specialCharRegex = /[^a-zA-Z0-9._\-\s]/;
-    if (specialCharRegex.test(name)) {
-      return `Nama file mengandung karakter tidak valid: "${name}". Gunakan hanya huruf, angka, dan tanda (-_.) dalam nama file.`;
-    }
-    // Check for double special chars like ##, !!, etc.
-    const doubleSpecialRegex = /[!@#$%^&*()+=\[\]{}|;:,<>?]{2,}/;
-    if (doubleSpecialRegex.test(name)) {
-      return 'Nama file mengandung karakter khusus berurutan yang tidak valid. Harap ganti nama file sebelum upload.';
-    }
-    return null;
-  };
-
-  const handleImportFile = (file: File | null) => {
-    if (!file) { setImportFile(null); setImportError(null); return; }
-    const fileExt = file.name.split('.').pop()?.toLowerCase();
-    if (fileExt !== 'csv' && fileExt !== 'xlsx') {
-      setImportError('Format file tidak sesuai. Hanya file .csv dan .xlsx yang diperbolehkan.');
-      setImportFile(null);
-      return;
-    }
-    const nameError = validateFileName(file);
-    if (nameError) {
-      setImportError(nameError);
-      setImportFile(null);
-      return;
-    }
-    setImportError(null);
-    setImportFile(file);
-  };
-
-  const handleImportCSV = async () => {
+  const handleImportCSV = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!importFile) return;
     setIsImporting(true);
-    setImportError(null);
-    setImportSuccess(null);
+    setUploadStatus(null);
     try {
       const formData = new FormData();
       formData.append('file', importFile);
       const res = await api.post('/customers/import', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setImportSuccess(`Berhasil mengimpor ${res.data.count} data pelanggan.`);
-      setImportFile(null);
+      setUploadStatus({
+        success: true,
+        message: `Import successful: ${res.data.count} customers imported and predicted.`,
+        summary: res.data.summary,
+        results: res.data.results
+      });
       fetchCustomers();
+      fetchHistory();
     } catch (err: any) {
       console.error(err);
-      const detail = err.response?.data?.detail;
-      if (detail?.errors && Array.isArray(detail.errors)) {
-        const missingCols = detail.errors.filter((e: string) => e.toLowerCase().includes('column') || e.toLowerCase().includes('kolom'));
-        if (missingCols.length > 0) {
-          setImportError(`Kolom wajib belum lengkap: ${missingCols.join(', ')}. Silakan gunakan template yang tersedia.`);
-        } else {
-          setImportError(`Data gagal diproses: ${detail.errors.slice(0, 3).join('. ')}`);
-        }
-      } else if (typeof detail === 'string') {
-        if (detail.toLowerCase().includes('column') || detail.toLowerCase().includes('missing')) {
-          setImportError('Kolom wajib belum lengkap. Pastikan file sesuai format template.');
-        } else if (detail.toLowerCase().includes('format') || detail.toLowerCase().includes('parse')) {
-          setImportError('Format file tidak sesuai. Pastikan file adalah CSV atau XLSX yang valid.');
-        } else {
-          setImportError('Data gagal diproses. Silakan periksa file dan coba kembali.');
-        }
-      } else if (err.message?.toLowerCase().includes('network') || err.code === 'ERR_NETWORK') {
-        setImportError('Koneksi ke server gagal. Pastikan backend sedang berjalan.');
+      if (err.response?.data?.detail?.errors) {
+        setUploadStatus({
+          success: false,
+          message: 'Data Validation Failed',
+          errors: err.response.data.detail.errors
+        });
+      } else if (typeof err.response?.data?.detail === 'string') {
+        setUploadStatus({
+          success: false,
+          message: `Error: ${err.response.data.detail}`
+        });
       } else {
-        setImportError('Data gagal diproses. Silakan periksa format file dan coba kembali.');
+        setUploadStatus({
+          success: false,
+          message: 'Failed to import file. Please check the format.'
+        });
       }
     } finally {
       setIsImporting(false);
@@ -179,8 +170,8 @@ export default function Customers() {
         <h1 className="text-sm font-semibold tracking-tight text-zinc-900">Customer Intelligence</h1>
         <div className="flex gap-2">
           <button 
-            onClick={() => { setIsImportModalOpen(true); setImportError(null); setImportSuccess(null); }}
-            className="flex items-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow"
+            onClick={() => setActiveTab('import_csv')}
+            className={cn("flex items-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow", activeTab === 'import_csv' && "bg-zinc-100")}
           >
             <UploadCloud size={14} /> Import CSV/XLSX
           </button>
@@ -195,27 +186,39 @@ export default function Customers() {
 
       <div className="p-6 max-w-[1600px] mx-auto w-full">
         
-        {/* Segmented Control Tabs */}
-        <div className="flex mb-6 w-full max-w-sm">
-          <div className="flex bg-zinc-100/80 p-1 rounded-lg border border-zinc-200/50 w-full">
+        {/* Segmented Control Tabs / Back Button */}
+        {activeTab !== 'import_csv' ? (
+          <div className="flex mb-6 w-full max-w-sm">
+            <div className="flex bg-zinc-100/80 p-1 rounded-lg border border-zinc-200/50 w-full">
+              <button 
+                className={cn("flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex justify-center items-center gap-1.5", activeTab === 'churn_data' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700")}
+                onClick={() => setActiveTab('churn_data')}
+              >
+                <BarChart2 size={14} />
+                Risk Workspace
+              </button>
+              <button 
+                className={cn("flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex justify-center items-center gap-1.5", activeTab === 'user_feedback' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700")}
+                onClick={() => setActiveTab('user_feedback')}
+              >
+                <MessageSquare size={14} />
+                User Feedback
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6">
             <button 
-              className={cn("flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex justify-center items-center gap-1.5", activeTab === 'churn_data' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700")}
               onClick={() => setActiveTab('churn_data')}
+              className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 text-sm font-semibold transition-colors group"
             >
-              <BarChart2 size={14} />
-              Risk Workspace
-            </button>
-            <button 
-              className={cn("flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex justify-center items-center gap-1.5", activeTab === 'user_feedback' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700")}
-              onClick={() => setActiveTab('user_feedback')}
-            >
-              <MessageSquare size={14} />
-              User Feedback
+              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+              Back to Workspace
             </button>
           </div>
-        </div>
+        )}
 
-        {activeTab === 'churn_data' ? (
+        {activeTab === 'churn_data' && (
           <div className="flex flex-col gap-4">
             <div className="flex justify-between items-end">
               <div>
@@ -356,7 +359,9 @@ export default function Customers() {
           </div>
         </div>
         </div>
-        ) : activeTab === 'user_feedback' ? (
+        )}
+
+        {activeTab === 'user_feedback' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
@@ -390,7 +395,7 @@ export default function Customers() {
             <div className="saas-card overflow-hidden">
               <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
                 <div>
-                  <h3 className="saas-heading">User Feedback & Sentiment Analysis</h3>
+                  <h3 className="saas-heading">NLP Keyword Extractions & Actual Feedback</h3>
                   <p className="saas-subtext mt-0.5">Direct feedback from users filtered by ML sentiment model</p>
                 </div>
                 {nlpInsights.feedbacks.length > 100 && (
@@ -437,7 +442,289 @@ export default function Customers() {
               </div>
             </div>
           </div>
-        ) : null}
+
+        )}
+
+        {activeTab === 'import_csv' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fadeIn">
+            
+            {/* Left Column: Upload Dropzone & History (or Error State) */}
+            <div className="md:col-span-2 space-y-6">
+              
+              {/* Conditional Upload or Error State */}
+              {uploadStatus?.success === false ? (
+                <div className="space-y-6 animate-fadeIn">
+                  {/* Error Alert Banner */}
+                  <div className="bg-rose-50 border border-rose-200 rounded-md p-5 flex items-start gap-4">
+                    <XCircle className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-[13px] font-semibold text-zinc-900">
+                        Upload Failed
+                      </h3>
+                      <p className="text-xs text-zinc-600 mt-1">{uploadStatus.message}</p>
+                      {importFile && (
+                        <div className="mt-3 bg-white px-3 py-2 rounded-lg border border-zinc-100 text-xs font-semibold text-zinc-700 flex items-center gap-2 w-fit">
+                          <span className="text-zinc-500">File:</span> {importFile.name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Specific Validation Errors */}
+                  {uploadStatus.errors && uploadStatus.errors.length > 0 && (
+                    <div className="bg-white border border-zinc-200/80 shadow-[0_2px_8px_rgb(0,0,0,0.04)] rounded-md p-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <AlertCircle className="w-5 h-5 text-rose-500" />
+                        <h4 className="text-[13px] font-semibold text-zinc-900">
+                          {uploadStatus.errors.length} Validation Error{uploadStatus.errors.length > 1 ? "s" : ""} Found
+                        </h4>
+                      </div>
+                      <p className="text-xs text-zinc-500 mb-4">
+                        Fix the following issues in your CSV/XLSX file and re-upload:
+                      </p>
+
+                      <div className="space-y-2">
+                        {uploadStatus.errors.map((err, idx) => (
+                          <div key={idx} className="flex items-start gap-3 bg-rose-50/60 border border-rose-100 rounded-md px-4 py-3">
+                            <XCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                            <span className="text-xs font-medium text-rose-700">{err}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {uploadStatus.errors.length >= 15 && (
+                        <p className="text-[10px] text-zinc-400 mt-3 italic">
+                          Showing first 15 errors. Fix these and re-upload to check for more.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+
+                  {/* Error Action Buttons */}
+                  <div>
+                    <button 
+                      onClick={() => { setImportFile(null); setUploadStatus(null); }}
+                      className="px-8 h-9 text-[13px] bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-md transition-colors"
+                    >
+                      Try Another File
+                    </button>
+                  </div>
+                </div>
+              ) : !uploadStatus?.success && (
+                <form onSubmit={handleImportCSV} className="bg-zinc-50 border-2 border-dashed border-zinc-300 hover:border-zinc-400 hover:bg-white rounded-md p-8 flex flex-col items-center justify-center min-h-[300px] transition-all cursor-pointer relative group animate-fadeIn">
+                  <input
+                    type="file"
+                    accept=".csv, .xlsx"
+                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <Upload className="w-8 h-8 text-zinc-500" />
+                  </div>
+                  <h3 className="text-lg font-extrabold text-zinc-900 mb-2">Drop your CSV/XLSX file here</h3>
+                  <p className="text-sm text-zinc-500 mb-6">or click to browse</p>
+                  
+                  {importFile ? (
+                    <div className="text-center z-20 relative">
+                      <p className="text-sm font-bold text-zinc-800">{importFile.name}</p>
+                      <button
+                        type="submit"
+                        disabled={isImporting}
+                        className="mt-4 px-4 py-1.5 text-[13px] bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-300 text-white font-bold rounded-md transition-colors shadow-sm cursor-pointer z-30 relative"
+                      >
+                        {isImporting ? "Analyzing..." : "Analyze"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="px-4 py-1.5 text-[13px] bg-zinc-900 text-white font-bold rounded-md relative z-20 pointer-events-none">
+                      Select File
+                    </div>
+                  )}
+                </form>
+              )}
+
+              {/* ── PREDICTION RESULTS TABLE (shown after successful upload) ── */}
+              {uploadStatus?.success && uploadStatus.results && uploadStatus.results.length > 0 && (
+                <div className="space-y-6 animate-fadeIn mt-6">
+
+
+
+                  {/* Avg Churn Probability Banner */}
+                  <div className="bg-zinc-50 border border-zinc-200 rounded-md p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-md bg-zinc-900 flex items-center justify-center shrink-0">
+                      <Activity className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-zinc-500">Average Churn Probability</p>
+                      <p className="text-xl font-bold text-zinc-900 ">{uploadStatus.summary?.avg_churn_probability ?? 0}%</p>
+                    </div>
+                    <div className="ml-auto">
+                      <button
+                        onClick={() => { setImportFile(null); setUploadStatus(null); }}
+                        className="px-3 py-1.5 text-[12px] bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-md transition-colors"
+                      >
+                        Upload Another
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Results Table */}
+                  <div className="bg-white border border-zinc-200/80 shadow-[0_2px_8px_rgb(0,0,0,0.04)] rounded-md overflow-hidden">
+                    <div className="p-5 border-b border-zinc-100 flex items-center justify-between">
+                      <h4 className="text-[13px] font-semibold text-zinc-900">Prediction Results</h4>
+                      <span className="text-xs text-zinc-400 font-medium">{uploadStatus.results.length} customer(s)</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-zinc-50 border-b border-zinc-100">
+                          <tr>
+                            <th className="text-left px-5 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wide">#</th>
+                            <th className="text-left px-5 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wide">Customer</th>
+                            <th className="text-left px-5 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wide">Age</th>
+                            <th className="text-left px-5 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wide">Region</th>
+                            <th className="text-left px-5 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wide">Plan</th>
+                            <th className="text-left px-5 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wide">Churn Probability</th>
+                            <th className="text-left px-5 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wide">Risk Level</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {uploadStatus.results.map((row, idx) => {
+                            const isHigh   = row.risk_level === 'High Risk';
+                            const isMedium = row.risk_level === 'Medium Risk';
+                            return (
+                              <tr key={idx} className="hover:bg-zinc-50 transition-colors">
+                                <td className="px-5 py-3.5 text-xs text-zinc-400 font-medium">{idx + 1}</td>
+                                <td className="px-5 py-3.5">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-full bg-zinc-100 text-zinc-700 flex items-center justify-center text-[10px] font-black shrink-0">
+                                      {row.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || '?'}
+                                    </div>
+                                    <span className="font-semibold text-zinc-800 text-xs">{row.name}</span>
+                                  </div>
+                                </td>
+                                <td className="px-5 py-3.5 text-xs text-zinc-600">{row.age ?? '-'}</td>
+                                <td className="px-5 py-3.5 text-xs text-zinc-600">{row.region}</td>
+                                <td className="px-5 py-3.5 text-xs text-zinc-600">{row.plan_tier}</td>
+                                <td className="px-5 py-3.5">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-20 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full ${
+                                          isHigh ? 'bg-rose-500' : isMedium ? 'bg-amber-500' : 'bg-emerald-500'
+                                        }`}
+                                        style={{ width: `${row.churn_probability ?? 0}%` }}
+                                      />
+                                    </div>
+                                    <span className={`text-xs font-bold ${
+                                      isHigh ? 'text-rose-600' : isMedium ? 'text-amber-600' : 'text-emerald-600'
+                                    }`}>
+                                      {row.churn_probability !== null ? `${row.churn_probability}%` : '-'}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-5 py-3.5">
+                                  <span className={`inline-flex px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                                    isHigh   ? 'bg-rose-100 text-rose-700' :
+                                    isMedium ? 'bg-amber-100 text-amber-700' :
+                                               'bg-emerald-100 text-emerald-700'
+                                  }`}>
+                                    {row.risk_level}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* Upload History */}
+              <div className="bg-white border border-zinc-200/80 shadow-[0_2px_8px_rgb(0,0,0,0.04)] rounded-md p-6 mt-6">
+                <h4 className="text-[13px] font-semibold text-zinc-900 mb-4">Upload History</h4>
+                {uploadHistory.length > 0 ? (
+                  <div className="space-y-3">
+                    {uploadHistory.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between bg-zinc-50 hover:bg-zinc-100 p-4 rounded-md border border-zinc-100 transition-colors cursor-pointer group">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-5 h-5 text-zinc-400 group-hover:text-zinc-500 transition-colors" />
+                          <div>
+                            <p className="text-sm font-bold text-zinc-800">{item.count} customers</p>
+                            <p className="text-xs text-zinc-400 mt-0.5">{item.date}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-xs font-bold text-emerald-600">Completed</span>
+                          <Download className="w-4 h-4 text-zinc-400 group-hover:text-zinc-600" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-zinc-500 italic">No upload history yet.</p>
+                )}
+              </div>
+
+            </div>
+
+            {/* Right Column: Guides */}
+            <div className="space-y-6">
+              
+              {/* How to Use Card */}
+              <div className="bg-white border border-zinc-200/80 shadow-[0_2px_8px_rgb(0,0,0,0.04)] rounded-md p-6">
+                <h4 className="text-base font-extrabold text-zinc-900  mb-6">How to Use</h4>
+                
+                <div className="space-y-6 relative">
+                  {/* Vertical Line */}
+                  <div className="absolute top-2 bottom-2 left-[11px] w-0.5 bg-zinc-100 z-0"></div>
+                  
+                  <div className="flex gap-4 relative z-10">
+                    <div className="w-6 h-6 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm shadow-zinc-200 border-2 border-white">
+                      1
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-bold text-zinc-800">Prepare your CSV/XLSX</h5>
+                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Download our template and fill in customer data</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4 relative z-10">
+                    <div className="w-6 h-6 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm shadow-zinc-200 border-2 border-white">
+                      2
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-bold text-zinc-800">Upload file</h5>
+                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Drag and drop or click to select your CSV/XLSX</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4 relative z-10">
+                    <div className="w-6 h-6 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm shadow-zinc-200 border-2 border-white">
+                      3
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-bold text-zinc-800">Get predictions</h5>
+                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Download results with churn probabilities</p>
+                    </div>
+                  </div>
+                </div>
+
+                <a href="/template_churn.xlsx" download className="block text-center w-full mt-8 py-2.5 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 font-bold rounded-md border border-zinc-200 transition-colors text-xs">
+                  Download Template
+                </a>
+              </div>
+
+
+            </div>
+
+          </div>
+        
+        )}
+
       </div>
 
       {/* Add Customer Drawer */}
@@ -538,40 +825,20 @@ export default function Customers() {
                   </div>
                   <div className="text-sm font-medium text-zinc-700 leading-relaxed mb-3">
                     {selectedCustomer.churn_risk === 'High' 
-                      ? `Critical churn probability detected. Customer inactive for ${selectedCustomer.days_since_active || 'N/A'} days with ${selectedCustomer.tickets_opened_90d || 0} support tickets in last 90 days.`
-                      : selectedCustomer.churn_risk === 'Medium'
-                      ? `Customer shows moderate risk signals. Last activity was ${selectedCustomer.days_since_active || 'unknown'} days ago.`
-                      : "Customer exhibits normal usage patterns and stable engagement."}
+                      ? "Critical churn probability detected based on recent behavioral drops and negative sentiment."
+                      : "Customer exhibits normal usage patterns and stable sentiment."}
                   </div>
                   
                   {selectedCustomer.churn_risk === 'High' && (
-                    <div className="bg-white rounded border border-rose-100 p-3 shadow-sm space-y-2">
-                      <h4 className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-2 flex items-center gap-1"><Lightbulb size={12}/> AI Customer Service Action</h4>
-                      {selectedCustomer.feedback?.toLowerCase().includes('website') || selectedCustomer.feedback?.toLowerCase().includes('ui') ? (
-                        <p className="text-[13px] font-medium text-zinc-800">🖥️ Eskalasikan keluhan UI/UX ke tim engineering hari ini. Berikan update status dalam 24 jam.</p>
-                      ) : (selectedCustomer.days_since_active || 0) > 30 ? (
-                        <p className="text-[13px] font-medium text-zinc-800">📞 Customer tidak aktif lebih dari 30 hari. Hubungi via telepon untuk memverifikasi hambatan teknis.</p>
-                      ) : (selectedCustomer.days_since_active || 0) > 14 ? (
-                        <p className="text-[13px] font-medium text-zinc-800">📧 Kirim email retensi personal dengan penawaran diskon 20% untuk 3 bulan ke depan.</p>
-                      ) : (selectedCustomer.tickets_opened_90d || 0) > 3 ? (
-                        <p className="text-[13px] font-medium text-zinc-800">🎧 Customer sering membuka tiket support. Assign dedicated success manager untuk resolusi lebih cepat.</p>
-                      ) : selectedCustomer.plan_tier === 'Starter' ? (
-                        <p className="text-[13px] font-medium text-zinc-800">⬆️ Tawarkan upgrade gratis 1 bulan ke plan Pro untuk meningkatkan engagement dan retensi.</p>
-                      ) : (
-                        <p className="text-[13px] font-medium text-zinc-800">🔄 Lakukan check-in mingguan dan kirim panduan fitur yang belum digunakan customer ini.</p>
-                      )}
-                    </div>
-                  )}
-                  {selectedCustomer.churn_risk === 'Medium' && (
-                    <div className="bg-white rounded border border-amber-100 p-3 shadow-sm">
-                      <h4 className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1"><Lightbulb size={12}/> Proactive Customer Service</h4>
-                      {(selectedCustomer.days_since_active || 0) > 7 ? (
-                        <p className="text-[13px] font-medium text-zinc-800">📊 Kirim laporan personalisasi penggunaan fitur dan saran untuk memaksimalkan nilai layanan.</p>
-                      ) : (selectedCustomer.tickets_opened_90d || 0) > 1 ? (
-                        <p className="text-[13px] font-medium text-zinc-800">💬 Tindak lanjuti tiket support yang ada dan pastikan resolusi sudah memuaskan customer.</p>
-                      ) : (
-                        <p className="text-[13px] font-medium text-zinc-800">📬 Kirim survei kepuasan singkat (NPS) untuk memahami kebutuhan dan ekspektasi customer.</p>
-                      )}
+                    <div className="bg-white rounded border border-rose-100 p-3 shadow-sm">
+                      <h4 className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-1 flex items-center gap-1"><Lightbulb size={12}/> AI Recommended Action</h4>
+                      <p className="text-[13px] font-medium text-zinc-800">
+                        {selectedCustomer.feedback?.toLowerCase().includes('website') 
+                          ? "Escalate UI/UX complaint ticket directly to engineering team today."
+                          : selectedCustomer.days_since_active > 14 
+                          ? "Initiate proactive outreach call to verify technical blockers."
+                          : "Issue an automated 15% retention discount via email sequence."}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -623,84 +890,6 @@ export default function Customers() {
         </div>
       )}
 
-      {/* Import CSV/XLSX Modal */}
-      {isImportModalOpen && (
-        <div className="fixed inset-0 bg-zinc-950/30 backdrop-blur-sm z-50 flex justify-center items-center animate-fade-in">
-          <div className="w-[480px] bg-white rounded-xl shadow-2xl p-6 flex flex-col relative animate-in zoom-in-95 duration-200">
-            <button onClick={() => { setIsImportModalOpen(false); setImportFile(null); setImportError(null); setImportSuccess(null); }} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-700 transition-colors">
-              <X size={16} />
-            </button>
-            <h2 className="text-lg font-bold text-zinc-900 mb-1">Import Pelanggan</h2>
-            <p className="text-xs text-zinc-500 mb-5">Upload file CSV atau XLSX untuk mengimpor data pelanggan secara massal dan menjalankan prediksi ML otomatis.</p>
-            
-            <button 
-              onClick={handleDownloadTemplate}
-              className="flex items-center justify-center gap-2 w-full py-2 mb-4 border border-zinc-200 rounded-md text-sm font-medium text-blue-600 bg-blue-50/50 hover:bg-blue-50 transition-colors"
-            >
-              <Download size={14} /> Download Template CSV
-            </button>
-
-            {/* Error message */}
-            {importError && (
-              <div className="mb-4 bg-rose-50 border border-rose-200 rounded-lg p-3 flex items-start gap-2">
-                <AlertTriangle size={14} className="text-rose-500 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs font-semibold text-rose-700">Upload Gagal</p>
-                  <p className="text-xs text-rose-600 mt-0.5 leading-relaxed">{importError}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Success message */}
-            {importSuccess && (
-              <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-start gap-2">
-                <CheckCircle size={14} className="text-emerald-500 mt-0.5 shrink-0" />
-                <p className="text-xs font-semibold text-emerald-700">{importSuccess}</p>
-              </div>
-            )}
-            
-            <div className="border-2 border-dashed border-zinc-200 rounded-lg p-6 flex flex-col items-center justify-center mb-5 bg-zinc-50/50 hover:border-indigo-300 transition-colors">
-              <UploadCloud size={28} className="text-zinc-400 mb-2" />
-              <p className="text-xs text-zinc-500 mb-1 font-medium">Pilih file CSV atau XLSX</p>
-              <p className="text-[10px] text-zinc-400 mb-3">Ukuran maksimal: 10MB</p>
-              <input 
-                type="file" 
-                accept=".csv,.xlsx"
-                onChange={(e) => handleImportFile(e.target.files?.[0] || null)}
-                className="text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-              />
-              {importFile && (
-                <div className="mt-3 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-full">
-                  ✓ {importFile.name}
-                </div>
-              )}
-            </div>
-
-            {/* Format Guide */}
-            <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 mb-5">
-              <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-1.5">Format yang Didukung</p>
-              <div className="flex gap-4 text-[11px] text-blue-700">
-                <span className="flex items-center gap-1">📄 .csv — Comma Separated Values</span>
-                <span className="flex items-center gap-1">📊 .xlsx — Excel Spreadsheet</span>
-              </div>
-              <p className="text-[10px] text-blue-600 mt-1.5">Pastikan kolom wajib seperti name, gender, region_category, plan_tier sudah tersedia.</p>
-            </div>
-            
-            <div className="flex justify-end gap-3">
-              <button onClick={() => { setIsImportModalOpen(false); setImportFile(null); setImportError(null); setImportSuccess(null); }} className="px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 rounded border border-zinc-200 transition-colors shadow-sm">
-                Batal
-              </button>
-              <button 
-                onClick={handleImportCSV} 
-                disabled={!importFile || isImporting}
-                className="px-4 py-2 text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 rounded transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
-              >
-                {isImporting ? <div className="w-4 h-4 border-2 border-zinc-500 border-t-white rounded-full animate-spin"></div> : 'Upload & Predict'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      </>
   );
 }

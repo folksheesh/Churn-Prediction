@@ -10,9 +10,8 @@ import Customers from '@/pages/admin/Customers';
 import Admin from '@/pages/admin/Admin';
 import Analytics from '@/pages/admin/Analytics';
 import Analysis from '@/pages/admin/Analysis';
-import BatchUpload from '@/pages/admin/BatchUpload';
 import Login from '@/pages/auth/Login';
-import Register from '@/pages/auth/Register';
+import AdminManagement from '@/pages/admin/AdminManagement';
 import Landing from '@/pages/Landing';
 import UserDashboard from '@/pages/user/Dashboard';
 
@@ -24,8 +23,7 @@ export default function App() {
           {/* Public Auth Routes */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
-            <Route path="/admin/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+
           </Route>
 
           {/* Public Landing Page */}
@@ -37,8 +35,8 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/manage-admins" element={<AdminManagement />} />
               <Route path="/analysis" element={<Analysis />} />
-              <Route path="/admin/batch-upload" element={<BatchUpload />} />
             </Route>
           </Route>
           

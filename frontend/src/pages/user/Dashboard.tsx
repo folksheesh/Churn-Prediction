@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
@@ -34,9 +34,7 @@ import {
   Download,
   Info,
   HelpCircle,
-  Wand2,
-  Zap,
-  Globe2
+  Wand2
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -258,7 +256,7 @@ export default function Home() {
         days_since_last_login: predInactive || 0
       });
       
-      // Generate factors for the UI based on inputs
+      // Generate mock factors for the UI based on inputs
       const factors = [];
       if (predInactive && predInactive > 14) factors.push({ text: "Recent inactivity", impact: "High Impact" });
       else if (predInactive && predInactive > 7) factors.push({ text: "Decreasing activity", impact: "Medium Impact" });
@@ -349,12 +347,12 @@ export default function Home() {
       {/* 1. TOP NAVBAR */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 px-6 h-16 flex items-center justify-between shrink-0 shadow-sm transition-all">
         {/* Left: Logo */}
-        <div className="flex items-center gap-3">
+        <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <div className="w-8 h-8 bg-gradient-to-tr from-brand-600 to-brand-500 rounded-lg flex items-center justify-center font-outfit text-sm font-bold text-white shadow-[0_2px_10px_rgba(37,99,235,0.2)]">
             CS
           </div>
           <h1 className="font-outfit font-bold text-lg leading-tight text-slate-900 hidden sm:block">ChurnSense</h1>
-        </div>
+        </Link>
 
         {/* Center: Navigation Links */}
         <div className="hidden md:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl border border-slate-200/50">
@@ -407,8 +405,15 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Right: Session & Avatar (Removed as requested) */}
+        {/* Right: Auth Action */}
         <div className="flex items-center gap-3 sm:gap-4">
+          <button 
+            onClick={handleAuthAction}
+            className="hidden sm:block text-sm font-semibold bg-brand-600 text-white px-5 py-2 rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-600/20"
+          >
+            {isAuthenticated ? "Logout" : "Admin Login"}
+          </button>
+          
           {/* Mobile Menu Dropdown Wrapper */}
           <div className="md:hidden relative group">
             <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200">
@@ -846,7 +851,6 @@ export default function Home() {
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
                       Plan Tier
-                      <span className="text-[10px] text-brand-500 font-normal ml-1">(affects churn score)</span>
                     </label>
                     <div className="relative">
                       <select
@@ -854,14 +858,13 @@ export default function Home() {
                         onChange={(e) => setPredPlanTier(e.target.value)}
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors appearance-none cursor-pointer text-slate-700"
                       >
-                        <option value="" disabled>Select plan tier...</option>
-                        <option value="Starter">Starter — Higher churn risk</option>
-                        <option value="Pro">Pro — Moderate risk</option>
-                        <option value="Enterprise">Enterprise — Lower churn risk</option>
+                        <option value="" disabled>Select tier...</option>
+                        <option value="Starter">Starter</option>
+                        <option value="Pro">Pro</option>
+                        <option value="Enterprise">Enterprise</option>
                       </select>
                       <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1.5">Starter customers have statistically higher churn rates</p>
                   </div>
 
                   <div>
@@ -1206,167 +1209,293 @@ export default function Home() {
           ];
 
           return (
-            <div className="space-y-8 animate-fadeIn">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
               
-              {/* Summary KPIs */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                 <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                   <p className="text-[11px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Total Users</p>
-                   <p className="text-2xl font-black text-slate-900 font-outfit">{summary?.totalCustomers?.toLocaleString() || 0}</p>
-                 </div>
-                 <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                   <p className="text-[11px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Healthy Users</p>
-                   <p className="text-2xl font-black text-emerald-600 font-outfit">{summary?.lowRiskCount?.toLocaleString() || 0}</p>
-                 </div>
-                 <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                   <p className="text-[11px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Need Attention</p>
-                   <p className="text-2xl font-black text-amber-500 font-outfit">{summary?.mediumRiskCount?.toLocaleString() || 0}</p>
-                 </div>
-                 <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                   <p className="text-[11px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Critical Risk</p>
-                   <p className="text-2xl font-black text-rose-500 font-outfit">{summary?.highRiskCount?.toLocaleString() || 0}</p>
-                 </div>
+              {/* Card 1: Churn Rate by Age */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Churn Rate by Customer Age</h3>
+                <p className="text-xs text-slate-500 mb-6">Shows how likely customers are to leave based on how long they've been with us</p>
+                
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-2">What does this mean?</h4>
+                      <div className="text-xs text-slate-600 space-y-2">
+                        <p><span className="font-bold text-slate-700">Churn Rate:</span> The percentage of customers who stop using our service.</p>
+                        <p><span className="font-bold text-slate-700">Customer Age:</span> How many months they've been a customer (also called 'tenure').</p>
+                        <p>Lower numbers are better! This chart helps us see which customer groups need more support.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-64 w-full mb-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={ageChurnData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} domain={[0, 60]} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value: any) => [`${value}%`, 'Churn Rate']}
+                      />
+                      <Line type="monotone" dataKey="val" stroke="#6366f1" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
+                  <div className="flex items-center justify-between mb-4 cursor-pointer">
+                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-brand-500" />
+                      How to Read This Chart
+                    </h4>
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
+                      <p className="text-xs text-slate-600">Look at the line from left to right</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                      <p className="text-xs text-slate-600">Higher points mean more customers are leaving</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
+                      <p className="text-xs text-slate-600">New customers (0-3 months) have the highest churn rate</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">4</div>
+                      <p className="text-xs text-slate-600">Long-term customers (25+ months) are most loyal</p>
+                    </li>
+                  </ul>
+                  <div className="border-t border-slate-200 pt-4">
+                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      New customers need more attention! The first 6 months are critical. Once customers stay longer than a year, they're much more likely to remain loyal.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Card 2: Risk Groups */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Customer Risk Groups</h3>
+                <p className="text-xs text-slate-500 mb-6">How many customers are in each risk category</p>
                 
-                {/* Card 1: Customer Loyalty Over Time */}
-                <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow">
-                  <div className="mb-5">
-                    <h3 className="text-base font-bold text-slate-900 mb-1">Customer Loyalty Over Time</h3>
-                    <p className="text-xs text-slate-500">Likelihood of leaving based on how long they've stayed.</p>
-                  </div>
-                  
-                  {/* Short Insight */}
-                  <div className="bg-indigo-50/50 rounded-xl p-3 mb-6 flex items-start gap-2 border border-indigo-100/50">
-                    <Zap className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
-                    <p className="text-xs text-indigo-900 leading-relaxed">
-                      <span className="font-semibold">Insight:</span> New customers (0-6 months) need the most attention. Loyalty jumps significantly after year 1.
-                    </p>
-                  </div>
-
-                  <div className="h-56 w-full mt-auto">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={ageChurnData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} domain={[0, 60]} />
-                        <Tooltip 
-                          contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontSize: '11px' }}
-                          formatter={(value: number) => [`${value}%`, 'Risk Level']}
-                        />
-                        <Line type="monotone" dataKey="val" stroke="#6366f1" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-2">What are risk groups?</h4>
+                      <p className="text-xs text-slate-600 mb-2">Our AI predicts how likely each customer is to leave and groups them:</p>
+                      <ul className="space-y-1.5 text-xs text-slate-600">
+                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-rose-500"></div><span className="font-bold text-slate-700">High Risk:</span> Very likely to leave soon (needs immediate action)</li>
+                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-500"></div><span className="font-bold text-slate-700">Medium Risk:</span> Showing some warning signs (monitor closely)</li>
+                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="font-bold text-slate-700">Low Risk:</span> Happy and engaged customers (keep them satisfied!)</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
 
-                {/* Card 2: Risk Groups */}
-                <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow">
-                  <div className="mb-5">
-                    <h3 className="text-base font-bold text-slate-900 mb-1">Customers Who Might Leave</h3>
-                    <p className="text-xs text-slate-500">Current active user base categorized by risk level.</p>
-                  </div>
+                <div className="h-64 w-full mb-6 relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={riskGroupData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ cx, cy, midAngle, innerRadius, outerRadius, value, index }) => {
+                          const RADIAN = Math.PI / 180;
+                          const radius = outerRadius + 20;
+                          const x = cx + radius * Math.cos(-(midAngle || 0) * RADIAN);
+                          const y = cy + radius * Math.sin(-(midAngle || 0) * RADIAN);
+                          return (
+                            <text x={x} y={y} fill={riskGroupData[index].fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={10} fontWeight="bold">
+                              {riskGroupData[index].name}: {value}
+                            </text>
+                          );
+                        }}
+                      >
+                        {riskGroupData.map((entry, index) => (
+                          <Cell key={`cell-\${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value: any) => [value, 'Customers']}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
 
-                  {/* Short Insight */}
-                  <div className="bg-emerald-50/50 rounded-xl p-3 mb-6 flex items-start gap-2 border border-emerald-100/50">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                    <p className="text-xs text-emerald-900 leading-relaxed">
-                      <span className="font-semibold">Status:</span> Most of your customers are healthy, but {summary?.highRiskCount || 0} users need immediate follow-up.
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
+                  <div className="flex items-center justify-between mb-4 cursor-pointer">
+                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-brand-500" />
+                      How to Read This Chart
+                    </h4>
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
+                      <p className="text-xs text-slate-600">Each colored section represents a risk group</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                      <p className="text-xs text-slate-600">Bigger sections = more customers in that group</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
+                      <p className="text-xs text-slate-600">The numbers show how many customers are in each group</p>
+                    </li>
+                  </ul>
+                  <div className="border-t border-slate-200 pt-4">
+                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Currently, most customers ({summary?.lowRiskCount?.toLocaleString()}) are low risk, which is good! However, {summary?.highRiskCount?.toLocaleString()} high-risk customers need immediate attention to prevent them from leaving.
                     </p>
                   </div>
+                </div>
+              </div>
 
-                  <div className="h-56 w-full mt-auto relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={riskGroupData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={65}
-                          outerRadius={90}
-                          paddingAngle={3}
-                          dataKey="value"
-                          stroke="none"
-                        >
-                          {riskGroupData.map((entry, index) => (
-                            <Cell key={`cell-\${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontSize: '11px' }}
-                          formatter={(value: number) => [value, 'Customers']}
-                        />
-                        <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                      </PieChart>
-                    </ResponsiveContainer>
+              {/* Card 3: Loyalty by Location */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Customer Loyalty by Location</h3>
+                <p className="text-xs text-slate-500 mb-6">Compares how well we retain customers in different parts of the world</p>
+                
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-2">What is retention?</h4>
+                      <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-700">Retention:</span> The percentage of customers who stay with us (opposite of churn).</p>
+                      <p className="text-xs text-slate-600 mb-2">Higher percentages are better! If retention is 85%, that means 85 out of 100 customers stayed.</p>
+                      <p className="text-xs text-slate-600">This helps us see which regions might need different pricing, better support, or improved service.</p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Card 3: Loyalty by Location */}
-                <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow">
-                  <div className="mb-5">
-                    <h3 className="text-base font-bold text-slate-900 mb-1">Loyalty by Location</h3>
-                    <p className="text-xs text-slate-500">Percentage of users staying active across different regions.</p>
-                  </div>
+                <div className="h-64 w-full mb-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={regionRetentionData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} domain={[0, 100]} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value: any) => [`${value}%`, 'Retention']}
+                        cursor={{ fill: '#f1f5f9' }}
+                      />
+                      <Bar dataKey="val" fill="#06b6d4" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
 
-                  {/* Short Insight */}
-                  <div className="bg-blue-50/50 rounded-xl p-3 mb-6 flex items-start gap-2 border border-blue-100/50">
-                    <Globe2 className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                    <p className="text-xs text-blue-900 leading-relaxed">
-                      <span className="font-semibold">Trend:</span> Taller bars mean better retention. Check the lowest bar to identify which region needs better support.
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
+                  <div className="flex items-center justify-between mb-4 cursor-pointer">
+                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-brand-500" />
+                      How to Read This Chart
+                    </h4>
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
+                      <p className="text-xs text-slate-600">Each bar represents a geographic region</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                      <p className="text-xs text-slate-600">Taller bars = better customer retention in that region</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
+                      <p className="text-xs text-slate-600">Compare the heights to see which regions perform best</p>
+                    </li>
+                  </ul>
+                  <div className="border-t border-slate-200 pt-4">
+                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Look at the lowest bar - that region has the most customers at risk. Consider investigating why retention is lower there; it might be pricing, local competition, or service issues.
                     </p>
                   </div>
+                </div>
+              </div>
 
-                  <div className="h-56 w-full mt-auto">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={regionRetentionData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} domain={[0, 100]} />
-                        <Tooltip 
-                          contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontSize: '11px' }}
-                          formatter={(value: number) => [`${value}%`, 'Stay Rate']}
-                          cursor={{ fill: '#f8fafc' }}
-                        />
-                        <Bar dataKey="val" fill="#0ea5e9" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                      </BarChart>
-                    </ResponsiveContainer>
+              {/* Card 4: Active vs Inactive Over Time */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Active vs Inactive Customers Over Time</h3>
+                <p className="text-xs text-slate-500 mb-6">Tracks how many customers are actively using the service each month</p>
+                
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-2">What is customer activity?</h4>
+                      <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-700">Active Customers:</span> Logged in and used the service within the last 30 days.</p>
+                      <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-700">Inactive Customers:</span> Haven't logged in for more than 30 days.</p>
+                      <p className="text-xs text-slate-600">Growing inactive numbers are a warning sign! Inactive customers are much more likely to cancel their subscriptions.</p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Card 4: Active vs Inactive Over Time */}
-                <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow">
-                  <div className="mb-5">
-                    <h3 className="text-base font-bold text-slate-900 mb-1">User Engagement Growth</h3>
-                    <p className="text-xs text-slate-500">Tracking active vs inactive users over the last 6 months.</p>
-                  </div>
-
-                  {/* Short Insight */}
-                  <div className="bg-amber-50/50 rounded-xl p-3 mb-6 flex items-start gap-2 border border-amber-100/50">
-                    <TrendingUp className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                    <p className="text-xs text-amber-900 leading-relaxed">
-                      <span className="font-semibold">Watch Out:</span> If the orange "Inactive" area grows faster than the green "Active" area, engagement is slipping.
-                    </p>
-                  </div>
-
-                  <div className="h-56 w-full mt-auto">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={activeInactiveData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} />
-                        <Tooltip 
-                          contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontSize: '11px' }}
-                        />
-                        <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                        <Area type="monotone" dataKey="Active" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
-                        <Area type="monotone" dataKey="Inactive" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.4} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
+                <div className="h-64 w-full mb-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={activeInactiveData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
+                      <Area type="monotone" dataKey="Active" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.8} />
+                      <Area type="monotone" dataKey="Inactive" stackId="1" stroke="#b45309" fill="#b45309" fillOpacity={0.6} />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
 
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
+                  <div className="flex items-center justify-between mb-4 cursor-pointer">
+                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-brand-500" />
+                      How to Read This Chart
+                    </h4>
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
+                      <p className="text-xs text-slate-600">Green area shows active customers (good!)</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                      <p className="text-xs text-slate-600">Orange/Brown area shows inactive customers (warning sign)</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
+                      <p className="text-xs text-slate-600">Watch the trend from left to right over months</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">4</div>
+                      <p className="text-xs text-slate-600">Total height = all customers</p>
+                    </li>
+                  </ul>
+                  <div className="border-t border-slate-200 pt-4">
+                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      A growing active area means more customers are engaged with our service. If the inactive area is growing faster than the active area, it's a sign of decreasing engagement.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Second row of charts */}
@@ -1469,11 +1598,9 @@ export default function Home() {
                 </div>
 
               </div>
-
             </div>
           );
         })()}
-
 
         {/* CUSTOMER DETAILS MODAL */}
         {selectedCustomer && (

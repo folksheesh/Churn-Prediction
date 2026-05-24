@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Activity, LayoutDashboard, Database, BarChart3, ShieldAlert, ChevronDown, LogOut, Upload, Zap } from 'lucide-react';
+import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut, ShieldCheck, Upload, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,14 +17,14 @@ export default function Sidebar() {
 
   const adminNavItems = [
     { name: 'System Status', href: '/admin', icon: Zap },
-    { name: 'Batch Upload', href: '/admin/batch-upload', icon: Upload },
+    { name: 'Manage Admins', href: '/manage-admins', icon: ShieldCheck },
   ];
 
   return (
     <aside className="w-[260px] border-r border-slate-200 bg-[#FAFAFA] flex flex-col hidden md:flex shrink-0 h-screen sticky top-0">
       {/* Workspace Selector (Linear style) */}
       <div className="h-16 flex items-center px-4 border-b border-slate-200/60 mb-4">
-        <div className="flex items-center gap-3 w-full hover:bg-slate-100/80 p-1.5 -ml-1.5 rounded-xl transition-all cursor-pointer group">
+        <Link to="/" className="flex items-center gap-3 w-full hover:bg-slate-100/80 p-1.5 -ml-1.5 rounded-xl transition-all cursor-pointer group">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-brand-500 text-white flex items-center justify-center font-bold shadow-[0_2px_10px_rgba(37,99,235,0.2)] text-sm">
             C
           </div>
@@ -32,8 +32,8 @@ export default function Sidebar() {
             <span className="font-semibold text-[13px] tracking-tight text-slate-900 leading-tight">ChurnSense</span>
             <span className="text-[11px] text-slate-500 font-medium">Acme Corporation</span>
           </div>
-          <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
-        </div>
+          <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600 transition-colors opacity-0 group-hover:opacity-100" />
+        </Link>
       </div>
       
       <div className="px-3 flex-1 overflow-y-auto custom-scrollbar">

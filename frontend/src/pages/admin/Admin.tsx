@@ -329,7 +329,7 @@ export default function Admin() {
                     outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(1)}%`}
                     labelLine={false}
                   >
                     {svmDistributionData.map((entry, index) => (
@@ -363,7 +363,7 @@ export default function Admin() {
                   <RechartsTooltip 
                     cursor={{ fill: '#f4f4f5' }}
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
-                    formatter={(value: number) => [`${value}%`, 'Risiko Churn']}
+                    formatter={(value: any) => [`${value}%`, 'Risiko Churn']}
                   />
                   <Bar dataKey="churnProb" radius={[0, 4, 4, 0]} barSize={24}>
                     {feedbackImpactData.map((entry, index) => (
