@@ -53,7 +53,7 @@ export default function Admin() {
         <h1 className="text-lg font-semibold tracking-tight text-zinc-900">Platform Administration</h1>
       </header>
 
-      <div className="p-8 max-w-[1200px] mx-auto w-full space-y-8">
+      <div className="p-4 sm:p-8 max-w-[1200px] mx-auto w-full space-y-8">
         
         {/* Top Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -275,8 +275,8 @@ export default function Admin() {
               <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <Eye size={12} /> Login Monitoring — Active Sessions
               </h3>
-              <div className="border border-zinc-200 rounded-lg overflow-hidden">
-                <table className="w-full text-sm text-left">
+              <div className="border border-zinc-200 rounded-lg overflow-x-auto">
+                <table className="w-full text-sm text-left whitespace-nowrap">
                   <thead className="text-[10px] text-zinc-500 bg-zinc-50 uppercase tracking-wider border-b border-zinc-100">
                     <tr>
                       <th className="px-4 py-2.5 font-medium">User</th>
@@ -387,7 +387,8 @@ export default function Admin() {
                <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin"></div>
              </div>
           ) : (
-            <table className="w-full text-sm text-left">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-sm text-left whitespace-nowrap">
               <thead className="text-[11px] text-zinc-500 bg-zinc-50 uppercase tracking-wider border-b border-zinc-100">
                 <tr>
                   <th className="px-6 py-3 font-medium">Timestamp</th>
@@ -415,7 +416,8 @@ export default function Admin() {
                   </tr>
                 )}
               </tbody>
-            </table>
+              </table>
+            </div>
           )}
         </div>
 

@@ -117,7 +117,7 @@ export default function AdminManagement() {
         <h1 className="text-lg font-semibold tracking-tight text-zinc-900">Manage Admins</h1>
       </header>
 
-      <div className="p-8 max-w-[1200px] mx-auto w-full space-y-6 flex gap-6 items-start">
+      <div className="p-4 sm:p-8 max-w-[1200px] mx-auto w-full flex flex-col lg:flex-row gap-6 items-start">
         
         {/* Admin List */}
         <div className="flex-1 bg-white border border-zinc-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
@@ -131,7 +131,8 @@ export default function AdminManagement() {
                <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin"></div>
              </div>
           ) : (
-            <table className="w-full text-sm text-left">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-sm text-left whitespace-nowrap">
               <thead className="text-[11px] text-zinc-500 bg-zinc-50 uppercase tracking-wider border-b border-zinc-100">
                 <tr>
                   <th className="px-6 py-3 font-medium">Name</th>
@@ -165,11 +166,12 @@ export default function AdminManagement() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 
         {/* Add Admin Form */}
-        <div className="w-[400px] bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden shrink-0">
+        <div className="w-full lg:w-[400px] bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden shrink-0">
           <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {editingId ? <Edit2 size={18} className="text-zinc-500" /> : <Plus size={18} className="text-zinc-500" />}

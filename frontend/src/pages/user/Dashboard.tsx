@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+
 import {
   LayoutDashboard,
   Users,
@@ -34,7 +34,8 @@ import {
   Download,
   Info,
   HelpCircle,
-  Wand2
+  Wand2,
+  LogOut
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -329,17 +330,7 @@ export default function Home() {
     }, 1500);
   };
 
-  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
-
-  const handleAuthAction = () => {
-    if (isAuthenticated) {
-      logout();
-      navigate('/');
-    } else {
-      navigate('/login');
-    }
-  };
 
   return (
     <div className="flex flex-col min-h-screen font-sans bg-[#fcfcfd]">
@@ -408,12 +399,13 @@ export default function Home() {
         {/* Right: Auth Action */}
         <div className="flex items-center gap-3 sm:gap-4">
           <button 
-            onClick={handleAuthAction}
-            className="hidden sm:block text-sm font-semibold bg-brand-600 text-white px-5 py-2 rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-600/20"
+            onClick={() => navigate('/')}
+            className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 border border-transparent hover:border-rose-100"
           >
-            {isAuthenticated ? "Logout" : "Admin Login"}
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span>Logout</span>
           </button>
-          
+
           {/* Mobile Menu Dropdown Wrapper */}
           <div className="md:hidden relative group">
             <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200">
@@ -425,6 +417,11 @@ export default function Home() {
               <button onClick={() => setActiveTab("customers")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "customers" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Customers</button>
               <button onClick={() => setActiveTab("prediction")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "prediction" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Customer Insights</button>
               <button onClick={() => setActiveTab("analysis")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "analysis" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Analysis</button>
+              <div className="h-px bg-slate-200/60 my-1"></div>
+              <button onClick={() => navigate('/')} className="text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center justify-between">
+                <span>Logout</span>
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>

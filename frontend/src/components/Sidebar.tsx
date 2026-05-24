@@ -1,11 +1,18 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut, ShieldCheck, Upload, Zap } from 'lucide-react';
+import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut, ShieldCheck, Upload, Zap, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function Sidebar() {
+export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void }) {
   const { pathname } = useLocation();
+  
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    if (onMobileClose) {
+      onMobileClose();
+    }
+  }, [pathname]);
   const { user, logout } = useAuth();
   const [adminOpen, setAdminOpen] = useState(true);
 
@@ -21,7 +28,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-[260px] border-r border-slate-200 bg-[#FAFAFA] flex flex-col hidden md:flex shrink-0 h-screen sticky top-0">
+    <aside className="w-[260px] border-r border-slate-200 bg-[#FAFAFA] flex flex-col shrink-0 h-screen sticky top-0 shadow-xl md:shadow-none">
       {/* Workspace Selector (Linear style) */}
       <div className="h-16 flex items-center px-4 border-b border-slate-200/60 mb-4">
         <Link to="/" className="flex items-center gap-3 w-full hover:bg-slate-100/80 p-1.5 -ml-1.5 rounded-xl transition-all cursor-pointer group">
@@ -32,8 +39,16 @@ export default function Sidebar() {
             <span className="font-semibold text-[13px] tracking-tight text-slate-900 leading-tight">ChurnSense</span>
             <span className="text-[11px] text-slate-500 font-medium">Acme Corporation</span>
           </div>
-          <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600 transition-colors opacity-0 group-hover:opacity-100" />
+          <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600 transition-colors opacity-0 group-hover:opacity-100 hidden md:block" />
         </Link>
+        {onMobileClose && (
+          <button 
+            onClick={onMobileClose}
+            className="md:hidden p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg ml-auto"
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
       
       <div className="px-3 flex-1 overflow-y-auto custom-scrollbar">

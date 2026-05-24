@@ -220,13 +220,13 @@ export default function Customers() {
 
         {activeTab === 'churn_data' && (
           <div className="flex flex-col gap-4">
-            <div className="flex justify-between items-end">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
               <div>
                 <h2 className="text-sm font-semibold text-zinc-900">Risk Workspace</h2>
                 <p className="text-[11px] text-zinc-500 mt-0.5">Triage and manage customer retention risks</p>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="relative w-64">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full md:w-auto">
+                <div className="relative w-full sm:w-64">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
                   <input 
                     type="text" 
@@ -576,7 +576,7 @@ export default function Customers() {
                       <span className="text-xs text-zinc-400 font-medium">{uploadStatus.results.length} customer(s)</span>
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
+                      <table className="w-full text-sm whitespace-nowrap">
                         <thead className="bg-zinc-50 border-b border-zinc-100">
                           <tr>
                             <th className="text-left px-5 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wide">#</th>
