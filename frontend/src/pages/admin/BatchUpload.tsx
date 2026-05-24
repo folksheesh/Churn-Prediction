@@ -9,6 +9,37 @@ export default function BatchUpload() {
   const [uploadStatus, setUploadStatus] = useState<{ success: boolean; message: string; errors: string[], data?: any[] } | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  const validateFileName = (file: File): string | null => {
+    const name = file.name;
+    const specialCharRegex = /[^a-zA-Z0-9._\-\s]/;
+    if (specialCharRegex.test(name)) {
+      return `Nama file mengandung karakter tidak valid: "${name}". Gunakan hanya huruf, angka, dan tanda (-_.) dalam nama file.`;
+    }
+    const doubleSpecialRegex = /[!@#$%^&*()+=\[\]{}|;:,<>?]{2,}/;
+    if (doubleSpecialRegex.test(name)) {
+      return 'Nama file mengandung karakter khusus berurutan. Harap ganti nama file sebelum upload.';
+    }
+    return null;
+  };
+
+  const handleFileChange = (file: File | null) => {
+    if (!file) { setUploadFile(null); return; }
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (ext !== 'csv' && ext !== 'xlsx') {
+      setUploadStatus({ success: false, message: 'Format file tidak sesuai. Hanya file .csv dan .xlsx yang diperbolehkan.', errors: [] });
+      setUploadFile(null);
+      return;
+    }
+    const nameError = validateFileName(file);
+    if (nameError) {
+      setUploadStatus({ success: false, message: nameError, errors: [] });
+      setUploadFile(null);
+      return;
+    }
+    setUploadStatus(null);
+    setUploadFile(file);
+  };
+
   const handleFileUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadFile) return;
@@ -27,7 +58,7 @@ export default function BatchUpload() {
       if (res.data.count) {
         setUploadStatus({
           success: true,
-          message: `Successfully validated and imported ${res.data.count} customer rows!`,
+          message: `Berhasil mengimpor ${res.data.count} data pelanggan!`,
           errors: [],
           data: res.data.data
         });
@@ -35,22 +66,32 @@ export default function BatchUpload() {
       } else {
         setUploadStatus({
           success: false,
-          message: "Validation failed. Please correct the errors below and try again.",
+          message: "Validasi gagal. Harap periksa error di bawah dan coba lagi.",
           errors: res.data.errors || []
         });
       }
     } catch (err: any) {
       const detail = err.response?.data?.detail;
-      let errMsg = "Network error. Make sure your FastAPI backend is running.";
+      let errMsg = "Koneksi ke server gagal. Pastikan backend sedang berjalan.";
       let errList: string[] = [];
       
       if (typeof detail === 'string') {
-        errMsg = detail;
+        if (detail.toLowerCase().includes('column') || detail.toLowerCase().includes('missing')) {
+          errMsg = 'Kolom wajib belum lengkap. Pastikan file sesuai format template yang tersedia.';
+        } else if (detail.toLowerCase().includes('format') || detail.toLowerCase().includes('parse')) {
+          errMsg = 'Format file tidak sesuai. Pastikan file adalah CSV atau XLSX yang valid.';
+        } else {
+          errMsg = 'Data gagal diproses. Silakan periksa file dan coba kembali.';
+        }
       } else if (detail && typeof detail === 'object') {
-        errMsg = detail.message || "Validation failed";
-        errList = detail.errors || [];
-      } else if (err.message) {
-        errMsg = err.message;
+        const errors = detail.errors || [];
+        const missingCols = errors.filter((e: string) => e.toLowerCase().includes('column') || e.toLowerCase().includes('kolom'));
+        errMsg = missingCols.length > 0
+          ? `Kolom wajib belum lengkap: ${missingCols.join(', ')}.`
+          : (detail.message || 'Data gagal diproses.');
+        errList = errors.slice(0, 10);
+      } else if (err.message?.toLowerCase().includes('network') || err.code === 'ERR_NETWORK') {
+        errMsg = 'Koneksi ke server gagal. Pastikan backend sedang berjalan.';
       }
 
       setUploadStatus({
@@ -82,11 +123,6 @@ export default function BatchUpload() {
                 <div className="bg-rose-50 border border-rose-200 rounded-xl p-5 flex items-start gap-4">
                   <XCircle className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">
-                      {uploadStatus.errors && uploadStatus.errors.length > 0 
-                        ? "Upload Failed: Missing required columns" 
-                        : "Upload Failed"}
-                    </h3>
                     <p className="text-xs text-slate-600 mt-1">{uploadStatus.message}</p>
                     {uploadFile && (
                       <div className="mt-3 bg-white px-3 py-2 rounded-lg border border-slate-100 text-xs font-semibold text-slate-700 flex items-center gap-2 w-fit">
@@ -105,7 +141,7 @@ export default function BatchUpload() {
                         <AlertCircle className="w-5 h-5 text-rose-500" />
                         <h4 className="text-sm font-bold text-slate-900">Missing Required Columns</h4>
                       </div>
-                      <p className="text-xs text-slate-500 mb-4">Your CSV file is missing the following required columns:</p>
+                      <p className="text-xs text-slate-500 mb-4">File kamu tidak memiliki kolom wajib berikut:</p>
                       
                       <div className="bg-rose-50/50 border border-rose-200 rounded-xl p-4 mb-4">
                         <h5 className="text-xs font-bold text-rose-700 mb-3">Missing Columns ({uploadStatus.errors.length}):</h5>
@@ -182,15 +218,16 @@ export default function BatchUpload() {
               <form onSubmit={handleFileUpload} className="bg-white rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-zinc-200 hover:border-indigo-400 transition-all cursor-pointer relative group animate-fadeIn shadow-sm">
                 <input
                   type="file"
-                  accept=".csv, .xlsx"
-                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                  accept=".csv,.xlsx"
+                  onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
                 <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <Upload className="w-8 h-8 text-indigo-600" />
                 </div>
-                <h3 className="text-lg font-bold text-zinc-900 mb-2">Drop your CSV file here</h3>
-                <p className="text-sm text-zinc-500 mb-6">or click to browse</p>
+                <h3 className="text-lg font-bold text-zinc-900 mb-2">Drop file CSV atau XLSX di sini</h3>
+                <p className="text-sm text-zinc-500 mb-2">atau klik untuk memilih file</p>
+                <p className="text-xs text-zinc-400 mb-6">Format yang didukung: .csv dan .xlsx</p>
                 
                 {uploadFile ? (
                   <div className="text-center z-20 relative">
@@ -303,7 +340,7 @@ export default function BatchUpload() {
             
             {/* How to Use Card */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-200">
-              <h4 className="text-base font-bold text-zinc-900 mb-6">How to Use</h4>
+              <h4 className="text-sm font-bold text-zinc-900 mb-6">Cara Menggunakan</h4>
               
               <div className="space-y-6 relative">
                 {/* Vertical Line */}
@@ -314,8 +351,8 @@ export default function BatchUpload() {
                     1
                   </div>
                   <div>
-                    <h5 className="text-sm font-bold text-zinc-800">Prepare your CSV</h5>
-                    <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Download our template and fill in customer data</p>
+                    <h5 className="text-sm font-bold text-zinc-800">Siapkan file CSV atau XLSX</h5>
+                    <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Download template dan isi data pelanggan sesuai format</p>
                   </div>
                 </div>
                 
@@ -325,7 +362,7 @@ export default function BatchUpload() {
                   </div>
                   <div>
                     <h5 className="text-sm font-bold text-zinc-800">Upload file</h5>
-                    <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Drag and drop or click to select your CSV</p>
+                    <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Drag & drop atau klik untuk memilih file CSV atau XLSX</p>
                   </div>
                 </div>
                 
@@ -347,7 +384,7 @@ export default function BatchUpload() {
 
             {/* CSV Column Guide Card */}
             <div className="bg-zinc-50 border border-zinc-200/60 rounded-2xl p-6 shadow-sm">
-              <h4 className="text-sm font-bold text-zinc-900 mb-4">CSV Format Guide</h4>
+              <h4 className="text-sm font-bold text-zinc-900 mb-4">Panduan Format CSV/XLSX</h4>
               <ul className="space-y-3 text-xs font-medium text-zinc-600">
                 <li className="flex items-start gap-2">
                   <span className="text-zinc-400 mt-0.5">•</span>

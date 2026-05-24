@@ -12,15 +12,12 @@ export default function Sidebar() {
   const mainNavItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Analysis', href: '/analysis', icon: BarChart3 },
-    { name: 'Analytics', href: '/analytics', icon: Activity },
     { name: 'Customers', href: '/customers', icon: Users },
   ];
 
   const adminNavItems = [
-    { name: 'Model Health', href: '/admin', icon: Zap },
-    { name: 'Data Pipeline', href: '/admin/data', icon: Database },
+    { name: 'System Status', href: '/admin', icon: Zap },
     { name: 'Batch Upload', href: '/admin/batch-upload', icon: Upload },
-    { name: 'Alerts', href: '/admin/alerts', icon: ShieldAlert },
   ];
 
   return (

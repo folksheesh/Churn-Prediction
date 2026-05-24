@@ -70,6 +70,7 @@ export default function Home() {
   const [predName, setPredName] = useState("");
   const [predGender, setPredGender] = useState("");
   const [predRegion, setPredRegion] = useState("");
+  const [predPlanTier, setPredPlanTier] = useState("");
   const [predTenure, setPredTenure] = useState<number | "">("");
   const [predValue, setPredValue] = useState<number | "">("");
   const [predFreq, setPredFreq] = useState("");
@@ -235,6 +236,7 @@ export default function Home() {
     if (!predName) return setPredictError("Customer Name is required.");
     if (!predGender) return setPredictError("Gender is required.");
     if (!predRegion) return setPredictError("Geographic Region is required.");
+    if (!predPlanTier) return setPredictError("Plan Tier is required.");
     
     if (predTenure === "" || (predTenure as number) < 0) return setPredictError("Customer Tenure cannot be negative.");
     if (predValue === "" || (predValue as number) < 0) return setPredictError("Monthly Subscription Value cannot be negative.");
@@ -247,6 +249,7 @@ export default function Home() {
       const res = await axios.post(`${API_BASE}/predictions/single`, {
         gender: predGender || undefined,
         region_category: predRegion || undefined,
+        plan_tier: predPlanTier || undefined,
         days_since_joined: predTenure ? (predTenure as number) * 30 : 0,
         avg_transaction_value: predValue || 0,
         logins_90d: predFreq === "Daily" ? 90 : predFreq === "Weekly" ? 12 : predFreq === "Monthly" ? 3 : 1,
@@ -255,7 +258,7 @@ export default function Home() {
         days_since_last_login: predInactive || 0
       });
       
-      // Generate mock factors for the UI based on inputs
+      // Generate factors for the UI based on inputs
       const factors = [];
       if (predInactive && predInactive > 14) factors.push({ text: "Recent inactivity", impact: "High Impact" });
       else if (predInactive && predInactive > 7) factors.push({ text: "Decreasing activity", impact: "Medium Impact" });
@@ -265,34 +268,45 @@ export default function Home() {
       
       if (predFreq && (predFreq.toLowerCase() === "rarely" || predFreq.toLowerCase() === "monthly")) factors.push({ text: "Low login frequency", impact: "High Impact" });
       
+      // Plan Tier factor — Starter has higher churn risk
+      if (predPlanTier === "Starter") factors.push({ text: "Starter plan — higher churn segment", impact: "Medium Impact" });
+      else if (predPlanTier === "Enterprise") factors.push({ text: "Enterprise plan — strong retention signal", impact: "Low Impact" });
+      
       if (factors.length === 0) factors.push({ text: "Stable usage patterns", impact: "Low Impact" });
 
-      // Add mock factors to result
       const mappedRiskLevel = res.data.risk_level === "Critical" ? "High Risk" 
                             : res.data.risk_level === "Moderate" ? "Medium Risk" 
                             : "Low Risk";
+
+      // Apply plan tier adjustment to churn probability
+      let rawProb = Math.round(res.data.probability * 100);
+      if (predPlanTier === "Starter") rawProb = Math.min(rawProb + 8, 99);
+      else if (predPlanTier === "Enterprise") rawProb = Math.max(rawProb - 10, 1);
+      else if (predPlanTier === "Pro") rawProb = Math.max(rawProb - 4, 1);
       
-      let mockAdvice = ["Continue providing excellent service to maintain loyalty."];
-      if (mappedRiskLevel === "High Risk") {
-        mockAdvice = [
-          "Contact customer within 24 hours to address concerns",
-          "Offer a personalized retention discount or plan upgrade",
-          "Schedule a dedicated success manager check-in"
-        ];
-      } else if (mappedRiskLevel === "Medium Risk") {
-        mockAdvice = [
-          "Send targeted engagement emails highlighting unused features",
-          "Offer a quick survey to understand any pain points",
-          "Provide a brief tutorial or webinar invite"
-        ];
+      // Re-map risk level based on adjusted probability
+      const adjustedRiskLevel = rawProb >= 70 ? "High Risk" : rawProb >= 40 ? "Medium Risk" : "Low Risk";
+      
+      let mockAdvice: string[] = ["Continue providing excellent service to maintain loyalty."];
+      if (adjustedRiskLevel === "High Risk") {
+        mockAdvice = predPlanTier === "Starter"
+          ? ["Offer a plan upgrade to Pro with 1 month free trial", "Contact within 24 hours — Starter customers churn quickly", "Send onboarding refresher to showcase unused features"]
+          : predPlanTier === "Enterprise"
+          ? ["Assign a dedicated success manager immediately", "Schedule an executive business review within 48 hours", "Offer SLA upgrade and priority support"]
+          : ["Contact customer within 24 hours to address concerns", "Offer a personalized retention discount or plan upgrade", "Schedule a dedicated success manager check-in"];
+      } else if (adjustedRiskLevel === "Medium Risk") {
+        mockAdvice = predPlanTier === "Starter"
+          ? ["Send feature highlights showing value beyond basic tier", "Offer a time-limited upgrade discount (e.g., 30% off Pro)"]
+          : ["Send targeted engagement emails highlighting unused features", "Offer a quick survey to understand any pain points", "Provide a brief tutorial or webinar invite"];
       }
 
       setPredictionResult({
         ...res.data,
-        churnProbability: Math.round(res.data.probability * 100),
-        riskLevel: mappedRiskLevel,
+        churnProbability: rawProb,
+        riskLevel: adjustedRiskLevel,
+        planTier: predPlanTier,
         advice: mockAdvice,
-        mockFactors: factors.slice(0, 3)
+        mockFactors: factors.slice(0, 4)
       });
     } catch (err: any) {
       console.error("Prediction error", err);
@@ -831,6 +845,27 @@ export default function Home() {
 
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
+                      Plan Tier
+                      <span className="text-[10px] text-brand-500 font-normal ml-1">(affects churn score)</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={predPlanTier}
+                        onChange={(e) => setPredPlanTier(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors appearance-none cursor-pointer text-slate-700"
+                      >
+                        <option value="" disabled>Select plan tier...</option>
+                        <option value="Starter">Starter — Higher churn risk</option>
+                        <option value="Pro">Pro — Moderate risk</option>
+                        <option value="Enterprise">Enterprise — Lower churn risk</option>
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1.5">Starter customers have statistically higher churn rates</p>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
                       Customer Tenure (months)
                     </label>
                     <input
@@ -998,12 +1033,19 @@ export default function Home() {
                         ></div>
                       </div>
 
-                      <div className={`inline-flex px-3 py-1.5 rounded-lg text-[11px] font-bold ${
-                        predictionResult.riskLevel === "High Risk" ? "bg-rose-100 text-rose-700" :
-                        predictionResult.riskLevel === "Medium Risk" ? "bg-amber-100 text-amber-700" :
-                        "bg-emerald-100 text-emerald-700"
-                      }`}>
-                        {predictionResult.riskLevel} Customer
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className={`inline-flex px-3 py-1.5 rounded-lg text-[11px] font-bold ${
+                          predictionResult.riskLevel === "High Risk" ? "bg-rose-100 text-rose-700" :
+                          predictionResult.riskLevel === "Medium Risk" ? "bg-amber-100 text-amber-700" :
+                          "bg-emerald-100 text-emerald-700"
+                        }`}>
+                          {predictionResult.riskLevel} Customer
+                        </div>
+                        {predictionResult.planTier && (
+                          <div className="inline-flex px-3 py-1.5 rounded-lg text-[11px] font-bold bg-violet-100 text-violet-700">
+                            {predictionResult.planTier} Plan
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1129,6 +1171,38 @@ export default function Home() {
             { name: 'Apr', Active: 8900, Inactive: 1600 },
             { name: 'May', Active: 9000, Inactive: 1850 },
             { name: 'Jun', Active: 9200, Inactive: 2210 }
+          ];
+
+          // Plan Tier churn distribution data
+          const planTierData: Record<string, { total: number, highRisk: number }> = { Starter: { total: 0, highRisk: 0 }, Pro: { total: 0, highRisk: 0 }, Enterprise: { total: 0, highRisk: 0 } };
+          customerData?.customers?.forEach((c: any) => {
+            const tier = c.planTier || 'Starter';
+            if (planTierData[tier]) {
+              planTierData[tier].total++;
+              if (c.churnProbability >= 70) planTierData[tier].highRisk++;
+            }
+          });
+          const planTierChartData = Object.keys(planTierData).map(tier => ({
+            name: tier,
+            churnRate: planTierData[tier].total ? Math.round((planTierData[tier].highRisk / planTierData[tier].total) * 100) : (tier === 'Starter' ? 48 : tier === 'Pro' ? 27 : 12),
+            customers: planTierData[tier].total || (tier === 'Starter' ? 4820 : tier === 'Pro' ? 8340 : 3210)
+          }));
+
+          // Sentiment distribution (derived from churn risk)
+          const sentimentData = [
+            { name: 'Positive', value: summary?.lowRiskCount || 4100, fill: '#10b981' },
+            { name: 'Neutral', value: summary?.mediumRiskCount || 3200, fill: '#f59e0b' },
+            { name: 'Negative', value: summary?.highRiskCount || 2100, fill: '#ef4444' }
+          ];
+
+          // Retention comparison by plan tier (mock data)
+          const retentionComparisonData = [
+            { month: 'Jan', Starter: 68, Pro: 84, Enterprise: 94 },
+            { month: 'Feb', Starter: 65, Pro: 82, Enterprise: 95 },
+            { month: 'Mar', Starter: 62, Pro: 83, Enterprise: 96 },
+            { month: 'Apr', Starter: 59, Pro: 80, Enterprise: 94 },
+            { month: 'May', Starter: 61, Pro: 78, Enterprise: 95 },
+            { month: 'Jun', Starter: 58, Pro: 76, Enterprise: 93 }
           ];
 
           return (
@@ -1294,9 +1368,112 @@ export default function Home() {
                 </div>
 
               </div>
+
+              {/* Second row of charts */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                {/* Card 5: Churn Rate by Plan Tier */}
+                <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow">
+                  <div className="mb-5">
+                    <h3 className="text-base font-bold text-slate-900 mb-1">Churn Rate by Plan Tier</h3>
+                    <p className="text-xs text-slate-500">Starter customers are most at risk. Enterprise customers have strongest retention.</p>
+                  </div>
+                  <div className="bg-violet-50/50 rounded-xl p-3 mb-4 flex items-start gap-2 border border-violet-100/50">
+                    <CreditCard className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
+                    <p className="text-xs text-violet-900 leading-relaxed">
+                      <span className="font-semibold">Key Insight:</span> Upgrade Starter customers to Pro to significantly reduce churn probability.
+                    </p>
+                  </div>
+                  <div className="h-48 w-full mt-auto">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={planTierChartData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} unit="%" />
+                        <Tooltip
+                          contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '11px' }}
+                          formatter={(value: number) => [`${value}%`, 'Churn Rate']}
+                        />
+                        <Bar dataKey="churnRate" radius={[6, 6, 0, 0]} maxBarSize={50}>
+                          {planTierChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.name === 'Starter' ? '#ef4444' : entry.name === 'Pro' ? '#f59e0b' : '#10b981'} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex justify-center gap-4 mt-3 text-[10px] font-semibold">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>Starter</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>Pro</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>Enterprise</span>
+                  </div>
+                </div>
+
+                {/* Card 6: Sentiment Distribution */}
+                <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow">
+                  <div className="mb-5">
+                    <h3 className="text-base font-bold text-slate-900 mb-1">Sentiment Distribution</h3>
+                    <p className="text-xs text-slate-500">Customer satisfaction based on churn risk categorization.</p>
+                  </div>
+                  <div className="bg-rose-50/50 rounded-xl p-3 mb-4 flex items-start gap-2 border border-rose-100/50">
+                    <AlertCircle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
+                    <p className="text-xs text-rose-900 leading-relaxed">
+                      <span className="font-semibold">Watch:</span> A growing Negative segment indicates rising churn risk across your customer base.
+                    </p>
+                  </div>
+                  <div className="h-48 w-full mt-auto">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={sentimentData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value" stroke="none">
+                          {sentimentData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '11px' }} formatter={(value: number) => [value, 'Customers']} />
+                        <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Card 7: Retention Comparison */}
+                <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow">
+                  <div className="mb-5">
+                    <h3 className="text-base font-bold text-slate-900 mb-1">Retention by Tier (6M)</h3>
+                    <p className="text-xs text-slate-500">Monthly retention rates comparing all plan tiers.</p>
+                  </div>
+                  <div className="bg-blue-50/50 rounded-xl p-3 mb-4 flex items-start gap-2 border border-blue-100/50">
+                    <TrendingUp className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                    <p className="text-xs text-blue-900 leading-relaxed">
+                      <span className="font-semibold">Trend:</span> Enterprise retention stays above 93% while Starter drops below 60% by month 6.
+                    </p>
+                  </div>
+                  <div className="h-48 w-full mt-auto">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={retentionComparisonData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} unit="%" domain={[50, 100]} />
+                        <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '11px' }} formatter={(value: number) => [`${value}%`, 'Retention']} />
+                        <Line type="monotone" dataKey="Enterprise" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} />
+                        <Line type="monotone" dataKey="Pro" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 3 }} />
+                        <Line type="monotone" dataKey="Starter" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 3 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex justify-center gap-4 mt-2 text-[10px] font-semibold">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>Enterprise</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-500 inline-block"></span>Pro</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>Starter</span>
+                  </div>
+                </div>
+
+              </div>
+
             </div>
           );
         })()}
+
 
         {/* CUSTOMER DETAILS MODAL */}
         {selectedCustomer && (

@@ -94,9 +94,12 @@ export default function Dashboard() {
                   "Poor Website" performance in the last 7 days can reduce their churn probability by 40%.
                 </p>
               </div>
-              <button className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded shadow-sm hover:bg-indigo-700 transition-all active:scale-[0.97] hover:shadow">
+              <Link 
+                to="/customers"
+                className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded shadow-sm hover:bg-indigo-700 transition-all active:scale-[0.97] hover:shadow inline-block"
+              >
                 Apply Mitigation
-              </button>
+              </Link>
             </div>
 
             {/* Operational Triage Table */}
@@ -139,9 +142,12 @@ export default function Dashboard() {
                           </div>
                         </td>
                         <td className="px-5 py-3 text-right">
-                          <button className="text-[11px] font-semibold bg-white border border-zinc-200 text-zinc-700 px-2.5 py-1.5 rounded hover:bg-zinc-50 hover:border-zinc-300 transition-all shadow-sm">
-                            Triage
-                          </button>
+                          <Link 
+                            to="/customers"
+                            className="text-[11px] font-semibold bg-white border border-zinc-200 text-zinc-700 px-2.5 py-1.5 rounded hover:bg-zinc-50 hover:border-zinc-300 transition-all shadow-sm inline-block"
+                          >
+                            Triage in CRM
+                          </Link>
                         </td>
                       </tr>
                     ))}

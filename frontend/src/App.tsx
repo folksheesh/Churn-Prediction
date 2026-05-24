@@ -37,7 +37,6 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/admin" element={<Admin />} />
-              <Route path="/analytics" element={<Analytics />} />
               <Route path="/analysis" element={<Analysis />} />
               <Route path="/admin/batch-upload" element={<BatchUpload />} />
             </Route>
