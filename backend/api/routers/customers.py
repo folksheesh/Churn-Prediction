@@ -152,6 +152,111 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         else:
             df = pd.read_csv(io.BytesIO(contents))
         
+        # ─── Standardize and Normalize Column Headers ─────────────────────────
+        HEADER_MAPPING = {
+            "age": "age",
+            "age (age)": "age",
+            "customer age": "age",
+            "gender": "gender",
+            "gender (gender)": "gender",
+            "security_no": "security_no",
+            "security number (security_no)": "security_no",
+            "security number": "security_no",
+            "region_category": "region_category",
+            "region category (region_category)": "region_category",
+            "region category": "region_category",
+            "region": "region_category",
+            "joining_date": "joining_date",
+            "joining date (joining_date)": "joining_date",
+            "joining date": "joining_date",
+            "joined_through_referral": "joined_through_referral",
+            "joined through referral (joined_through_referral)": "joined_through_referral",
+            "joined through referral": "joined_through_referral",
+            "referral_id": "referral_id",
+            "referral id (referral_id)": "referral_id",
+            "referral id": "referral_id",
+            "preferred_offer_types": "preferred_offer_types",
+            "preferred offer types (preferred_offer_types)": "preferred_offer_types",
+            "preferred offer types": "preferred_offer_types",
+            "medium_of_operation": "medium_of_operation",
+            "medium of operation (medium_of_operation)": "medium_of_operation",
+            "medium of operation": "medium_of_operation",
+            "internet_option": "internet_option",
+            "internet option (internet_option)": "internet_option",
+            "internet option": "internet_option",
+            "last_visit_time": "last_visit_time",
+            "last visit time (last_visit_time)": "last_visit_time",
+            "last visit time": "last_visit_time",
+            "days_since_last_login": "days_since_last_login",
+            "days since last login (days_since_last_login)": "days_since_last_login",
+            "days since last login": "days_since_last_login",
+            "avg_session_duration": "avg_session_duration",
+            "average session duration (avg_session_duration)": "avg_session_duration",
+            "average session duration": "avg_session_duration",
+            "avg session duration": "avg_session_duration",
+            "avg_transaction_value": "avg_transaction_value",
+            "average transaction value (avg_transaction_value)": "avg_transaction_value",
+            "average transaction value": "avg_transaction_value",
+            "avg transaction value": "avg_transaction_value",
+            "avg_frequency_login_days": "avg_frequency_login_days",
+            "average login frequency (avg_frequency_login_days)": "avg_frequency_login_days",
+            "average login frequency (days)": "avg_frequency_login_days",
+            "avg login frequency (days)": "avg_frequency_login_days",
+            "points_in_wallet": "points_in_wallet",
+            "points in wallet (points_in_wallet)": "points_in_wallet",
+            "points in wallet": "points_in_wallet",
+            "used_special_discount": "used_special_discount",
+            "used special discount (used_special_discount)": "used_special_discount",
+            "used special discount": "used_special_discount",
+            "offer_application_preference": "offer_application_preference",
+            "offer application preference (offer_application_preference)": "offer_application_preference",
+            "offer application preference": "offer_application_preference",
+            "past_complaint": "past_complaint",
+            "past complaint (past_complaint)": "past_complaint",
+            "past complaint": "past_complaint",
+            "complaint_status": "complaint_status",
+            "complaint status (complaint_status)": "complaint_status",
+            "complaint status": "complaint_status",
+            "feedback": "feedback",
+            "feedback (feedback)": "feedback",
+            "user feedback": "feedback",
+            "nlp feedback": "feedback",
+            "plan_tier": "plan_tier",
+            "plan tier (plan_tier)": "plan_tier",
+            "plan tier": "plan_tier",
+            "logins_90d": "logins_90d",
+            "total logins in 90 days (logins_90d)": "logins_90d",
+            "logins (last 90 days)": "logins_90d",
+            "active_days_90d": "active_days_90d",
+            "active days in 90 days (active_days_90d)": "active_days_90d",
+            "active days (last 90 days)": "active_days_90d",
+            "api_calls_90d": "api_calls_90d",
+            "api calls in 90 days (api_calls_90d)": "api_calls_90d",
+            "api calls (last 90 days)": "api_calls_90d",
+            "session_minutes_90d": "session_minutes_90d",
+            "session minutes in 90 days (session_minutes_90d)": "session_minutes_90d",
+            "session minutes (last 90 days)": "session_minutes_90d",
+            "tickets_opened_90d": "tickets_opened_90d",
+            "support tickets in 90 days (tickets_opened_90d)": "tickets_opened_90d",
+            "support tickets (last 90 days)": "tickets_opened_90d",
+            "days_since_active": "days_since_active",
+            "days since last activity (days_since_active)": "days_since_active",
+            "days since active": "days_since_active",
+            "days_since_joined": "days_since_joined",
+            "customer tenure (days_since_joined)": "days_since_joined",
+            "customer tenure": "days_since_joined",
+        }
+
+        # Rename df columns to standard keys by parsing current column names
+        normalized_cols = []
+        for col in df.columns:
+            cleaned = str(col).strip().lower()
+            if cleaned in HEADER_MAPPING:
+                normalized_cols.append(HEADER_MAPPING[cleaned])
+            else:
+                normalized_cols.append(cleaned)
+        df.columns = normalized_cols
+
         # Auto-generate id column if missing
         if 'id' not in df.columns:
             df['id'] = [f"CUST-{str(uuid.uuid4())[:8].upper()}" for _ in range(len(df))]
@@ -162,42 +267,160 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
 
         # ─── Human-readable field labels for error messages ───────────────────
         FIELD_LABELS = {
-            "age":                      "Age",
-            "days_since_joined":        "Customer Tenure",
-            "days_since_last_login":    "Days Since Last Login",
-            "days_since_active":        "Days Since Last Activity",
-            "avg_session_duration":     "Avg Session Duration",
-            "avg_transaction_value":    "Avg Transaction Value (Monthly Subscription Value)",
-            "avg_frequency_login_days": "Avg Login Frequency (Days)",
-            "points_in_wallet":         "Points in Wallet",
-            "logins_90d":               "Logins (last 90 days)",
-            "active_days_90d":          "Active Days (last 90 days)",
-            "api_calls_90d":            "API Calls (last 90 days)",
-            "session_minutes_90d":      "Session Minutes (last 90 days)",
-            "tickets_opened_90d":       "Support Tickets (last 90 days)",
+            "age":                          "Age",
+            "gender":                       "Gender",
+            "security_no":                  "Security Number",
+            "region_category":              "Region Category",
+            "joining_date":                 "Joining Date",
+            "joined_through_referral":      "Joined Through Referral",
+            "referral_id":                  "Referral ID",
+            "preferred_offer_types":        "Preferred Offer Types",
+            "medium_of_operation":          "Medium of Operation",
+            "internet_option":              "Internet Option",
+            "last_visit_time":              "Last Visit Time",
+            "days_since_last_login":        "Days Since Last Login",
+            "avg_session_duration":         "Avg Session Duration",
+            "avg_transaction_value":        "Avg Transaction Value",
+            "avg_frequency_login_days":     "Avg Login Frequency (Days)",
+            "points_in_wallet":             "Points in Wallet",
+            "used_special_discount":        "Used Special Discount",
+            "offer_application_preference": "Offer Application Preference",
+            "past_complaint":               "Past Complaint",
+            "complaint_status":             "Complaint Status",
+            "feedback":                     "Feedback",
+            "plan_tier":                    "Plan Tier",
+            "logins_90d":                   "Logins (last 90 days)",
+            "active_days_90d":              "Active Days (last 90 days)",
+            "api_calls_90d":                "API Calls (last 90 days)",
+            "session_minutes_90d":          "Session Minutes (last 90 days)",
+            "days_since_active":            "Days Since Last Activity",
         }
 
         def lbl(col: str) -> str:
-            return FIELD_LABELS.get(col, f"'{col}'")
+            return f"'{col}'"
+
+        REQUIRED_COLS = [
+            "age",
+            "gender",
+            "security_no",
+            "region_category",
+            "joining_date",
+            "joined_through_referral",
+            "referral_id",
+            "preferred_offer_types",
+            "medium_of_operation",
+            "internet_option",
+            "last_visit_time",
+            "days_since_last_login",
+            "avg_session_duration",
+            "avg_transaction_value",
+            "avg_frequency_login_days",
+            "points_in_wallet",
+            "used_special_discount",
+            "offer_application_preference",
+            "past_complaint",
+            "complaint_status",
+            "feedback",
+            "plan_tier",
+            "logins_90d",
+            "active_days_90d",
+            "api_calls_90d",
+            "session_minutes_90d",
+            "days_since_active",
+        ]
+
+        CRITICAL_COLS = [
+            "age",
+            "gender",
+            "security_no",
+            "region_category",
+            "joining_date",
+            "joined_through_referral",
+            "referral_id",
+            "preferred_offer_types",
+            "medium_of_operation",
+            "internet_option",
+            "last_visit_time",
+            "days_since_last_login",
+            "avg_session_duration",
+            "avg_transaction_value",
+            "avg_frequency_login_days",
+            "points_in_wallet",
+            "used_special_discount",
+            "offer_application_preference",
+            "past_complaint",
+            "complaint_status",
+            "plan_tier",
+            "logins_90d",
+            "active_days_90d",
+            "api_calls_90d",
+            "session_minutes_90d",
+            "days_since_active",
+        ]
+
+        # Check if any required column is completely missing from the uploaded file
+        missing_columns = [col for col in REQUIRED_COLS if col not in df.columns]
+        if missing_columns:
+            friendly_missing = [lbl(col) for col in missing_columns]
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": "Invalid file structure.",
+                    "errors": [f"The following required columns are missing from your file: {', '.join(friendly_missing)}. Please download our standard template."]
+                }
+            )
 
         # ─── Per-row field validation ─────────────────────────────────────────
         errors = []
         for index, row in df.iterrows():
             row_num = index + 2  # +2: 0-indexed + header row
 
+            # First, check for empty/missing cells in critical columns for this row
+            has_empty = False
+            for col in CRITICAL_COLS:
+                if col in df.columns:
+                    val = row[col]
+                    is_empty = False
+                    if pd.isna(val) or val is None:
+                        is_empty = True
+                    else:
+                        val_str = str(val).strip()
+                        if val_str == "" or val_str.lower() in ("nan", "none", "null", "nat"):
+                            is_empty = True
+                    
+                    if is_empty:
+                        errors.append(f"Row {row_num}: {lbl(col)} is required and cannot be empty.")
+                        has_empty = True
+            
+            # If there's an empty cell in this row, skip further validation on it to avoid type crashes
+            if has_empty:
+                continue
+
             # Age: required, integer 0–120
             if 'age' in df.columns:
-                if pd.isna(row['age']):
-                    errors.append(f"Row {row_num}: {lbl('age')} is required and cannot be empty.")
-                elif not isinstance(row['age'], (int, float)) or not (0 <= row['age'] <= 120):
+                if not isinstance(row['age'], (int, float)) or not (0 <= row['age'] <= 120):
                     errors.append(f"Row {row_num}: {lbl('age')} must be a number between 0 and 120 (got '{row['age']}').")
 
-            # Customer Tenure: required, 0–3650 days (≈ 0–120 months)
-            if 'days_since_joined' in df.columns:
-                if pd.isna(row['days_since_joined']):
-                    errors.append(f"Row {row_num}: {lbl('days_since_joined')} is required and cannot be empty.")
-                elif not (0 <= row['days_since_joined'] <= 3650):
-                    errors.append(f"Row {row_num}: {lbl('days_since_joined')} must be between 0 and 3650 days (0–120 months) (got '{row['days_since_joined']}').")
+            # Joining Date: format DD-MM-YYYY or valid datetime
+            if 'joining_date' in df.columns:
+                val = row['joining_date']
+                is_valid_date = False
+                if isinstance(val, (pd.Timestamp, pd.DatetimeIndex)):
+                    is_valid_date = True
+                else:
+                    val_str = str(val).strip()
+                    try:
+                        pd.to_datetime(val_str, format="%d-%m-%Y")
+                        is_valid_date = True
+                    except Exception:
+                        try:
+                            pd.to_datetime(val_str)
+                            is_valid_date = True
+                        except Exception:
+                            is_valid_date = False
+                
+                if not is_valid_date:
+                    errors.append(f"Row {row_num}: {lbl('joining_date')} must be in standard DD-MM-YYYY format (got '{val}').")
 
             # Days Since Last Login: non-negative
             if 'days_since_last_login' in df.columns and pd.notna(row['days_since_last_login']):
@@ -264,7 +487,7 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
                 status_code=422,
                 detail={
                     "message": "Validation failed. Please fix the errors below and re-upload your file.",
-                    "errors": errors[:15]
+                    "errors": errors[:100]
                 }
             )
 
@@ -301,7 +524,8 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
             db.add_all(customers_to_add)
             
         # Log activity
-        log = ActivityLog(action="CSV Import", user="System", details=f"Imported {len(df)} customers")
+        filename = file.filename if file.filename else "customers_data.xlsx"
+        log = ActivityLog(action="CSV Import", user="System", details=f"Imported {len(df)} customers from {filename}")
         db.add(log)
         
         db.commit()

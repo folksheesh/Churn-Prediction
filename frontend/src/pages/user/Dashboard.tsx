@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from '@/lib/api';
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -54,7 +54,6 @@ import {
   Legend
 } from "recharts";
 
-const API_BASE = "http://localhost:8000/api/v1";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis">("dashboard");
@@ -65,14 +64,15 @@ export default function Home() {
   const [riskFilter, setRiskFilter] = useState("All");
   
   // Single prediction state
-  const [predName, setPredName] = useState("");
-  const [predGender, setPredGender] = useState("");
-  const [predRegion, setPredRegion] = useState("");
-  const [predTenure, setPredTenure] = useState<number | "">("");
-  const [predValue, setPredValue] = useState<number | "">("");
-  const [predFreq, setPredFreq] = useState("");
-  const [predTickets, setPredTickets] = useState<number | "">("");
-  const [predInactive, setPredInactive] = useState<number | "">("");
+  const [predData, setPredData] = useState<Record<string, any>>({
+    age: '', gender: 'Male', region_category: 'City', joining_date: '', joined_through_referral: 'No',
+    preferred_offer_types: 'Gift Vouchers/Coupons', medium_of_operation: 'Desktop', internet_option: 'Wi-Fi',
+    days_since_last_login: '', avg_session_duration: '', avg_transaction_value: '',
+    avg_frequency_login_days: '', points_in_wallet: '', used_special_discount: 'No',
+    offer_application_preference: 'No', past_complaint: 'No', complaint_status: 'Not Applicable',
+    feedback: 'No reason specified', plan_tier: 'Basic', logins_90d: '', active_days_90d: '',
+    api_calls_90d: '', session_minutes_90d: '', days_since_active: ''
+  });
   const [predictionResult, setPredictionResult] = useState<any>(null);
   const [predicting, setPredicting] = useState(false);
   const [predictError, setPredictError] = useState<string | null>(null);
@@ -87,15 +87,16 @@ export default function Home() {
   const fetchCustomers = async () => {
     try {
       // Fetch table data (limited for performance)
-      const res = await axios.get(`${API_BASE}/customers`, {
+      const res = await api.get('/customers/', {
         params: { limit: 100 }
       });
       const data = res.data.items || [];
       
       // Fetch true global analytics
-      const [overviewRes, riskRes] = await Promise.all([
-        axios.get(`${API_BASE}/analytics/overview`),
-        axios.get(`${API_BASE}/analytics/risk-distribution`)
+      const [overviewRes, riskRes, nlpRes] = await Promise.all([
+        api.get('/analytics/overview'),
+        api.get('/analytics/risk-distribution'),
+        api.get('/analytics/nlp-insights')
       ]);
       
       // Filter logic for table
@@ -193,6 +194,7 @@ export default function Home() {
           .filter((c: any) => c.riskLevel === 'High Risk' || c.churnProbability >= 70)
           .sort((a: any, b: any) => b.churnProbability - a.churnProbability)
           .slice(0, 3),
+        sentiment: nlpRes.data,
         activities: [
           { time: '10:45 AM', text: 'System triggered XGBoost batch prediction on live data.' },
           { time: '09:30 AM', text: 'Daily pipeline refresh completed.' }
@@ -229,77 +231,48 @@ export default function Home() {
     e.preventDefault();
     setPredictError(null);
 
-    // Form Validation
-    if (!predName) return setPredictError("Customer Name is required.");
-    if (!predGender) return setPredictError("Gender is required.");
-    if (!predRegion) return setPredictError("Geographic Region is required.");
+    // Detailed Validation
+    if (predData.age === "" || predData.age < 0 || predData.age > 120) {
+      return setPredictError("Age must be a number between 0 and 120.");
+    }
     
-    if (predTenure === "" || (predTenure as number) < 0) return setPredictError("Customer Tenure cannot be negative.");
-    if (predValue === "" || (predValue as number) < 0) return setPredictError("Monthly Subscription Value cannot be negative.");
-    if (!predFreq) return setPredictError("Login Frequency is required.");
-    if (predTickets === "" || (predTickets as number) < 0) return setPredictError("Support Tickets cannot be negative.");
-    if (predInactive === "" || (predInactive as number) < 0) return setPredictError("Days Since Last Activity cannot be negative.");
+    if (!predData.joining_date) {
+      return setPredictError("Joining Date is required.");
+    }
+
+    const dateRegex = /^\\d{2}-\\d{2}-\\d{4}$/;
+    if (!dateRegex.test(predData.joining_date)) {
+      return setPredictError("Joining Date must be in DD-MM-YYYY format (e.g., 15-01-2023).");
+    }
+
+    const nonNegativeFields = [
+      { key: "days_since_last_login", label: "Days Since Last Login" },
+      { key: "avg_session_duration", label: "Avg Session Duration" },
+      { key: "avg_transaction_value", label: "Avg Transaction Value" },
+      { key: "avg_frequency_login_days", label: "Avg Login Frequency (Days)" },
+      { key: "points_in_wallet", label: "Points in Wallet" },
+      { key: "logins_90d", label: "Logins (last 90 days)" },
+      { key: "active_days_90d", label: "Active Days (last 90 days)" },
+      { key: "api_calls_90d", label: "API Calls (last 90 days)" },
+      { key: "session_minutes_90d", label: "Session Minutes (last 90 days)" },
+      { key: "days_since_active", label: "Days Since Last Activity" }
+    ];
+
+    for (const field of nonNegativeFields) {
+      const val = predData[field.key];
+      if (val !== "" && val !== undefined && val < 0) {
+        return setPredictError(`${field.label} must be 0 or greater (got ${val}).`);
+      }
+    }
 
     setPredicting(true);
     try {
-      const res = await axios.post(`${API_BASE}/predictions/single`, {
-        gender: predGender || undefined,
-        region_category: predRegion || undefined,
-        days_since_joined: predTenure ? (predTenure as number) * 30 : 0,
-        avg_transaction_value: predValue || 0,
-        logins_90d: predFreq === "Daily" ? 90 : predFreq === "Weekly" ? 12 : predFreq === "Monthly" ? 3 : 1,
-        tickets_opened_90d: predTickets || 0,
-        days_since_active: predInactive || 0,
-        days_since_last_login: predInactive || 0
-      });
-      
-      // Generate mock factors for the UI based on inputs
-      const factors = [];
-      if (predInactive && predInactive > 14) factors.push({ text: "Recent inactivity", impact: "High Impact" });
-      else if (predInactive && predInactive > 7) factors.push({ text: "Decreasing activity", impact: "Medium Impact" });
-      
-      if (predTickets && predTickets > 2) factors.push({ text: "High support tickets", impact: "High Impact" });
-      else if (predTickets && predTickets > 0) factors.push({ text: "Recent support interactions", impact: "Medium Impact" });
-      
-      if (predFreq && (predFreq.toLowerCase() === "rarely" || predFreq.toLowerCase() === "monthly")) factors.push({ text: "Low login frequency", impact: "High Impact" });
-      
-      if (factors.length === 0) factors.push({ text: "Stable usage patterns", impact: "Low Impact" });
-
-      // Add mock factors to result
-      const mappedRiskLevel = res.data.risk_level === "Critical" ? "High Risk" 
-                            : res.data.risk_level === "Moderate" ? "Medium Risk" 
-                            : "Low Risk";
-      
-      let mockAdvice = ["Continue providing excellent service to maintain loyalty."];
-      if (mappedRiskLevel === "High Risk") {
-        mockAdvice = [
-          "Contact customer within 24 hours to address concerns",
-          "Offer a personalized retention discount or plan upgrade",
-          "Schedule a dedicated success manager check-in"
-        ];
-      } else if (mappedRiskLevel === "Medium Risk") {
-        mockAdvice = [
-          "Send targeted engagement emails highlighting unused features",
-          "Offer a quick survey to understand any pain points",
-          "Provide a brief tutorial or webinar invite"
-        ];
-      }
-
-      setPredictionResult({
-        ...res.data,
-        churnProbability: Math.round(res.data.probability * 100),
-        riskLevel: mappedRiskLevel,
-        advice: mockAdvice,
-        mockFactors: factors.slice(0, 3)
-      });
+      const payload = { ...predData };
+      const res = await api.post('/predictions/single', payload);
+      setPredictionResult(res.data);
     } catch (err: any) {
-      console.error("Prediction error", err);
-      const detail = err.response?.data?.detail;
-      let errMsg = "Network error. Make sure your FastAPI backend is running.";
-      if (typeof detail === 'string') errMsg = detail;
-      else if (detail && typeof detail === 'object') errMsg = detail.message || JSON.stringify(detail);
-      else if (err.message) errMsg = err.message;
-      setPredictError(errMsg);
+      console.error("Prediction error:", err);
+      setPredictError(err.response?.data?.detail || "An error occurred during prediction.");
     } finally {
       setPredicting(false);
     }
@@ -498,11 +471,11 @@ export default function Home() {
               </div>
             )}
 
-            {/* CHARTS CONTAINER */}
-            <div className="grid grid-cols-1 gap-8">
+                        {/* CHARTS CONTAINER */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               
               {/* Churn Forecast Line Chart */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-6">
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-6 lg:col-span-2 flex flex-col">
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h4 className="text-base font-extrabold text-slate-900 font-outfit">Customer Activity Trend</h4>
@@ -510,7 +483,7 @@ export default function Home() {
                   </div>
                 </div>
                 {summary && summary.churnForecast ? (
-                  <div className="h-[280px] w-full">
+                  <div className="h-[280px] w-full mt-auto">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={summary.churnForecast}>
                         <defs>
@@ -532,20 +505,76 @@ export default function Home() {
                 )}
               </div>
 
+              {/* Risk Breakdown Donut Chart */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-6 flex flex-col">
+                <div className="mb-6">
+                  <h4 className="text-base font-extrabold text-slate-900 font-outfit">Risk Breakdown</h4>
+                  <p className="text-xs text-slate-400">Current customer health distribution.</p>
+                </div>
+                {summary ? (
+                  <div className="h-[280px] w-full mt-auto flex flex-col items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'High Risk', value: summary.highRiskCount, color: '#f43f5e' },
+                            { name: 'Medium Risk', value: summary.mediumRiskCount, color: '#f59e0b' },
+                            { name: 'Low Risk', value: summary.lowRiskCount, color: '#10b981' }
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={65}
+                          outerRadius={95}
+                          paddingAngle={2}
+                          dataKey="value"
+                        >
+                          {
+                            [
+                              { name: 'High Risk', value: summary.highRiskCount, color: '#f43f5e' },
+                              { name: 'Medium Risk', value: summary.mediumRiskCount, color: '#f59e0b' },
+                              { name: 'Low Risk', value: summary.lowRiskCount, color: '#10b981' }
+                            ].map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))
+                          }
+                        </Pie>
+                        <Tooltip contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="w-full mt-4 flex flex-col gap-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500"></span><span className="text-slate-600 font-medium">High</span></div>
+                        <span className="font-bold text-slate-800">{summary.highRiskCount}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500"></span><span className="text-slate-600 font-medium">Medium</span></div>
+                        <span className="font-bold text-slate-800">{summary.mediumRiskCount}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500"></span><span className="text-slate-600 font-medium">Low</span></div>
+                        <span className="font-bold text-slate-800">{summary.lowRiskCount}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-[280px] flex items-center justify-center text-slate-400">Loading risk data...</div>
+                )}
+              </div>
+
             </div>
 
-            {/* BOTTOM SECTION GRID: REGION RETENTION & ACTIVITIES */}
-            <div className="grid grid-cols-1 gap-8">
+            {/* BOTTOM SECTION GRID: REGION RETENTION & SENTIMENT */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               
-              {/* Region Retention and table list */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-6">
-                <div className="mb-6">
+              {/* Region Retention */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-6 flex flex-col justify-between">
+                <div>
                   <h4 className="text-base font-extrabold text-slate-900 font-outfit">Regional Customer Insights</h4>
                   <p className="text-xs text-slate-400">Engagement metrics grouped by geographic region.</p>
                 </div>
 
                 {summary && summary.regionStats ? (
-                  <div className="h-[200px] w-full mb-6">
+                  <div className="h-[200px] w-full mt-6">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={summary.regionStats}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -557,73 +586,140 @@ export default function Home() {
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-slate-400">Loading region statistics...</div>
+                  <div className="h-[200px] flex items-center justify-center text-slate-400 mt-6">Loading region statistics...</div>
                 )}
+              </div>
 
-                {/* Customer Attention Cards */}
-                <div className="mt-8">
-                  <h4 className="text-sm font-extrabold text-slate-900 mb-4">Customers Needing Attention</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {summary?.highRiskCustomers?.length > 0 ? summary.highRiskCustomers.map((c: any, i: number) => {
-                      const isHigh = c.churnProbability >= 75;
-                      const isMed = !isHigh;
-                      const btnClass = isHigh ? "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-100" : "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-100";
-                      const textClass = isHigh ? "text-rose-600 bg-rose-50 border-rose-100" : "text-amber-600 bg-amber-50 border-amber-100";
-                      const dotClass = isHigh ? "bg-rose-500 shadow-rose-200" : "bg-amber-500 shadow-amber-200";
-                      const avatarClass = isHigh ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700";
-                      
-                      const btnState = sendingOffer === c.customerId ? "loading" : sendingOffer === c.customerId + "_success" ? "success" : "idle";
-                      
-                      return (
-                        <div key={c.customerId} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-                          <div 
-                            className="cursor-pointer group flex-1"
-                            onClick={() => openCustomerModal(c)}
-                          >
-                            <div className="flex justify-between items-start mb-4">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm shrink-0 transition-transform group-hover:scale-105 ${avatarClass}`}>
-                                  {c.initials}
-                                </div>
-                                <div>
-                                  <h5 className="font-bold text-slate-900 text-sm truncate max-w-[120px] group-hover:text-brand-600 transition-colors">{c.name}</h5>
-                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${textClass}`}>
-                                    {isHigh ? "High Attention" : "Medium Attention"}
-                                  </span>
-                                </div>
-                              </div>
-                              <span className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 shadow-sm ${dotClass}`}></span>
-                            </div>
-                            <p className="text-xs text-slate-600 mb-5 leading-relaxed h-8 line-clamp-2">
-                              {c.recommendations?.[0] || "Engagement decreasing recently."}
-                            </p>
-                          </div>
-                          <button 
-                            onClick={() => handleSendOffer(c.customerId)}
-                            disabled={btnState !== "idle"}
-                            className={`w-full py-2.5 font-bold text-xs rounded-xl transition-all border flex justify-center items-center gap-2 ${
-                              btnState === "success" 
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
-                                : btnClass
-                            }`}
-                          >
-                            {btnState === "loading" ? (
-                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                            ) : btnState === "success" ? (
-                              "Offer Sent!"
-                            ) : (
-                              "Send Offer"
-                            )}
-                          </button>
-                        </div>
-                      );
-                    }) : (
-                      <div className="col-span-3 text-center py-8 text-sm text-slate-400">
-                        No high risk customers at this time.
-                      </div>
-                    )}
-                  </div>
+              {/* Customer Feedback Sentiment (NLP) */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-6 flex flex-col justify-between">
+                <div>
+                  <h4 className="text-base font-extrabold text-slate-900 font-outfit">Customer Feedback Sentiment (NLP)</h4>
+                  <p className="text-xs text-slate-400">Live AI analysis of written customer reviews.</p>
                 </div>
+
+                {summary && summary.sentiment ? (
+                  <div className="h-[200px] w-full flex items-center justify-between mt-6">
+                    <div className="w-[60%] h-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={[
+                              { name: 'Positive', value: summary.sentiment.positive, color: '#10b981' },
+                              { name: 'Neutral', value: summary.sentiment.neutral, color: '#f59e0b' },
+                              { name: 'Negative', value: summary.sentiment.negative, color: '#ef4444' }
+                            ]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={70}
+                            paddingAngle={3}
+                            dataKey="value"
+                          >
+                            {[
+                              { name: 'Positive', value: summary.sentiment.positive, color: '#10b981' },
+                              { name: 'Neutral', value: summary.sentiment.neutral, color: '#f59e0b' },
+                              { name: 'Negative', value: summary.sentiment.negative, color: '#ef4444' }
+                            ].map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="w-[35%] flex flex-col gap-3 justify-center">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Positive</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          <span className="text-sm font-extrabold text-slate-800">{summary.sentiment.positive}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Neutral</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                          <span className="text-sm font-extrabold text-slate-800">{summary.sentiment.neutral}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Negative</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                          <span className="text-sm font-extrabold text-slate-800 text-rose-600">{summary.sentiment.negative}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-slate-400 mt-6">Loading sentiment data...</div>
+                )}
+              </div>
+
+            </div>
+
+            {/* Customers Needing Attention Card */}
+            <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-6 mt-8">
+              <h4 className="text-sm font-extrabold text-slate-900 mb-4">Customers Needing Attention</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {summary?.highRiskCustomers?.length > 0 ? summary.highRiskCustomers.map((c: any, i: number) => {
+                  const isHigh = c.churnProbability >= 75;
+                  const isMed = !isHigh;
+                  const btnClass = isHigh ? "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-100" : "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-100";
+                  const textClass = isHigh ? "text-rose-600 bg-rose-50 border-rose-100" : "text-amber-600 bg-amber-50 border-amber-100";
+                  const dotClass = isHigh ? "bg-rose-500 shadow-rose-200" : "bg-amber-500 shadow-amber-200";
+                  const avatarClass = isHigh ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700";
+                  
+                  const btnState = sendingOffer === c.customerId ? "loading" : sendingOffer === c.customerId + "_success" ? "success" : "idle";
+                  
+                  return (
+                    <div key={c.customerId} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                      <div 
+                        className="cursor-pointer group flex-1"
+                        onClick={() => openCustomerModal(c)}
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm shrink-0 transition-transform group-hover:scale-105 ${avatarClass}`}>
+                              {c.initials}
+                            </div>
+                            <div>
+                              <h5 className="font-bold text-slate-900 text-sm truncate max-w-[120px] group-hover:text-brand-600 transition-colors">{c.name}</h5>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${textClass}`}>
+                                {isHigh ? "High Attention" : "Medium Attention"}
+                              </span>
+                            </div>
+                          </div>
+                          <span className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 shadow-sm ${dotClass}`}></span>
+                        </div>
+                        <p className="text-xs text-slate-600 mb-5 leading-relaxed h-8 line-clamp-2">
+                          {c.recommendations?.[0] || "Engagement decreasing recently."}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => handleSendOffer(c.customerId)}
+                        disabled={btnState !== "idle"}
+                        className={`w-full py-2.5 font-bold text-xs rounded-xl transition-all border flex justify-center items-center gap-2 ${
+                          btnState === "success" 
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
+                            : btnClass
+                        }`}
+                      >
+                        {btnState === "loading" ? (
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                        ) : btnState === "success" ? (
+                          "Offer Sent!"
+                        ) : (
+                          "Send Offer"
+                        )}
+                      </button>
+                    </div>
+                  );
+                }) : (
+                  <div className="col-span-3 text-center py-8 text-sm text-slate-400">
+                    No high risk customers at this time.
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -783,139 +879,64 @@ export default function Home() {
               <form onSubmit={handlePredict} className="bg-white border border-slate-100 shadow-sm rounded-xl p-8">
                 <h3 className="text-lg font-extrabold text-slate-900 mb-6 font-outfit">Customer Information</h3>
                 
-                <div className="space-y-5">
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Customer Name
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., John Smith"
-                      value={predName}
-                      onChange={(e) => setPredName(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Gender
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={predGender}
-                        onChange={(e) => setPredGender(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors appearance-none cursor-pointer text-slate-700"
-                      >
-                        <option value="" disabled>Select gender...</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                      </select>
-                      <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                  {Object.entries({
+                    "age": { label: "Age", type: "number", placeholder: "e.g., 25" },
+                    "gender": { label: "Gender", type: "select", options: ["Male", "Female"] },
+                    "region_category": { label: "Region Category", type: "select", options: ["City", "Village", "Town"] },
+                    "joining_date": { label: "Joining Date (dd-mm-yyyy)", type: "text", placeholder: "e.g., 15-01-2023" },
+                    "joined_through_referral": { label: "Joined Through Referral", type: "select", options: ["Yes", "No", "?"] },
+                    "preferred_offer_types": { label: "Preferred Offer Types", type: "select", options: ["Gift Vouchers/Coupons", "Credit/Debit Card Offers", "Without Offers"] },
+                    "medium_of_operation": { label: "Medium of Operation", type: "select", options: ["Desktop", "Smartphone", "Both", "?"] },
+                    "internet_option": { label: "Internet Option", type: "select", options: ["Wi-Fi", "Mobile_Data", "Fiber_Optic"] },
+                    "days_since_last_login": { label: "Days Since Last Login", type: "number", placeholder: "e.g., 5" },
+                    "avg_session_duration": { label: "Avg Session Duration", type: "number", placeholder: "e.g., 300.5" },
+                    "avg_transaction_value": { label: "Avg Transaction Value", type: "number", placeholder: "e.g., 1500.75" },
+                    "avg_frequency_login_days": { label: "Avg Login Frequency (Days)", type: "number", placeholder: "e.g., 12.5" },
+                    "points_in_wallet": { label: "Points in Wallet", type: "number", placeholder: "e.g., 500" },
+                    "used_special_discount": { label: "Used Special Discount", type: "select", options: ["Yes", "No"] },
+                    "offer_application_preference": { label: "Offer Application Preference", type: "select", options: ["Yes", "No"] },
+                    "past_complaint": { label: "Past Complaint", type: "select", options: ["Yes", "No"] },
+                    "complaint_status": { label: "Complaint Status", type: "select", options: ["Not Applicable", "Unsolved", "Solved", "Solved in Follow-up", "No Information Available"] },
+                    "feedback": { label: "Feedback", type: "select", options: ["Poor Product Quality", "Poor Website", "Poor Customer Service", "Too many ads", "No reason specified", "Reasonable Price", "User Friendly Website", "Products always in Stock", "Quality Customer Care"] },
+                    "plan_tier": { label: "Plan Tier", type: "select", options: ["Basic", "Premium", "Platinum"] },
+                    "logins_90d": { label: "Logins (last 90 days)", type: "number", placeholder: "e.g., 40" },
+                    "active_days_90d": { label: "Active Days (last 90 days)", type: "number", placeholder: "e.g., 35" },
+                    "api_calls_90d": { label: "API Calls (last 90 days)", type: "number", placeholder: "e.g., 5000" },
+                    "session_minutes_90d": { label: "Session Minutes (last 90 days)", type: "number", placeholder: "e.g., 950.5" },
+                    "days_since_active": { label: "Days Since Last Activity", type: "number", placeholder: "e.g., 2" },
+                  }).map(([key, config]) => (
+                    <div key={key}>
+                      <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
+                        {config.label}
+                      </label>
+                      {config.type === "select" ? (
+                        <div className="relative">
+                          <select
+                            value={predData[key] || ""}
+                            onChange={(e) => setPredData({...predData, [key]: e.target.value})}
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors appearance-none cursor-pointer text-slate-700"
+                          >
+                            <option value="" disabled>Select {config.label}...</option>
+                            {config.options?.map((opt: string) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      ) : (
+                        <input
+                          type={config.type}
+                          step={config.type === 'number' ? 'any' : undefined}
+                          placeholder={config.placeholder}
+                          value={predData[key] === undefined ? "" : predData[key]}
+                          onChange={(e) => setPredData({...predData, [key]: config.type === 'number' ? (e.target.value ? Number(e.target.value) : '') : e.target.value})}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors"
+                        />
+                      )}
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Geographic Region
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={predRegion}
-                        onChange={(e) => setPredRegion(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors appearance-none cursor-pointer text-slate-700"
-                      >
-                        <option value="" disabled>Select region...</option>
-                        {customerData?.regions?.map((r: string) => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Customer Tenure (months)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="e.g., 18"
-                      value={predTenure}
-                      onChange={(e) => setPredTenure(e.target.value ? parseInt(e.target.value) : "")}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-1.5">Enter how many months they've been a customer (0-120)</p>
-                  </div>
-
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Monthly Subscription Value (USD)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="e.g., 149"
-                      value={predValue}
-                      onChange={(e) => setPredValue(e.target.value ? parseFloat(e.target.value) : "")}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-1.5">Enter the monthly subscription amount in dollars</p>
-                  </div>
-
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Login Frequency
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={predFreq}
-                        onChange={(e) => setPredFreq(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors appearance-none cursor-pointer text-slate-700"
-                      >
-                        <option value="" disabled>Select frequency...</option>
-                        <option value="Daily">Daily Logins</option>
-                        <option value="Weekly">Weekly Logins</option>
-                        <option value="Monthly">Monthly Logins</option>
-                        <option value="Rarely">Rarely Logins</option>
-                      </select>
-                      <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Support Tickets (last 30 days)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="e.g., 3"
-                      value={predTickets}
-                      onChange={(e) => setPredTickets(e.target.value ? parseInt(e.target.value) : "")}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-1.5">Number of support requests in the past month</p>
-                  </div>
-
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
-                      Days Since Last Activity
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="e.g., 7"
-                      value={predInactive}
-                      onChange={(e) => setPredInactive(e.target.value ? parseInt(e.target.value) : "")}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-1.5">How many days ago did they last log in?</p>
-                  </div>
-
-                  <button
-                    type="submit"
+                  ))}
+                  <button type="submit" 
                     disabled={predicting}
                     className="w-full h-12 mt-4 bg-brand-500 hover:bg-brand-600 disabled:bg-slate-300 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors glow-brand"
                   >
@@ -1135,6 +1156,21 @@ export default function Home() {
             { name: 'May', Active: 9000, Inactive: 1850 },
             { name: 'Jun', Active: 9200, Inactive: 2210 }
           ];
+
+          const tierGroupData: Record<string, { name: string, 'Low Risk': number, 'Medium Risk': number, 'High Risk': number }> = {
+            'Basic': { name: 'Basic', 'Low Risk': 0, 'Medium Risk': 0, 'High Risk': 0 },
+            'Premium': { name: 'Premium', 'Low Risk': 0, 'Medium Risk': 0, 'High Risk': 0 },
+            'Platinum': { name: 'Platinum', 'Low Risk': 0, 'Medium Risk': 0, 'High Risk': 0 },
+            'Enterprise': { name: 'Enterprise', 'Low Risk': 0, 'Medium Risk': 0, 'High Risk': 0 },
+          };
+          customerData?.customers?.forEach((c: any) => {
+            const tier = c.planTier || 'Basic';
+            const risk = c.riskLevel; // "Low Risk", "Medium Risk", "High Risk"
+            if (tierGroupData[tier] && (risk === 'Low Risk' || risk === 'Medium Risk' || risk === 'High Risk')) {
+              tierGroupData[tier][risk as 'Low Risk' | 'Medium Risk' | 'High Risk']++;
+            }
+          });
+          const planRiskData = Object.values(tierGroupData);
 
           return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
@@ -1421,6 +1457,73 @@ export default function Home() {
                     <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
                     <p className="text-xs text-slate-600 leading-relaxed">
                       A growing active area means more customers are engaged with our service. If the inactive area is growing faster than the active area, it's a sign of decreasing engagement.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 5: Churn Risk by Plan Tier */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Churn Risk by Subscription Plan</h3>
+                <p className="text-xs text-slate-500 mb-6">Breaks down the proportion of Low, Medium, and High-Risk customers for each plan tier</p>
+                
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-2">Why analyze risk by plan tier?</h4>
+                      <p className="text-xs text-slate-600 mb-2">It allows us to understand if certain tiers are under-performing or experiencing friction:</p>
+                      <ul className="space-y-1.5 text-xs text-slate-600">
+                        <li><span className="font-bold text-slate-700">Enterprise/Platinum:</span> High-value accounts. Churn here causes large financial impact.</li>
+                        <li><span className="font-bold text-slate-700">Basic/Premium:</span> High-volume accounts. Churn here indicates wider product-market fit or onboarding issues.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-64 w-full mb-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={planRiskData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
+                      <Bar dataKey="Low Risk" stackId="a" fill="#10b981" />
+                      <Bar dataKey="Medium Risk" stackId="a" fill="#f59e0b" />
+                      <Bar dataKey="High Risk" stackId="a" fill="#ef4444" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
+                  <div className="flex items-center justify-between mb-4 cursor-pointer">
+                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-brand-500" />
+                      How to Read This Chart
+                    </h4>
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
+                      <p className="text-xs text-slate-600">Each stacked bar shows the total customers in that plan tier</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                      <p className="text-xs text-slate-600">Green is healthy, Orange is warning, Red is critical</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
+                      <p className="text-xs text-slate-600">Taller red sections mean higher risk concentration in that plan tier</p>
+                    </li>
+                  </ul>
+                  <div className="border-t border-slate-200 pt-4">
+                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Pay close attention to any tier with a large red or orange block. If high-value plan tiers show a significant percentage of at-risk users, prioritize outreach campaigns for those high-value segments.
                     </p>
                   </div>
                 </div>

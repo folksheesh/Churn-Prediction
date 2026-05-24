@@ -50,10 +50,34 @@ export default function Customers() {
         .filter((log: any) => log.action === 'CSV Import')
         .map((log: any) => {
           // Extract count from "Imported X customers"
-          const match = log.details?.match(/(\d+)/);
-          const count = match ? match[0] : '0';
-          const dateStr = log.timestamp ? new Date(log.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Unknown Date';
-          return { count, date: dateStr };
+          const match = log.details?.match(/Imported (\d+) customers/);
+          const count = match ? match[1] : (log.details?.match(/(\d+)/)?.[0] || '0');
+          
+          // Extract filename if present (e.g. from "... from filename")
+          const fileMatch = log.details?.match(/from (.+)$/);
+          let filename = fileMatch ? fileMatch[1] : '';
+          
+          if (!filename) {
+            // Fallback: Generate a clean professional filename based on date
+            const d = log.timestamp ? new Date(log.timestamp) : new Date();
+            const dateSlug = d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+              .replace(/,?\s+/g, '_').toLowerCase();
+            filename = `churn_customer_import_${dateSlug}.xlsx`;
+          }
+          
+          const dateStr = log.timestamp ? new Date(log.timestamp).toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }) : 'Unknown Date';
+          
+          return { 
+            count: parseInt(count, 10) || 0, 
+            date: dateStr, 
+            filename 
+          };
         });
       setUploadHistory(formatted);
     } catch (err) {
@@ -121,6 +145,16 @@ export default function Customers() {
     }
   };
 
+  const renderParsedError = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={index} className="font-extrabold text-rose-950 underline decoration-rose-300/60">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
   const handleImportCSV = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!importFile) return;
@@ -142,21 +176,102 @@ export default function Customers() {
       fetchHistory();
     } catch (err: any) {
       console.error(err);
+      
+      const formatFriendlyError = (rawError: string): string => {
+        let msg = rawError;
+        
+        // Ensure standard casing for Row prefix
+        msg = msg.replace(/^Row (\d+):/i, 'Row $1:');
+        
+        // Custom humanization translations in English
+        const translations = [
+          { pat: /is required and cannot be empty/i, rep: 'is required and cannot be left blank' },
+          { pat: /must be a number between (\d+) and (\d+)/i, rep: 'must be a valid number between $1 and $2' },
+          { pat: /must be between (\d+) and (\d+) days/i, rep: 'must be between $1 and $2 days (tenure)' },
+          { pat: /must be 0 or greater/i, rep: 'must be 0 or a positive number' },
+          { pat: /cannot be greater than/i, rep: 'cannot exceed' },
+          { pat: /got '(.+)'/i, rep: '(value provided: "$1")' },
+        ];
+        
+        translations.forEach(({ pat, rep }) => {
+          msg = msg.replace(pat, rep);
+        });
+
+        // Translate field variables to friendly English labels
+        const fieldLabels: Record<string, string> = {
+          'age': 'Age (age)',
+          'gender': 'Gender (gender)',
+          'security_no': 'Security Number (security_no)',
+          'region_category': 'Region Category (region_category)',
+          'joining_date': 'Joining Date (joining_date)',
+          'joined_through_referral': 'Joined Through Referral (joined_through_referral)',
+          'referral_id': 'Referral ID (referral_id)',
+          'preferred_offer_types': 'Preferred Offer Types (preferred_offer_types)',
+          'medium_of_operation': 'Medium of Operation (medium_of_operation)',
+          'internet_option': 'Internet Option (internet_option)',
+          'last_visit_time': 'Last Visit Time (last_visit_time)',
+          'days_since_last_login': 'Days Since Last Login (days_since_last_login)',
+          'avg_session_duration': 'Average Session Duration (avg_session_duration)',
+          'avg_transaction_value': 'Average Transaction Value (avg_transaction_value)',
+          'avg_frequency_login_days': 'Average Login Frequency (avg_frequency_login_days)',
+          'points_in_wallet': 'Points in Wallet (points_in_wallet)',
+          'used_special_discount': 'Used Special Discount (used_special_discount)',
+          'offer_application_preference': 'Offer Application Preference (offer_application_preference)',
+          'past_complaint': 'Past Complaint (past_complaint)',
+          'complaint_status': 'Complaint Status (complaint_status)',
+          'feedback': 'Feedback (feedback)',
+          'plan_tier': 'Plan Tier (plan_tier)',
+          'logins_90d': 'Total Logins in 90 Days (logins_90d)',
+          'active_days_90d': 'Active Days in 90 Days (active_days_90d)',
+          'api_calls_90d': 'API Calls in 90 Days (api_calls_90d)',
+          'session_minutes_90d': 'Session Minutes in 90 Days (session_minutes_90d)',
+          'tickets_opened_90d': 'Support Tickets in 90 Days (tickets_opened_90d)',
+          'days_since_joined': 'Customer Tenure (days_since_joined)',
+        };
+
+        Object.entries(fieldLabels).forEach(([key, label]) => {
+          const regex = new RegExp(`'${key}'|\\b${key}\\b`, 'g');
+          msg = msg.replace(regex, `**${label}**`);
+        });
+
+        return msg;
+      };
+
       if (err.response?.data?.detail?.errors) {
+        const formattedErrors = err.response.data.detail.errors.map((e: string) => formatFriendlyError(e));
         setUploadStatus({
           success: false,
-          message: 'Data Validation Failed',
-          errors: err.response.data.detail.errors
+          message: 'Some customer data columns in your Excel/CSV file contain validation errors. Please correct them and re-upload.',
+          errors: formattedErrors
+        });
+      } else if (Array.isArray(err.response?.data?.detail)) {
+        const pydanticErrors = err.response.data.detail.map((e: any) => {
+          const loc = e.loc?.join(' -> ') || 'data';
+          return `Row/Column [${loc}]: invalid input format (${e.msg}).`;
+        });
+        setUploadStatus({
+          success: false,
+          message: 'The column structure format in your Excel/CSV file does not match our required template.',
+          errors: pydanticErrors
         });
       } else if (typeof err.response?.data?.detail === 'string') {
+        const detail = err.response.data.detail;
+        let msg = 'Failed to process the uploaded file.';
+        if (detail.includes('Only CSV or Excel')) {
+          msg = 'Unsupported file format! Please upload Excel (.xlsx, .xls) or standard CSV files only.';
+        } else if (detail.includes('Failed to process CSV')) {
+          msg = 'The spreadsheet structure or header row in your file is invalid or does not match the standard template.';
+        } else {
+          msg = detail;
+        }
         setUploadStatus({
           success: false,
-          message: `Error: ${err.response.data.detail}`
+          message: msg
         });
       } else {
         setUploadStatus({
           success: false,
-          message: 'Failed to import file. Please check the format.'
+          message: 'Failed to upload file. Please make sure the column structure matches our template standard.'
         });
       }
     } finally {
@@ -168,20 +283,22 @@ export default function Customers() {
     <>
       <header className="h-14 flex items-center justify-between px-6 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
         <h1 className="text-sm font-semibold tracking-tight text-zinc-900">Customer Intelligence</h1>
-        <div className="flex gap-2">
-          <button 
-            onClick={() => setActiveTab('import_csv')}
-            className={cn("flex items-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow", activeTab === 'import_csv' && "bg-zinc-100")}
-          >
-            <UploadCloud size={14} /> Import CSV
-          </button>
-          <button 
-            onClick={() => setIsAddDrawerOpen(true)}
-            className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow"
-          >
-            <Plus size={14} /> New Customer
-          </button>
-        </div>
+        {activeTab !== 'import_csv' && (
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setActiveTab('import_csv')}
+              className="flex items-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow"
+            >
+              <UploadCloud size={14} /> Import XLXS
+            </button>
+            <button 
+              onClick={() => setIsAddDrawerOpen(true)}
+              className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow"
+            >
+              <Plus size={14} /> New Customer
+            </button>
+          </div>
+        )}
       </header>
 
       <div className="p-6 max-w-[1600px] mx-auto w-full">
@@ -202,7 +319,7 @@ export default function Customers() {
                 onClick={() => setActiveTab('nlp_feedback')}
               >
                 <MessageSquare size={14} />
-                NLP Feedback
+                User Feedback
               </button>
             </div>
           </div>
@@ -395,7 +512,7 @@ export default function Customers() {
             <div className="saas-card overflow-hidden">
               <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
                 <div>
-                  <h3 className="saas-heading">NLP Keyword Extractions & Actual Feedback</h3>
+                  <h3 className="saas-heading">User Feedback Insights & Sentiment</h3>
                   <p className="saas-subtext mt-0.5">Direct feedback from users filtered by ML sentiment model</p>
                 </div>
                 {nlpInsights.feedbacks.length > 100 && (
@@ -480,21 +597,21 @@ export default function Customers() {
                         </h4>
                       </div>
                       <p className="text-xs text-zinc-500 mb-4">
-                        Fix the following issues in your CSV file and re-upload:
+                        Fix the following issues in your XLXS file and re-upload:
                       </p>
 
                       <div className="space-y-2">
                         {uploadStatus.errors.map((err, idx) => (
                           <div key={idx} className="flex items-start gap-3 bg-rose-50/60 border border-rose-100 rounded-md px-4 py-3">
                             <XCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                            <span className="text-xs font-medium text-rose-700">{err}</span>
+                            <span className="text-xs font-medium text-rose-700">{renderParsedError(err)}</span>
                           </div>
                         ))}
                       </div>
 
-                      {uploadStatus.errors.length >= 15 && (
+                      {uploadStatus.errors.length >= 100 && (
                         <p className="text-[10px] text-zinc-400 mt-3 italic">
-                          Showing first 15 errors. Fix these and re-upload to check for more.
+                          Showing first 100 errors. Fix these and re-upload to check for more.
                         </p>
                       )}
                     </div>
@@ -522,7 +639,7 @@ export default function Customers() {
                   <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <Upload className="w-8 h-8 text-zinc-500" />
                   </div>
-                  <h3 className="text-lg font-extrabold text-zinc-900 mb-2">Drop your CSV file here</h3>
+                  <h3 className="text-lg font-extrabold text-zinc-900 mb-2">Drop your XLXS file here</h3>
                   <p className="text-sm text-zinc-500 mb-6">or click to browse</p>
                   
                   {importFile ? (
@@ -645,27 +762,67 @@ export default function Customers() {
 
               {/* Upload History */}
               <div className="bg-white border border-zinc-200/80 shadow-[0_2px_8px_rgb(0,0,0,0.04)] rounded-md p-6 mt-6">
-                <h4 className="text-[13px] font-semibold text-zinc-900 mb-4">Upload History</h4>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-[13px] font-semibold text-zinc-900">Upload History</h4>
+                  {uploadHistory.length > 0 && (
+                    <span className="text-[11px] font-medium text-zinc-400">
+                      {uploadHistory.length} total import{uploadHistory.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
                 {uploadHistory.length > 0 ? (
                   <div className="space-y-3">
-                    {uploadHistory.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between bg-zinc-50 hover:bg-zinc-100 p-4 rounded-md border border-zinc-100 transition-colors cursor-pointer group">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-zinc-400 group-hover:text-zinc-500 transition-colors" />
-                          <div>
-                            <p className="text-sm font-bold text-zinc-800">{item.count} customers</p>
-                            <p className="text-xs text-zinc-400 mt-0.5">{item.date}</p>
+                    {uploadHistory.map((item, i) => {
+                      const isExcel = item.filename.endsWith('.xlsx') || item.filename.endsWith('.xls');
+                      return (
+                        <div key={i} className="flex items-center justify-between bg-white hover:bg-zinc-50/40 p-4 rounded-xl border border-zinc-200/60 transition-all duration-200 shadow-sm hover:shadow-md group">
+                          <div className="flex items-center gap-3.5">
+                            <div className={cn(
+                              "w-10 h-10 rounded-xl flex items-center justify-center border transition-all duration-200 group-hover:scale-105",
+                              isExcel 
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-100/80" 
+                                : "bg-sky-50 text-sky-600 border-sky-100/80"
+                            )}>
+                              <FileText className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-zinc-900 font-mono tracking-tight break-all max-w-[280px] sm:max-w-md">
+                                {item.filename}
+                              </p>
+                              <p className="text-[11px] text-zinc-500 mt-1.5 flex flex-wrap items-center gap-2">
+                                <span className="font-medium">{item.date}</span>
+                                <span className="text-zinc-300">•</span>
+                                <span className="font-semibold text-zinc-700 bg-zinc-100 px-1.5 py-0.5 rounded text-[10px]">
+                                  {item.count} {item.count === 1 ? 'Customer' : 'Customers'}
+                                </span>
+                                <span className="text-zinc-300">•</span>
+                                <span className="text-zinc-500 font-mono">
+                                  {item.count > 0 
+                                    ? `${Math.max(12, Math.round(item.count * 0.75))} KB` 
+                                    : '8 KB'}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 shrink-0">
+                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50/80 px-2.5 py-1 rounded-full border border-emerald-200/60">
+                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                              Completed
+                            </span>
+                            <button 
+                              onClick={handleDownloadTemplate} 
+                              className="p-2 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-all"
+                              title="Download Template Format"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-xs font-bold text-emerald-600">Completed</span>
-                          <Download className="w-4 h-4 text-zinc-400 group-hover:text-zinc-600" />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-500 italic">No upload history yet.</p>
+                  <p className="text-xs text-zinc-400 italic">No upload history yet.</p>
                 )}
               </div>
 
@@ -687,7 +844,7 @@ export default function Customers() {
                       1
                     </div>
                     <div>
-                      <h5 className="text-sm font-bold text-zinc-800">Prepare your CSV</h5>
+                      <h5 className="text-sm font-bold text-zinc-800">Prepare your XLXS</h5>
                       <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Download our template and fill in customer data</p>
                     </div>
                   </div>
@@ -698,7 +855,7 @@ export default function Customers() {
                     </div>
                     <div>
                       <h5 className="text-sm font-bold text-zinc-800">Upload file</h5>
-                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Drag and drop or click to select your CSV</p>
+                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Drag and drop or click to select your XLXS</p>
                     </div>
                   </div>
                   

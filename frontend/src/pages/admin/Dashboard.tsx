@@ -39,11 +39,6 @@ export default function Dashboard() {
         <div>
           <h1 className="text-sm font-semibold tracking-tight text-zinc-900">Operational Overview</h1>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> Live Updates
-          </div>
-        </div>
       </header>
 
       <div className="p-6 max-w-[1600px] mx-auto w-full space-y-6">

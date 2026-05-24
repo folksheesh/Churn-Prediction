@@ -1,11 +1,13 @@
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut, ShieldCheck, Upload, Zap } from 'lucide-react';
+import { Users, Activity, LayoutDashboard, Settings, BarChart3, ChevronDown, LogOut, ShieldCheck, Upload, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Sidebar() {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
+  const [adminOpen, setAdminOpen] = useState(true);
 
   const mainNavItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -16,8 +18,6 @@ export default function Sidebar() {
 
   const adminNavItems = [
     { name: 'Model Health', href: '/admin', icon: Zap },
-    { name: 'Data Pipeline', href: '/admin/data', icon: Database },
-    { name: 'Alerts', href: '/admin/alerts', icon: ShieldAlert },
     { name: 'Manage Admins', href: '/manage-admins', icon: ShieldCheck },
   ];
 

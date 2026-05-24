@@ -37,6 +37,12 @@ class PredictionResponse(BaseModel):
     risk_level: str
     label: str
 
+    # Extended fields for user dashboard integration
+    churnProbability: Optional[float] = None
+    riskLevel: Optional[str] = None
+    advice: Optional[List[str]] = None
+    mockFactors: Optional[List[Dict[str, Any]]] = None
+
 class BatchPredictionResponse(BaseModel):
     success: bool
     results: List[Dict[str, Any]]
