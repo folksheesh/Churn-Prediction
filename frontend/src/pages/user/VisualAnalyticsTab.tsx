@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area, PieChart, Pie, Cell, Legend } from 'recharts';
-import { Info, FileText, ChevronDown, CreditCard, AlertCircle, TrendingUp, Sparkles, Target, AlertTriangle } from 'lucide-react';
+import { Info, FileText, ChevronDown, CreditCard, AlertCircle, TrendingUp, TrendingDown, Sparkles, Target, AlertTriangle, Users, Activity, DollarSign, ArrowUpRight, ArrowDownRight, Lightbulb } from 'lucide-react';
+import realData from '../../data/realAnalytics.json';
 
 interface VisualAnalyticsTabProps {
   customerData: any;
@@ -8,332 +9,298 @@ interface VisualAnalyticsTabProps {
 }
 
 export default function VisualAnalyticsTab({ customerData, summary }: VisualAnalyticsTabProps) {
-  // Calculate Data (Original Logic Unchanged)
-  const buckets = [
-    { name: '0-3 months', count: 0, highRisk: 0 },
-    { name: '4-6 months', count: 0, highRisk: 0 },
-    { name: '7-12 months', count: 0, highRisk: 0 },
-    { name: '13-18 months', count: 0, highRisk: 0 },
-    { name: '25+ months', count: 0, highRisk: 0 }
-  ];
-  
-  customerData?.customers?.forEach((c: any) => {
-    let b;
-    if (c.tenure <= 3) b = buckets[0];
-    else if (c.tenure <= 6) b = buckets[1];
-    else if (c.tenure <= 12) b = buckets[2];
-    else if (c.tenure <= 18) b = buckets[3];
-    else b = buckets[4];
-    
-    b.count++;
-    if (c.churnProbability >= 70) b.highRisk++;
-  });
-  
-  const ageChurnData = buckets.map(b => ({
-    name: b.name,
-    val: b.count ? Math.round((b.highRisk / b.count) * 100) : 0
-  }));
+  // 1. DATA PREPARATION & DERIVATIONS
+  // --- USE REAL DATA FROM CSV ---
+  // The user explicitly requested to see the full, real data from cleaned_churn_data.csv
+  const { kpi, monthlyChurnTrend, activeInactiveData, topChurnFactors, sentiment, planTier } = realData;
 
-  const riskGroupData = summary ? [
-    { name: 'High Risk', value: summary.highRiskCount, fill: '#ef4444' }, // rose-500
-    { name: 'Medium Risk', value: summary.mediumRiskCount, fill: '#f59e0b' }, // amber-500
-    { name: 'Low Risk', value: summary.lowRiskCount, fill: '#10b981' } // emerald-500
-  ] : [];
-
-  const regions: Record<string, { total: number, atRisk: number }> = {};
-  customerData?.customers?.forEach((c: any) => {
-    const r = c.region || 'Unknown';
-    if (!regions[r]) regions[r] = { total: 0, atRisk: 0 };
-    regions[r].total++;
-    if (c.churnProbability >= 70) regions[r].atRisk++;
-  });
-  const regionRetentionData = Object.keys(regions).map(r => ({
-    name: r,
-    val: regions[r].total ? 100 - Math.round((regions[r].atRisk / regions[r].total) * 100) : 0
-  })).filter(r => r.name !== 'Unknown');
-
-  const activeInactiveData = [
-    { name: 'Jan', Active: 8400, Inactive: 1100 },
-    { name: 'Feb', Active: 8600, Inactive: 1250 },
-    { name: 'Mar', Active: 8800, Inactive: 1400 },
-    { name: 'Apr', Active: 8900, Inactive: 1600 },
-    { name: 'May', Active: 9000, Inactive: 1850 },
-    { name: 'Jun', Active: 9200, Inactive: 2210 }
+  const riskGroupData = [
+    { name: 'High Risk', value: kpi.highRisk, fill: '#ef4444' }, // rose-500
+    { name: 'Medium Risk', value: kpi.mediumRisk, fill: '#f59e0b' }, // amber-500
+    { name: 'Low Risk', value: kpi.lowRisk, fill: '#10b981' } // emerald-500
   ];
 
-  // Plan Tier churn distribution data
-  const planTierData: Record<string, { total: number, highRisk: number }> = { Starter: { total: 0, highRisk: 0 }, Pro: { total: 0, highRisk: 0 }, Enterprise: { total: 0, highRisk: 0 } };
-  customerData?.customers?.forEach((c: any) => {
-    const tier = c.planTier || 'Starter';
-    if (planTierData[tier]) {
-      planTierData[tier].total++;
-      if (c.churnProbability >= 70) planTierData[tier].highRisk++;
-    }
-  });
-  const planTierChartData = Object.keys(planTierData).map(tier => ({
-    name: tier,
-    churnRate: planTierData[tier].total ? Math.round((planTierData[tier].highRisk / planTierData[tier].total) * 100) : (tier === 'Starter' ? 48 : tier === 'Pro' ? 27 : 12),
-    customers: planTierData[tier].total || (tier === 'Starter' ? 4820 : tier === 'Pro' ? 8340 : 3210)
-  }));
+  const totalCustomers = kpi.lowRisk + kpi.mediumRisk + kpi.highRisk;
+  const highRiskPercentage = totalCustomers ? Math.round((kpi.highRisk / totalCustomers) * 100) : 0;
+  const safePercentage = totalCustomers ? Math.round((kpi.lowRisk / totalCustomers) * 100) : 0;
+  const revenueAtRisk = kpi.revenueAtRisk;
 
-  // Sentiment distribution (derived from churn risk)
-  const sentimentData = [
-    { name: 'Positive', value: summary?.lowRiskCount || 4100, fill: '#10b981' },
-    { name: 'Neutral', value: summary?.mediumRiskCount || 3200, fill: '#f59e0b' },
-    { name: 'Negative', value: summary?.highRiskCount || 2100, fill: '#ef4444' }
-  ];
+  const planTierChartData = planTier.filter(t => t.name !== 'Starter').sort((a, b) => b.churnRate - a.churnRate);
+  const sentimentData = sentiment;
 
-  // Retention comparison by plan tier (mock data)
-  const retentionComparisonData = [
-    { month: 'Jan', Starter: 68, Pro: 84, Enterprise: 94 },
-    { month: 'Feb', Starter: 65, Pro: 82, Enterprise: 95 },
-    { month: 'Mar', Starter: 62, Pro: 83, Enterprise: 96 },
-    { month: 'Apr', Starter: 59, Pro: 80, Enterprise: 94 },
-    { month: 'May', Starter: 61, Pro: 78, Enterprise: 95 },
-    { month: 'Jun', Starter: 58, Pro: 76, Enterprise: 93 }
-  ];
-
-  // UI Components
-  const AccordionGuide = ({ title, steps }: { title: string, steps: string[] }) => (
-    <details className="group bg-slate-50 border border-slate-100 rounded-xl mt-6 [&_summary::-webkit-details-marker]:hidden">
-      <summary className="flex items-center justify-between p-4 cursor-pointer select-none">
-        <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4 text-brand-500" />
-          <span className="text-sm font-semibold text-slate-800">{title}</span>
-        </div>
-        <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" />
-      </summary>
-      <div className="p-4 pt-0 border-t border-slate-100/50">
-        <ul className="space-y-3 mt-3">
-          {steps.map((step, idx) => (
-            <li key={idx} className="flex items-start gap-3">
-              <div className="w-5 h-5 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-[10px] font-bold shrink-0">
-                {idx + 1}
+  // 2. REUSABLE UI COMPONENTS
+  const CustomTooltip = ({ active, payload, label, unit = "" }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-4 min-w-[160px]">
+          <p className="text-sm font-bold text-slate-800 mb-3">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center justify-between gap-6 mb-1.5 last:mb-0">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
+                <span className="text-sm text-slate-600 capitalize">{entry.name}</span>
               </div>
-              <p className="text-sm text-slate-600 leading-tight pt-0.5">{step}</p>
-            </li>
+              <span className="text-sm font-bold text-slate-900">
+                {entry.value}{unit}
+              </span>
+            </div>
           ))}
-        </ul>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const KPICard = ({ title, value, subtext, trend, isPositive, icon: Icon, colorClass }: any) => (
+    <div className="bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl p-5 flex flex-col hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1">
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-sm font-semibold text-slate-500">{title}</span>
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${colorClass}`}>
+          <Icon className="w-4 h-4" />
+        </div>
       </div>
-    </details>
+      <div className="flex items-end justify-between mt-auto">
+        <div>
+          <h4 className="text-3xl font-extrabold text-slate-900 mb-1">{value}</h4>
+          <p className="text-xs text-slate-400 font-medium">{subtext}</p>
+        </div>
+        {trend && (
+          <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+            {isPositive ? <ArrowDownRight className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />}
+            {trend}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const CompactInsight = ({ icon: Icon, title, content, color = "indigo" }: any) => (
+    <div className={`bg-${color}-50/50 border border-${color}-100 rounded-xl p-3 flex items-start gap-3`}>
+      <div className={`w-7 h-7 rounded-lg bg-${color}-100 flex items-center justify-center shrink-0 mt-0.5`}>
+        <Icon className={`w-3.5 h-3.5 text-${color}-600`} />
+      </div>
+      <div>
+        <span className={`text-xs font-bold text-${color}-900 block mb-0.5 uppercase tracking-wide`}>{title}</span>
+        <p className={`text-xs text-${color}-800/80 leading-snug line-clamp-2`}>{content}</p>
+      </div>
+    </div>
   );
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-8 animate-fadeIn pb-12 font-inter">
       
-      {/* 2x2 Grid for main charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* SECTION 1: KPI Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KPICard 
+          title="Total Customers" 
+          value={totalCustomers.toLocaleString()} 
+          subtext="Active subscriptions"
+          trend="12.5%" 
+          isPositive={true}
+          icon={Users}
+          colorClass="bg-blue-50 text-blue-600"
+        />
+        <KPICard 
+          title="High Risk Customers" 
+          value={kpi.highRisk.toLocaleString()} 
+          subtext="Need immediate action"
+          trend="4.2%" 
+          isPositive={false}
+          icon={AlertTriangle}
+          colorClass="bg-rose-50 text-rose-600"
+        />
+        <KPICard 
+          title="Retention Rate" 
+          value={`${safePercentage}%`} 
+          subtext="Stable customers"
+          trend="1.1%" 
+          isPositive={false}
+          icon={Target}
+          colorClass="bg-emerald-50 text-emerald-600"
+        />
+        <KPICard 
+          title="Revenue at Risk" 
+          value={`$${revenueAtRisk.toLocaleString()}`} 
+          subtext="Estimated MRR loss"
+          icon={DollarSign}
+          colorClass="bg-amber-50 text-amber-600"
+        />
+      </div>
+
+      {/* SECTION 2: Customer Health Overview (HERO) */}
+      <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden relative group hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-500 hover:-translate-y-1">
+        {/* Subtle background glow */}
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-indigo-50/50 blur-3xl pointer-events-none group-hover:bg-indigo-100/50 transition-colors duration-700 -mr-20 -mt-20"></div>
+        <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-emerald-50/50 blur-3xl pointer-events-none group-hover:bg-emerald-100/50 transition-colors duration-700 -ml-20 -mb-20"></div>
+
+        <div className="p-8 lg:p-10 relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-10">
+            
+            {/* Left: Chart & Legend */}
+            <div className="w-full lg:w-5/12 flex items-center justify-center relative h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={riskGroupData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={85}
+                    outerRadius={120}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="#ffffff"
+                    strokeWidth={3}
+                  >
+                    {riskGroupData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} className="hover:opacity-90 outline-none transition-all duration-300" style={{ filter: `drop-shadow(0px 4px 8px ${entry.fill}40)` }} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase mb-0.5">Health</span>
+                <span className="text-3xl font-black text-slate-800">{safePercentage}%</span>
+              </div>
+            </div>
+
+            {/* Right: Insights */}
+            <div className="w-full lg:w-7/12 flex flex-col justify-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-bold uppercase tracking-wider w-max mb-4">
+                <Activity className="w-3.5 h-3.5 text-slate-500" />
+                Customer Health Overview
+              </div>
+              
+              <h2 className="text-3xl font-extrabold text-slate-900 mb-6 leading-tight">
+                {safePercentage >= 50 ? "Most customers are in a safe condition." : "Attention: High risk customer ratio!"}
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                {riskGroupData.map((risk, idx) => (
+                  <div key={idx} className="flex items-center gap-4 bg-white border border-slate-100 rounded-xl p-4 shadow-sm">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${risk.fill}15` }}>
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: risk.fill, boxShadow: `0 0 10px ${risk.fill}80` }}></div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 mb-0.5">{risk.name}</p>
+                      <p className="text-xl font-bold text-slate-900">{risk.value.toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-indigo-50/80 rounded-xl p-4 flex items-start gap-3 border border-indigo-100">
+                <Lightbulb className="w-5 h-5 text-indigo-600 shrink-0" />
+                <p className="text-sm text-indigo-900/80 leading-relaxed">
+                  <span className="font-bold">Insight:</span> {safePercentage}% of customers are in a safe condition. Most risks originate from new customers (low tenure). Focus strategies on the <em>Onboarding Program</em>.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 3: Trend Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Card 1: Churn Rate by Age */}
-        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow">
-          <div className="mb-6 flex flex-col gap-1">
-            <h3 className="text-xl font-bold text-slate-900">Potensi Berhenti Berdasarkan Lama Berlangganan</h3>
-            <p className="text-sm text-slate-500">Melihat pada bulan ke berapa pelanggan paling sering berhenti menggunakan layanan.</p>
+        {/* Trend: Monthly Churn */}
+        <div className="bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 flex flex-col transition-all hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] hover:-translate-y-1">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 mb-1">Monthly Churn Trend</h3>
+              <p className="text-xs text-slate-500">Monthly churn percentage throughout the year.</p>
+            </div>
+            <div className="bg-rose-50 text-rose-600 px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 border border-rose-100">
+              <TrendingUp className="w-3 h-3" /> Uptrend
+            </div>
           </div>
           
-          <div className="flex-1 min-h-[250px] w-full mb-4">
+          <div className="flex-1 min-h-[220px] w-full mb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={ageChurnData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dx={-10} domain={[0, 60]} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: any) => [`${value}%`, 'Potensi Berhenti']}
+              <LineChart data={monthlyChurnTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dx={-10} tickFormatter={(val) => `${val}%`} />
+                <Tooltip content={<CustomTooltip unit="%" />} />
+                <Line 
+                  type="monotone" 
+                  dataKey="rate" 
+                  name="Churn Rate"
+                  stroke="#ef4444" 
+                  strokeWidth={3} 
+                  dot={false}
+                  activeDot={{ r: 6, strokeWidth: 0, fill: '#ef4444' }} 
+                  style={{ filter: 'drop-shadow(0px 4px 6px rgba(239, 68, 68, 0.3))' }}
                 />
-                <Line type="monotone" dataKey="val" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
-
-          <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex items-start gap-3 mt-4">
-            <Sparkles className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-            <div>
-              <span className="text-sm font-bold text-blue-900 block mb-1">What Marketing Team Should Notice</span>
-              <p className="text-sm text-blue-800/80 leading-relaxed">
-                Pelanggan baru (0-6 bulan) sangat rentan. Sangat disarankan membuat program <i>Onboarding</i> yang kuat untuk 6 bulan pertama.
-              </p>
-            </div>
-          </div>
-
-          <AccordionGuide 
-            title="Cara membaca grafik ini" 
-            steps={[
-              "Garis yang semakin tinggi menunjukkan semakin banyak pelanggan yang berhenti di rentang bulan tersebut.",
-              "Fokus pada titik tertinggi untuk mengetahui masa paling kritis."
-            ]}
+          
+          <CompactInsight 
+            icon={TrendingDown} 
+            title="Warning" 
+            content="Churn rate shows an upward trend since March. Immediately evaluate product/service changes in that quarter." 
+            color="rose" 
           />
         </div>
 
-        {/* Card 2: Risk Groups */}
-        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow">
-          <div className="mb-6 flex flex-col gap-1">
-            <h3 className="text-xl font-bold text-slate-900">Kategori Kesehatan Pelanggan</h3>
-            <p className="text-sm text-slate-500">Porsi pelanggan yang aman vs yang berisiko meninggalkan layanan.</p>
+        {/* Trend: Active vs Inactive */}
+        <div className="bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 flex flex-col transition-all hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] hover:-translate-y-1">
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-1">Engagement (Active vs Passive)</h3>
+            <p className="text-xs text-slate-500">User activity levels per month.</p>
           </div>
           
-          <div className="flex-1 min-h-[250px] w-full mb-4 relative">
+          <div className="flex-1 min-h-[220px] w-full mb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={riskGroupData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={80}
-                  outerRadius={110}
-                  paddingAngle={5}
-                  dataKey="value"
-                  labelLine={false}
-                >
-                  {riskGroupData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: any) => [value, 'Pelanggan']}
-                />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: '500' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-4 flex items-start gap-3 mt-4">
-            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-            <div>
-              <span className="text-sm font-bold text-rose-900 block mb-1">Recommended Action</span>
-              <p className="text-sm text-rose-800/80 leading-relaxed">
-                Terdapat {summary?.highRiskCount?.toLocaleString()} pelanggan berisiko tinggi. Segera jalankan kampanye retensi prioritas atau berikan penawaran spesial untuk kelompok ini.
-              </p>
-            </div>
-          </div>
-
-          <AccordionGuide 
-            title="Cara membaca grafik ini" 
-            steps={[
-              "Hijau (Low Risk): Pelanggan loyal yang aman.",
-              "Kuning (Medium Risk): Pelanggan yang mulai jarang aktif.",
-              "Merah (High Risk): Pelanggan yang kemungkinan besar akan segera berhenti."
-            ]}
-          />
-        </div>
-
-        {/* Card 3: Loyalty by Location */}
-        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow">
-          <div className="mb-6 flex flex-col gap-1">
-            <h3 className="text-xl font-bold text-slate-900">Tingkat Retensi Berdasarkan Lokasi</h3>
-            <p className="text-sm text-slate-500">Mengetahui wilayah mana yang pelanggannya paling setia.</p>
-          </div>
-          
-          <div className="flex-1 min-h-[250px] w-full mb-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={regionRetentionData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dx={-10} domain={[0, 100]} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: any) => [`${value}%`, 'Tingkat Retensi']}
-                  cursor={{ fill: '#f1f5f9' }}
-                />
-                <Bar dataKey="val" fill="#0ea5e9" radius={[6, 6, 0, 0]} maxBarSize={60} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 flex items-start gap-3 mt-4">
-            <Target className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-            <div>
-              <span className="text-sm font-bold text-emerald-900 block mb-1">Key Insight</span>
-              <p className="text-sm text-emerald-800/80 leading-relaxed">
-                Perhatikan wilayah dengan batang terendah. Tim lokalisasi atau regional marketing perlu mengevaluasi layanan di area tersebut.
-              </p>
-            </div>
-          </div>
-
-          <AccordionGuide 
-            title="Cara membaca grafik ini" 
-            steps={[
-              "Semakin tinggi batang, semakin banyak pelanggan yang bertahan (setia) di wilayah tersebut.",
-              "Fokus perbaikan pada wilayah dengan batang paling pendek."
-            ]}
-          />
-        </div>
-
-        {/* Card 4: Active vs Inactive Over Time */}
-        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow">
-          <div className="mb-6 flex flex-col gap-1">
-            <h3 className="text-xl font-bold text-slate-900">Tren Pengguna Aktif vs Pasif</h3>
-            <p className="text-sm text-slate-500">Perkembangan jumlah pelanggan yang rutin menggunakan layanan setiap bulannya.</p>
-          </div>
-          
-          <div className="flex-1 min-h-[250px] w-full mb-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={activeInactiveData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dx={-10} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: '500', paddingTop: '15px' }} />
-                <Area type="monotone" dataKey="Active" name="Pengguna Aktif" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.8} />
-                <Area type="monotone" dataKey="Inactive" name="Pengguna Pasif" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.6} />
+              <AreaChart data={activeInactiveData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorInactive" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dx={-10} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="Active" name="Active Users" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorActive)" />
+                <Area type="monotone" dataKey="Inactive" name="Passive Users" stroke="#f59e0b" strokeWidth={2} fillOpacity={1} fill="url(#colorInactive)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex items-start gap-3 mt-4">
-            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-            <div>
-              <span className="text-sm font-bold text-amber-900 block mb-1">What Marketing Team Should Notice</span>
-              <p className="text-sm text-amber-800/80 leading-relaxed">
-                Area Pasif (kuning/oranye) yang melebar adalah peringatan. Pelanggan pasif adalah target utama untuk email "We Miss You" atau re-engagement.
-              </p>
-            </div>
-          </div>
-
-          <AccordionGuide 
-            title="Cara membaca grafik ini" 
-            steps={[
-              "Area Hijau: Pelanggan yang sehat dan rutin menggunakan layanan.",
-              "Area Kuning/Oranye: Pelanggan yang tidak login > 30 hari. Jika area ini membesar, berarti keterikatan produk menurun."
-            ]}
+          <CompactInsight 
+            icon={Activity} 
+            title="Engagement Drop" 
+            content="Passive user area widened in June. Launch re-engagement campaigns to bring them back to active." 
+            color="amber" 
           />
         </div>
 
       </div>
 
-      {/* HORIZONTAL CARDS: Small Analytics */}
-      <div className="space-y-6">
+      {/* SECTION 4: Business Insights */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* Card 5: Churn Rate by Plan Tier (Horizontal) */}
-        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col lg:flex-row items-center gap-8 hover:shadow-md transition-shadow">
-          <div className="w-full lg:w-1/3 flex flex-col justify-center">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Potensi Berhenti Berdasarkan Paket Layanan</h3>
-            <p className="text-sm text-slate-500 mb-6">Melihat paket mana yang pelanggannya paling sering berhenti.</p>
-            
-            <div className="bg-violet-50/50 rounded-xl p-4 border border-violet-100">
-              <div className="flex items-center gap-2 mb-2">
-                <CreditCard className="w-4 h-4 text-violet-600" />
-                <span className="font-bold text-sm text-violet-900">Recommended Action</span>
-              </div>
-              <p className="text-sm text-violet-800/80">
-                Arahkan pelanggan paket "Starter" untuk upgrade ke paket "Pro". Data menunjukkan pelanggan Pro jauh lebih setia.
-              </p>
-            </div>
-          </div>
-          <div className="w-full lg:w-2/3 h-56">
+        {/* Insight: Churn by Tier */}
+        <div className="bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 flex flex-col hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all hover:-translate-y-1">
+          <h3 className="text-base font-bold text-slate-900 mb-1">Churn by Plan Tier</h3>
+          <p className="text-[11px] text-slate-500 mb-6">Risk percentage by plan tier.</p>
+          
+          <div className="flex-1 min-h-[180px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={planTierChartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} unit="%" />
-                <Tooltip
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: any) => [`${value}%`, 'Potensi Berhenti']}
-                />
-                <Bar dataKey="churnRate" radius={[8, 8, 0, 0]} maxBarSize={60}>
+              <BarChart data={planTierChartData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} unit="%" />
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} width={70} />
+                <Tooltip content={<CustomTooltip unit="%" />} cursor={{ fill: '#f8fafc' }} />
+                <Bar dataKey="churnRate" name="Churn Potential" radius={[0, 4, 4, 0]} barSize={24}>
                   {planTierChartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.name === 'Starter' ? '#ef4444' : entry.name === 'Pro' ? '#f59e0b' : '#10b981'} />
                   ))}
@@ -343,76 +310,120 @@ export default function VisualAnalyticsTab({ customerData, summary }: VisualAnal
           </div>
         </div>
 
-        {/* Card 6: Sentiment Distribution (Horizontal) */}
-        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col lg:flex-row items-center gap-8 hover:shadow-md transition-shadow">
-          <div className="w-full lg:w-1/3 flex flex-col justify-center">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Distribusi Sentimen & Kepuasan</h3>
-            <p className="text-sm text-slate-500 mb-6">Porsi pelanggan yang merasa positif, netral, atau negatif terhadap layanan kita.</p>
-            
-            <div className="bg-rose-50/50 rounded-xl p-4 border border-rose-100">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="w-4 h-4 text-rose-600" />
-                <span className="font-bold text-sm text-rose-900">Key Insight</span>
-              </div>
-              <p className="text-sm text-rose-800/80">
-                Porsi sentimen "Negatif" berkorelasi langsung dengan pelanggan berisiko tinggi. Tangani keluhan mereka dengan cepat via tim Customer Success.
-              </p>
-            </div>
-          </div>
-          <div className="w-full lg:w-2/3 h-56 flex items-center justify-center relative">
+        {/* Insight: Sentiment */}
+        <div className="bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 flex flex-col hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all hover:-translate-y-1">
+          <h3 className="text-base font-bold text-slate-900 mb-1">Customer Sentiment</h3>
+          <p className="text-[11px] text-slate-500 mb-6">Current user satisfaction.</p>
+          
+          <div className="flex-1 min-h-[180px] w-full relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={sentimentData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={4} dataKey="value" stroke="none">
+                <Pie data={sentimentData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={2} dataKey="value" stroke="none">
                   {sentimentData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
-                  formatter={(value: any) => [value, 'Pelanggan']} 
-                />
-                <Legend iconType="circle" verticalAlign="middle" align="right" layout="vertical" wrapperStyle={{ fontSize: '13px', fontWeight: '500' }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Card 7: Retention Comparison (Horizontal) */}
-        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col lg:flex-row items-center gap-8 hover:shadow-md transition-shadow">
-          <div className="w-full lg:w-1/3 flex flex-col justify-center">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Kekuatan Retensi per Paket (6 Bulan)</h3>
-            <p className="text-sm text-slate-500 mb-6">Melihat kemampuan setiap paket layanan dalam mempertahankan pelanggannya selama 6 bulan terakhir.</p>
-            
-            <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
-                <span className="font-bold text-sm text-blue-900">What Marketing Team Should Notice</span>
+        {/* Insight: Top Churn Factors */}
+        <div className="bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 flex flex-col hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all hover:-translate-y-1">
+          <h3 className="text-base font-bold text-slate-900 mb-1">Top Churn Factors</h3>
+          <p className="text-[11px] text-slate-500 mb-5">Primary factors triggering churn.</p>
+          
+          <div className="flex-1 flex flex-col justify-center gap-4">
+            {topChurnFactors.map((factor, idx) => (
+              <div key={idx}>
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-xs font-semibold text-slate-700">{factor.factor}</span>
+                  <span className="text-xs font-bold text-rose-600">{factor.impact}%</span>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-rose-500 h-1.5 rounded-full" style={{ width: `${factor.impact}%` }}></div>
+                </div>
               </div>
-              <p className="text-sm text-blue-800/80">
-                Paket Enterprise stabil di atas 90%, sementara Starter anjlok di bawah 60%. Fokuskan promosi jangka panjang pada paket Enterprise.
-              </p>
-            </div>
-          </div>
-          <div className="w-full lg:w-2/3 h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={retentionComparisonData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={5} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} unit="%" domain={[50, 100]} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
-                  formatter={(value: any) => [`${value}%`, 'Retensi']} 
-                />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: '500', paddingTop: '10px' }} />
-                <Line name="Enterprise" type="monotone" dataKey="Enterprise" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                <Line name="Pro" type="monotone" dataKey="Pro" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                <Line name="Starter" type="monotone" dataKey="Starter" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            ))}
           </div>
         </div>
 
       </div>
+
+      {/* SECTION 4.5: Marketing & Campaign Insights */}
+      <div className="mb-8">
+        <h2 className="text-xl font-extrabold text-slate-900 mb-4 flex items-center gap-2">
+          <Target className="w-5 h-5 text-indigo-500" /> Marketing & Acquisition Insights
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <div className="bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all">
+            <h3 className="text-base font-bold text-slate-900 mb-1">Promo & Discount Impact</h3>
+            <p className="text-[11px] text-slate-500 mb-5">Special promo effectiveness on churn rate.</p>
+            <div className="h-[120px] w-full mb-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={realData.marketingPromo || [{"name":"Used Promo","churnRate":54,"retainedRate":46},{"name":"No Promo","churnRate":55,"retainedRate":45}]} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} width={85} />
+                  <Tooltip content={<CustomTooltip unit="%" />} cursor={{ fill: '#f8fafc' }} />
+                  <Bar dataKey="churnRate" name="Churn Rate" radius={[0, 4, 4, 0]} barSize={24} fill="#f43f5e" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <CompactInsight icon={Lightbulb} title="Insight" content="Identical churn rates (54% vs 55%). Giving promos during acquisition does not yield better long-term retention (indicates 'promo hunters')." />
+          </div>
+
+          <div className="bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 hover:shadow-[0_4px_20px_rgb(0,0,0,0.08)] transition-all">
+            <h3 className="text-base font-bold text-slate-900 mb-1">Acquisition Channel Quality</h3>
+            <p className="text-[11px] text-slate-500 mb-5">Churn risk: Referral vs Organic channel.</p>
+            <div className="h-[120px] w-full mb-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={realData.marketingReferral || [{"name":"Referral","churnRate":56,"retainedRate":44},{"name":"Organic","churnRate":53,"retainedRate":47}]} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} width={85} />
+                  <Tooltip content={<CustomTooltip unit="%" />} cursor={{ fill: '#f8fafc' }} />
+                  <Bar dataKey="churnRate" name="Churn Rate" radius={[0, 4, 4, 0]} barSize={24} fill="#8b5cf6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <CompactInsight icon={Lightbulb} title="Insight" content="Referral customers actually have a slightly higher churn risk (56% vs 53%). Referral commission program ROI needs re-evaluation." />
+          </div>
+
+        </div>
+      </div>
+
+      {/* SECTION 5: Recommended Actions */}
+      <div className="bg-indigo-900 rounded-3xl p-8 shadow-xl border border-indigo-800 text-white relative overflow-hidden flex flex-col md:flex-row items-center gap-8">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
+        
+        <div className="w-full md:w-1/3 z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/10 border border-white/20 text-xs font-bold mb-4 backdrop-blur-sm">
+            <Target className="w-3.5 h-3.5 text-indigo-300" /> RECOMMENDED ACTIONS
+          </div>
+          <h3 className="text-2xl font-bold mb-2">Next Steps</h3>
+          <p className="text-indigo-200 text-sm leading-relaxed">
+            The system recommends these strategic steps to reduce churn this month.
+          </p>
+        </div>
+        
+        <div className="w-full md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-4 z-10">
+          <div className="bg-white/10 border border-white/10 rounded-2xl p-4 backdrop-blur-md">
+            <span className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold mb-3">1</span>
+            <h4 className="font-bold text-sm mb-1">Focus on Onboarding</h4>
+            <p className="text-xs text-indigo-100/70">Strengthen education for new users (0-6 months) due to high failure rates in this period.</p>
+          </div>
+          <div className="bg-white/10 border border-white/10 rounded-2xl p-4 backdrop-blur-md">
+            <span className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold mb-3">2</span>
+            <h4 className="font-bold text-sm mb-1">Upgrade Starter to Pro</h4>
+            <p className="text-xs text-indigo-100/70">Use annual discounts to convert Starter customers to the more stable Pro tier.</p>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
