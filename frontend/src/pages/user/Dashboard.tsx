@@ -68,6 +68,7 @@ export default function Home() {
   const [predName, setPredName] = useState("");
   const [predGender, setPredGender] = useState("");
   const [predRegion, setPredRegion] = useState("");
+  const [predPlanTier, setPredPlanTier] = useState("");
   const [predTenure, setPredTenure] = useState<number | "">("");
   const [predValue, setPredValue] = useState<number | "">("");
   const [predFreq, setPredFreq] = useState("");
@@ -245,6 +246,7 @@ export default function Home() {
       const res = await axios.post(`${API_BASE}/predictions/single`, {
         gender: predGender || undefined,
         region_category: predRegion || undefined,
+        plan_tier: predPlanTier || undefined,
         days_since_joined: predTenure ? (predTenure as number) * 30 : 0,
         avg_transaction_value: predValue || 0,
         logins_90d: predFreq === "Daily" ? 90 : predFreq === "Weekly" ? 12 : predFreq === "Monthly" ? 3 : 1,
@@ -836,6 +838,26 @@ export default function Home() {
 
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
+                      Plan Tier
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={predPlanTier}
+                        onChange={(e) => setPredPlanTier(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors appearance-none cursor-pointer text-slate-700"
+                      >
+                        <option value="" disabled>Select plan tier...</option>
+                        <option value="Starter">Starter</option>
+                        <option value="Pro">Pro</option>
+                        <option value="Enterprise">Enterprise</option>
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1.5">Select the customer's subscription plan</p>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2">
                       Customer Tenure (months)
                     </label>
                     <input
@@ -1423,6 +1445,139 @@ export default function Home() {
                       A growing active area means more customers are engaged with our service. If the inactive area is growing faster than the active area, it's a sign of decreasing engagement.
                     </p>
                   </div>
+                </div>
+              </div>
+
+              {/* Card 5: Plan Tier Distribution */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Plan Tier Distribution</h3>
+                <p className="text-xs text-slate-500 mb-6">Breakdown of customers by subscription plan</p>
+                
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-2">What are plan tiers?</h4>
+                      <p className="text-xs text-slate-600 mb-2">Each plan has different features and price levels:</p>
+                      <ul className="space-y-1.5 text-xs text-slate-600">
+                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-rose-500"></div><span className="font-bold text-slate-700">Starter:</span> Basic features, highest churn risk</li>
+                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-500"></div><span className="font-bold text-slate-700">Pro:</span> Advanced features, moderate retention</li>
+                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="font-bold text-slate-700">Enterprise:</span> Full features, highest loyalty</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-64 w-full mb-6">
+                  {(() => {
+                    const planData: Record<string, number> = {};
+                    customerData?.customers?.forEach((c: any) => {
+                      const tier = c.planTier || 'Unknown';
+                      planData[tier] = (planData[tier] || 0) + 1;
+                    });
+                    const tierColors: Record<string, string> = { 'Starter': '#ef4444', 'Pro': '#f59e0b', 'Enterprise': '#10b981', 'Basic': '#6366f1', 'Unknown': '#94a3b8' };
+                    const tierChartData = Object.entries(planData).map(([name, value]) => ({ name, value, fill: tierColors[name] || '#6366f1' }));
+                    
+                    return tierChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={tierChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={55}
+                            outerRadius={85}
+                            paddingAngle={3}
+                            dataKey="value"
+                            label={({ name, value }) => `${name}: ${value}`}
+                          >
+                            {tierChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(value: any) => [value, 'Customers']}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">Loading plan data...</div>
+                    );
+                  })()}
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
+                  <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2 mb-3">
+                    <FileText className="w-4 h-4 text-brand-500" />
+                    What This Tells You
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Starter plan customers have the highest churn rate. Consider incentivizing upgrades to Pro/Enterprise to improve retention. Enterprise customers are the most loyal.
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 6: Churn by Gender */}
+              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Churn Risk by Gender</h3>
+                <p className="text-xs text-slate-500 mb-6">Comparison of average churn probability between genders</p>
+                
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 mb-2">Why track by gender?</h4>
+                      <p className="text-xs text-slate-600">Understanding demographic differences in churn helps tailor retention strategies. If one group has higher churn, targeted campaigns may help.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-64 w-full mb-6">
+                  {(() => {
+                    const genderData: Record<string, { total: number, churnSum: number }> = {};
+                    customerData?.customers?.forEach((c: any) => {
+                      const g = c.gender === 'F' ? 'Female' : c.gender === 'M' ? 'Male' : 'Other';
+                      if (!genderData[g]) genderData[g] = { total: 0, churnSum: 0 };
+                      genderData[g].total++;
+                      genderData[g].churnSum += c.churnProbability || 0;
+                    });
+                    const genderChartData = Object.entries(genderData).map(([name, d]) => ({
+                      name,
+                      avgChurn: d.total ? Math.round(d.churnSum / d.total) : 0,
+                    }));
+                    
+                    return genderChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={genderChartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} unit="%" domain={[0, 100]} />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(value: any) => [`${value}%`, 'Avg Churn Risk']}
+                          />
+                          <Bar dataKey="avgChurn" radius={[8, 8, 0, 0]} barSize={60}>
+                            {genderChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.avgChurn > 50 ? '#ef4444' : entry.avgChurn > 30 ? '#f59e0b' : '#10b981'} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">Loading gender data...</div>
+                    );
+                  })()}
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
+                  <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2 mb-3">
+                    <FileText className="w-4 h-4 text-brand-500" />
+                    What This Tells You
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Compare the bar heights to see which gender segment has a higher average churn risk. Use this to create targeted retention campaigns.
+                  </p>
                 </div>
               </div>
 
