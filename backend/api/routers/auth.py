@@ -73,8 +73,8 @@ def validate_password_strength(password: str):
         raise HTTPException(status_code=400, detail="Password must contain at least one lowercase letter")
     if not re.search(r"\d", password):
         raise HTTPException(status_code=400, detail="Password must contain at least one number")
-    if not re.search(r"[@$!%*?&]", password):
-        raise HTTPException(status_code=400, detail="Password must contain at least one special character (@$!%*?&)")
+    if not re.search(r"[@$!%*?&#]", password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one special character (@$!%*?&#)")
 
 @router.post("/login", response_model=Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):

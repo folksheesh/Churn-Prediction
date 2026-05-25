@@ -24,7 +24,7 @@ export default function AdminManagement() {
   const valUpper = /[A-Z]/.test(password);
   const valLower = /[a-z]/.test(password);
   const valNum = /\d/.test(password);
-  const valSpec = /[@$!%*?&]/.test(password);
+  const valSpec = /[@$!%*?&#]/.test(password);
   const isPasswordValid = valLength && valUpper && valLower && valNum && valSpec;
   
   // Password is required for creating, but optional for editing
@@ -252,7 +252,7 @@ export default function AdminManagement() {
                 {valNum ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Number
               </div>
               <div className={`flex items-center gap-1.5 ${valSpec ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                {valSpec ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Special character (@$!%*?&)
+                {valSpec ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Special character (@$!%*?&#)
               </div>
             </div>
 
