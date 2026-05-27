@@ -3,8 +3,10 @@ from typing import Optional
 from jose import JWTError, jwt
 import bcrypt
 
+import os
+
 # Secret key for JWT encoding (In production, load this from .env)
-SECRET_KEY = "churnsense_super_secret_key"
+SECRET_KEY = os.getenv("SECRET_KEY", "churnsense_super_secret_key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 1 day
 

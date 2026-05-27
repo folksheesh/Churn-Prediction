@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useState } from 'react';
+import api from '@/lib/api';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -24,11 +24,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     formData.append('username', email);
     formData.append('password', pass);
 
-    const response = await axios.post('http://localhost:8000/api/v1/auth/login', formData, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      timeout: 5000 // 5 seconds timeout to prevent hanging
+    const response = await api.post('/auth/login', formData, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      timeout: 8000,
     });
 
     const data = response.data;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { ShieldCheck, Plus, Trash2, CheckCircle, XCircle, Edit2, Eye, EyeOff, X } from 'lucide-react';
 
@@ -32,12 +32,12 @@ export default function AdminManagement() {
 
   const fetchAdmins = async () => {
     try {
-      const res = await axios.get('http://localhost:8000/api/v1/auth/admins', {
+      const res = await api.get('/auth/admins', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAdmins(res.data);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch admins:', err);
     } finally {
       setLoading(false);
     }
@@ -60,16 +60,13 @@ export default function AdminManagement() {
     try {
       const payload: any = { email, name };
       if (password) payload.password = password;
+      const authHeader = { headers: { Authorization: `Bearer ${token}` } };
 
       if (editingId) {
-        await axios.put(`http://localhost:8000/api/v1/auth/admins/${editingId}`, payload, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.put(`/auth/admins/${editingId}`, payload, authHeader);
         setSuccess('Admin successfully updated!');
       } else {
-        await axios.post('http://localhost:8000/api/v1/auth/admins', payload, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.post('/auth/admins', payload, authHeader);
         setSuccess('Admin successfully added!');
       }
       
@@ -102,7 +99,7 @@ export default function AdminManagement() {
     if (!window.confirm("Are you sure you want to delete this admin?")) return;
     
     try {
-      await axios.delete(`http://localhost:8000/api/v1/auth/admins/${id}`, {
+      await api.delete(`/auth/admins/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchAdmins();

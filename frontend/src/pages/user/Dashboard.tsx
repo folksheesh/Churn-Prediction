@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { useAuth } from '@/contexts/AuthContext';
+import api from '@/lib/api';
 import { useNavigate, Link } from "react-router-dom";
 import VisualAnalyticsTab from "./VisualAnalyticsTab";
 
@@ -56,8 +56,6 @@ import {
   Legend
 } from "recharts";
 
-const API_BASE = "http://localhost:8000/api/v1";
-
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis">("dashboard");
   const [summary, setSummary] = useState<any>(null);
@@ -90,15 +88,15 @@ export default function Home() {
   const fetchCustomers = async () => {
     try {
       // Fetch table data (limited for performance)
-      const res = await axios.get(`${API_BASE}/customers`, {
+      const res = await api.get(`/customers`, {
         params: { limit: 100 }
       });
       const data = res.data.items || [];
       
       // Fetch true global analytics
       const [overviewRes, riskRes] = await Promise.all([
-        axios.get(`${API_BASE}/analytics/overview`),
-        axios.get(`${API_BASE}/analytics/risk-distribution`)
+        api.get(`/analytics/overview`),
+        api.get(`/analytics/risk-distribution`)
       ]);
       
       // Filter logic for table
@@ -246,7 +244,7 @@ export default function Home() {
 
     setPredicting(true);
     try {
-      const res = await axios.post(`${API_BASE}/predictions/single`, {
+      const res = await api.post(`/predictions/single`, {
         gender: predGender || undefined,
         region_category: predRegion || undefined,
         plan_tier: predPlanTier || undefined,
