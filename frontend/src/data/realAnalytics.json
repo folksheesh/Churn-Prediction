@@ -1,0 +1,165 @@
+{
+  "kpi": {
+    "total": 36993,
+    "lowRisk": 15654,
+    "mediumRisk": 2250,
+    "highRisk": 19089,
+    "retention": 42,
+    "revenueAtRisk": 483544137.6399991
+  },
+  "monthlyChurnTrend": [
+    {
+      "month": "Jan",
+      "rate": 52.0
+    },
+    {
+      "month": "Feb",
+      "rate": 52.3
+    },
+    {
+      "month": "Mar",
+      "rate": 52.6
+    },
+    {
+      "month": "Apr",
+      "rate": 50.5
+    },
+    {
+      "month": "May",
+      "rate": 54.9
+    },
+    {
+      "month": "Jun",
+      "rate": 51.9
+    },
+    {
+      "month": "Jul",
+      "rate": 53.5
+    },
+    {
+      "month": "Aug",
+      "rate": 54.1
+    },
+    {
+      "month": "Sep",
+      "rate": 51.7
+    },
+    {
+      "month": "Oct",
+      "rate": 52.1
+    },
+    {
+      "month": "Nov",
+      "rate": 53.9
+    },
+    {
+      "month": "Dec",
+      "rate": 50.0
+    }
+  ],
+  "activeInactiveData": [
+    {
+      "name": "Month -5",
+      "Active": 36993,
+      "Inactive": 0
+    },
+    {
+      "name": "Month -4",
+      "Active": 36708,
+      "Inactive": 285
+    },
+    {
+      "name": "Month -3",
+      "Active": 32416,
+      "Inactive": 4577
+    },
+    {
+      "name": "Month -2",
+      "Active": 23571,
+      "Inactive": 13422
+    },
+    {
+      "name": "Month -1",
+      "Active": 10159,
+      "Inactive": 26834
+    },
+    {
+      "name": "Current",
+      "Active": 2791,
+      "Inactive": 34202
+    }
+  ],
+  "topChurnFactors": [
+    {
+      "factor": "Starter / Basic Plan",
+      "impact": 81
+    },
+    {
+      "factor": "Low Logins (< 10 / 90d)",
+      "impact": 18
+    },
+    {
+      "factor": "Tenure < 6 Months",
+      "impact": 17
+    },
+    {
+      "factor": "High Support Tickets (> 2)",
+      "impact": 0
+    }
+  ],
+  "sentiment": [
+    {
+      "name": "Positive",
+      "value": 5551,
+      "fill": "#10b981"
+    },
+    {
+      "name": "Neutral",
+      "value": 6290,
+      "fill": "#f59e0b"
+    },
+    {
+      "name": "Negative",
+      "value": 25152,
+      "fill": "#ef4444"
+    }
+  ],
+  "planTier": [
+    {
+      "name": "Basic",
+      "churnRate": 100
+    },
+    {
+      "name": "Pro",
+      "churnRate": 29
+    },
+    {
+      "name": "Enterprise",
+      "churnRate": 0
+    }
+  ],
+  "marketingPromo": [
+    {
+      "name": "Used Promo",
+      "churnRate": 54,
+      "retainedRate": 46
+    },
+    {
+      "name": "No Promo",
+      "churnRate": 55,
+      "retainedRate": 45
+    }
+  ],
+  "marketingReferral": [
+    {
+      "name": "Referral",
+      "churnRate": 56,
+      "retainedRate": 44
+    },
+    {
+      "name": "Organic",
+      "churnRate": 53,
+      "retainedRate": 47
+    }
+  ]
+}

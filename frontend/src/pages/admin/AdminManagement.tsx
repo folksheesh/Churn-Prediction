@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { ShieldCheck, Plus, Trash2, CheckCircle, XCircle, Edit2, Eye, EyeOff, X } from 'lucide-react';
 
@@ -24,7 +24,7 @@ export default function AdminManagement() {
   const valUpper = /[A-Z]/.test(password);
   const valLower = /[a-z]/.test(password);
   const valNum = /\d/.test(password);
-  const valSpec = /[@$!%*?&]/.test(password);
+  const valSpec = /[@$!%*?&#]/.test(password);
   const isPasswordValid = valLength && valUpper && valLower && valNum && valSpec;
   
   // Password is required for creating, but optional for editing
@@ -32,12 +32,12 @@ export default function AdminManagement() {
 
   const fetchAdmins = async () => {
     try {
-      const res = await axios.get('http://localhost:8000/api/v1/auth/admins', {
+      const res = await api.get('/auth/admins', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAdmins(res.data);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch admins:', err);
     } finally {
       setLoading(false);
     }
@@ -60,16 +60,13 @@ export default function AdminManagement() {
     try {
       const payload: any = { email, name };
       if (password) payload.password = password;
+      const authHeader = { headers: { Authorization: `Bearer ${token}` } };
 
       if (editingId) {
-        await axios.put(`http://localhost:8000/api/v1/auth/admins/${editingId}`, payload, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.put(`/auth/admins/${editingId}`, payload, authHeader);
         setSuccess('Admin successfully updated!');
       } else {
-        await axios.post('http://localhost:8000/api/v1/auth/admins', payload, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.post('/auth/admins', payload, authHeader);
         setSuccess('Admin successfully added!');
       }
       
@@ -102,7 +99,7 @@ export default function AdminManagement() {
     if (!window.confirm("Are you sure you want to delete this admin?")) return;
     
     try {
-      await axios.delete(`http://localhost:8000/api/v1/auth/admins/${id}`, {
+      await api.delete(`/auth/admins/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchAdmins();
@@ -117,7 +114,7 @@ export default function AdminManagement() {
         <h1 className="text-lg font-semibold tracking-tight text-zinc-900">Manage Admins</h1>
       </header>
 
-      <div className="p-8 max-w-[1200px] mx-auto w-full space-y-6 flex gap-6 items-start">
+      <div className="p-4 sm:p-8 max-w-[1200px] mx-auto w-full flex flex-col lg:flex-row gap-6 items-start">
         
         {/* Admin List */}
         <div className="flex-1 bg-white border border-zinc-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
@@ -131,7 +128,8 @@ export default function AdminManagement() {
                <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin"></div>
              </div>
           ) : (
-            <table className="w-full text-sm text-left">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-sm text-left whitespace-nowrap">
               <thead className="text-[11px] text-zinc-500 bg-zinc-50 uppercase tracking-wider border-b border-zinc-100">
                 <tr>
                   <th className="px-6 py-3 font-medium">Name</th>
@@ -165,11 +163,12 @@ export default function AdminManagement() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 
         {/* Add Admin Form */}
-        <div className="w-[400px] bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden shrink-0">
+        <div className="w-full lg:w-[400px] bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden shrink-0">
           <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {editingId ? <Edit2 size={18} className="text-zinc-500" /> : <Plus size={18} className="text-zinc-500" />}
@@ -250,7 +249,7 @@ export default function AdminManagement() {
                 {valNum ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Number
               </div>
               <div className={`flex items-center gap-1.5 ${valSpec ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                {valSpec ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Special character (@$!%*?&)
+                {valSpec ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Special character (@$!%*?&#)
               </div>
             </div>
 

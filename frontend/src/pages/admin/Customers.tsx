@@ -14,7 +14,7 @@ export default function Customers() {
   const [isImporting, setIsImporting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{success: boolean, message: string, errors?: string[], summary?: any, results?: any[]} | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
-  const [activeTab, setActiveTab] = useState<'churn_data' | 'nlp_feedback' | 'import_csv'>('churn_data');
+  const [activeTab, setActiveTab] = useState<'churn_data' | 'user_feedback' | 'import_xlsx'>('churn_data');
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadHistory, setUploadHistory] = useState<any[]>([]);
   const itemsPerPage = 50;
@@ -39,7 +39,7 @@ export default function Customers() {
   }, [searchTerm, filterRisk]);
 
   useEffect(() => {
-    if (activeTab === 'import_csv') fetchHistory();
+    if (activeTab === 'import_xlsx') fetchHistory();
   }, [activeTab]);
 
   const fetchHistory = async () => {
@@ -47,7 +47,7 @@ export default function Customers() {
       const res = await api.get('/analytics/activity-logs');
       const logs = Array.isArray(res.data) ? res.data : (res.data.history || []);
       const formatted = logs
-        .filter((log: any) => log.action === 'CSV Import')
+        .filter((log: any) => log.action === 'CSV Import' || log.action === 'XLSX Import')
         .map((log: any) => {
           // Extract count from "Imported X customers"
           const match = log.details?.match(/Imported (\d+) customers/);
@@ -104,7 +104,7 @@ export default function Customers() {
     setLoading(true);
     try {
       // Limit to 200 items for instant loading instead of freezing the browser with 35,000 items
-      const res = await api.get(`/customers/?limit=200${searchTerm ? `&search=${searchTerm}` : ''}`);
+      const res = await api.get(`/customers/?limit=200${searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : ''}`);
       setCustomers(res.data.items || []);
     } catch (err) {
       console.error(err);
@@ -256,17 +256,13 @@ export default function Customers() {
         });
       } else if (typeof err.response?.data?.detail === 'string') {
         const detail = err.response.data.detail;
-        let msg = 'Failed to process the uploaded file.';
-        if (detail.includes('Only CSV or Excel')) {
-          msg = 'Unsupported file format! Please upload Excel (.xlsx, .xls) or standard CSV files only.';
-        } else if (detail.includes('Failed to process CSV')) {
-          msg = 'The spreadsheet structure or header row in your file is invalid or does not match the standard template.';
-        } else {
-          msg = detail;
-        }
+        let friendlyMsg = detail;
+        if (detail.includes('missing')) friendlyMsg = `Kolom yang dibutuhkan tidak ditemukan di file. ${detail}`;
+        else if (detail.includes('format')) friendlyMsg = `Format file tidak sesuai. Pastikan file mengikuti template yang disediakan.`;
+        else if (detail.includes('empty')) friendlyMsg = `File kosong atau tidak memiliki data. Pastikan file memiliki setidaknya 1 baris data.`;
         setUploadStatus({
           success: false,
-          message: msg
+          message: friendlyMsg
         });
       } else {
         setUploadStatus({
@@ -283,28 +279,26 @@ export default function Customers() {
     <>
       <header className="h-14 flex items-center justify-between px-6 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
         <h1 className="text-sm font-semibold tracking-tight text-zinc-900">Customer Intelligence</h1>
-        {activeTab !== 'import_csv' && (
-          <div className="flex gap-2">
-            <button 
-              onClick={() => setActiveTab('import_csv')}
-              className="flex items-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow"
-            >
-              <UploadCloud size={14} /> Import XLXS
-            </button>
-            <button 
-              onClick={() => setIsAddDrawerOpen(true)}
-              className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow"
-            >
-              <Plus size={14} /> New Customer
-            </button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setActiveTab('import_xlsx')}
+            className={cn("flex items-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow", activeTab === 'import_xlsx' && "bg-zinc-100")}
+          >
+            <UploadCloud size={14} /> Import XLSX
+          </button>
+          <button 
+            onClick={() => setIsAddDrawerOpen(true)}
+            className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow"
+          >
+            <Plus size={14} /> New Customer
+          </button>
+        </div>
       </header>
 
       <div className="p-6 max-w-[1600px] mx-auto w-full">
         
         {/* Segmented Control Tabs / Back Button */}
-        {activeTab !== 'import_csv' ? (
+        {activeTab !== 'import_xlsx' ? (
           <div className="flex mb-6 w-full max-w-sm">
             <div className="flex bg-zinc-100/80 p-1 rounded-lg border border-zinc-200/50 w-full">
               <button 
@@ -315,8 +309,8 @@ export default function Customers() {
                 Risk Workspace
               </button>
               <button 
-                className={cn("flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex justify-center items-center gap-1.5", activeTab === 'nlp_feedback' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700")}
-                onClick={() => setActiveTab('nlp_feedback')}
+                className={cn("flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex justify-center items-center gap-1.5", activeTab === 'user_feedback' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700")}
+                onClick={() => setActiveTab('user_feedback')}
               >
                 <MessageSquare size={14} />
                 User Feedback
@@ -478,7 +472,7 @@ export default function Customers() {
         </div>
         )}
 
-        {activeTab === 'nlp_feedback' && (
+        {activeTab === 'user_feedback' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
@@ -512,8 +506,8 @@ export default function Customers() {
             <div className="saas-card overflow-hidden">
               <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
                 <div>
-                  <h3 className="saas-heading">User Feedback Insights & Sentiment</h3>
-                  <p className="saas-subtext mt-0.5">Direct feedback from users filtered by ML sentiment model</p>
+                  <h3 className="saas-heading">User Feedback & Sentiment Analysis</h3>
+                  <p className="saas-subtext mt-0.5">Direct feedback from users analyzed by ML sentiment model</p>
                 </div>
                 {nlpInsights.feedbacks.length > 100 && (
                   <span className="saas-badge bg-amber-50 text-amber-700 border-amber-200">
@@ -562,7 +556,7 @@ export default function Customers() {
 
         )}
 
-        {activeTab === 'import_csv' && (
+        {activeTab === 'import_xlsx' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fadeIn">
             
             {/* Left Column: Upload Dropzone & History (or Error State) */}
@@ -576,7 +570,7 @@ export default function Customers() {
                     <XCircle className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
                     <div>
                       <h3 className="text-[13px] font-semibold text-zinc-900">
-                        Upload Failed
+                        Upload Gagal
                       </h3>
                       <p className="text-xs text-zinc-600 mt-1">{uploadStatus.message}</p>
                       {importFile && (
@@ -597,7 +591,7 @@ export default function Customers() {
                         </h4>
                       </div>
                       <p className="text-xs text-zinc-500 mb-4">
-                        Fix the following issues in your XLXS file and re-upload:
+                        Fix the following issues in your XLSX file and re-upload:
                       </p>
 
                       <div className="space-y-2">
@@ -624,7 +618,7 @@ export default function Customers() {
                       onClick={() => { setImportFile(null); setUploadStatus(null); }}
                       className="px-8 h-9 text-[13px] bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-md transition-colors"
                     >
-                      Try Another File
+                      Coba File Lain
                     </button>
                   </div>
                 </div>
@@ -639,7 +633,7 @@ export default function Customers() {
                   <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <Upload className="w-8 h-8 text-zinc-500" />
                   </div>
-                  <h3 className="text-lg font-extrabold text-zinc-900 mb-2">Drop your XLXS file here</h3>
+                  <h3 className="text-lg font-extrabold text-zinc-900 mb-2">Drop your XLSX file here</h3>
                   <p className="text-sm text-zinc-500 mb-6">or click to browse</p>
                   
                   {importFile ? (
@@ -844,7 +838,7 @@ export default function Customers() {
                       1
                     </div>
                     <div>
-                      <h5 className="text-sm font-bold text-zinc-800">Prepare your XLXS</h5>
+                      <h5 className="text-sm font-bold text-zinc-800">Prepare your XLSX</h5>
                       <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Download our template and fill in customer data</p>
                     </div>
                   </div>
@@ -855,7 +849,7 @@ export default function Customers() {
                     </div>
                     <div>
                       <h5 className="text-sm font-bold text-zinc-800">Upload file</h5>
-                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Drag and drop or click to select your XLXS</p>
+                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Drag and drop or click to select your XLSX</p>
                     </div>
                   </div>
                   
@@ -864,8 +858,8 @@ export default function Customers() {
                       3
                     </div>
                     <div>
-                      <h5 className="text-sm font-bold text-zinc-800">Get predictions</h5>
-                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Download results with churn probabilities</p>
+                      <h5 className="text-sm font-bold text-zinc-800">Dapatkan prediksi</h5>
+                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Lihat hasil dengan probabilitas churn</p>
                     </div>
                   </div>
                 </div>

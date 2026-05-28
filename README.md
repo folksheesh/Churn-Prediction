@@ -1,9 +1,9 @@
-# 📊 ChurnSight - Predictive Customer Analytics
+# 📊 ChurnSense - Predictive Customer Analytics
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![XGBoost](https://img.shields.io/badge/XGBoost-Machine%20Learning-orange.svg)
 
-**ChurnSight** adalah proyek machine learning *end-to-end* yang dirancang untuk memprediksi probabilitas *churn* pelanggan (berhenti berlangganan/menggunakan layanan). Proyek ini menggabungkan pemodelan prediktif **XGBoost**, analisis sentimen adaptif berbasis NLP, dan dilengkapi dengan **Dashboard SaaS Profesional**.
+**ChurnSense** adalah proyek machine learning *end-to-end* yang dirancang untuk memprediksi probabilitas *churn* pelanggan (berhenti berlangganan/menggunakan layanan). Proyek ini menggabungkan pemodelan prediktif **XGBoost**, analisis sentimen adaptif berbasis NLP, dan dilengkapi dengan **Dashboard SaaS Profesional**.
 
 ---
 

@@ -8,7 +8,7 @@ import AuthLayout from '@/layouts/AuthLayout';
 import Dashboard from '@/pages/admin/Dashboard';
 import Customers from '@/pages/admin/Customers';
 import Admin from '@/pages/admin/Admin';
-import Analytics from '@/pages/admin/Analytics';
+
 import Analysis from '@/pages/admin/Analysis';
 import Login from '@/pages/auth/Login';
 import AdminManagement from '@/pages/admin/AdminManagement';
@@ -36,12 +36,11 @@ export default function App() {
               <Route path="/customers" element={<Customers />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/manage-admins" element={<AdminManagement />} />
-              <Route path="/analytics" element={<Analytics />} />
               <Route path="/analysis" element={<Analysis />} />
             </Route>
           </Route>
           
-          {/* Public or Protected User routes could go here later */}
+          {/* Public User Route */}
           <Route path="/user-dashboard" element={<UserDashboard />} />
         </Routes>
       </Router>
