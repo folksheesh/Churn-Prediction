@@ -11,9 +11,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import axios from 'axios';
-
-const API_BASE = "http://localhost:8000/api/v1";
+import api from '@/lib/api';
 
 export default function Analysis() {
   const [riskData, setRiskData] = useState<any[]>([]);
@@ -26,10 +24,10 @@ export default function Analysis() {
     const fetchData = async () => {
       try {
         const [overviewRes, riskRes, trendRes, factorsRes] = await Promise.all([
-          axios.get(`${API_BASE}/analytics/overview`),
-          axios.get(`${API_BASE}/analytics/risk-distribution`),
-          axios.get(`${API_BASE}/analytics/historical-trend`),
-          axios.get(`${API_BASE}/analytics/feature-importance`)
+          api.get(`/analytics/overview`),
+          api.get(`/analytics/risk-distribution`),
+          api.get(`/analytics/historical-trend`),
+          api.get(`/analytics/feature-importance`)
         ]);
 
         setTotalAnalyzed(overviewRes.data.total_customers);

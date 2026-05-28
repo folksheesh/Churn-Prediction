@@ -1,8 +1,9 @@
-
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { useAuth } from '@/contexts/AuthContext';
+import api from '@/lib/api';
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import VisualAnalyticsTab from "./VisualAnalyticsTab";
+
 import {
   LayoutDashboard,
   Users,
@@ -34,7 +35,8 @@ import {
   Download,
   Info,
   HelpCircle,
-  Wand2
+  Wand2,
+  LogOut
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -53,8 +55,6 @@ import {
   Cell,
   Legend
 } from "recharts";
-
-const API_BASE = "http://localhost:8000/api/v1";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis">("dashboard");
@@ -88,15 +88,15 @@ export default function Home() {
   const fetchCustomers = async () => {
     try {
       // Fetch table data (limited for performance)
-      const res = await axios.get(`${API_BASE}/customers`, {
+      const res = await api.get(`/customers`, {
         params: { limit: 100 }
       });
       const data = res.data.items || [];
       
       // Fetch true global analytics
       const [overviewRes, riskRes] = await Promise.all([
-        axios.get(`${API_BASE}/analytics/overview`),
-        axios.get(`${API_BASE}/analytics/risk-distribution`)
+        api.get(`/analytics/overview`),
+        api.get(`/analytics/risk-distribution`)
       ]);
       
       // Filter logic for table
@@ -234,6 +234,7 @@ export default function Home() {
     if (!predName) return setPredictError("Customer Name is required.");
     if (!predGender) return setPredictError("Gender is required.");
     if (!predRegion) return setPredictError("Geographic Region is required.");
+    if (!predPlanTier) return setPredictError("Plan Tier is required.");
     
     if (predTenure === "" || (predTenure as number) < 0) return setPredictError("Customer Tenure cannot be negative.");
     if (predValue === "" || (predValue as number) < 0) return setPredictError("Monthly Subscription Value cannot be negative.");
@@ -243,7 +244,7 @@ export default function Home() {
 
     setPredicting(true);
     try {
-      const res = await axios.post(`${API_BASE}/predictions/single`, {
+      const res = await api.post(`/predictions/single`, {
         gender: predGender || undefined,
         region_category: predRegion || undefined,
         plan_tier: predPlanTier || undefined,
@@ -265,34 +266,45 @@ export default function Home() {
       
       if (predFreq && (predFreq.toLowerCase() === "rarely" || predFreq.toLowerCase() === "monthly")) factors.push({ text: "Low login frequency", impact: "High Impact" });
       
+      // Plan Tier factor — Starter has higher churn risk
+      if (predPlanTier === "Starter") factors.push({ text: "Starter plan — higher churn segment", impact: "Medium Impact" });
+      else if (predPlanTier === "Enterprise") factors.push({ text: "Enterprise plan — strong retention signal", impact: "Low Impact" });
+      
       if (factors.length === 0) factors.push({ text: "Stable usage patterns", impact: "Low Impact" });
 
-      // Add mock factors to result
       const mappedRiskLevel = res.data.risk_level === "Critical" ? "High Risk" 
                             : res.data.risk_level === "Moderate" ? "Medium Risk" 
                             : "Low Risk";
+
+      // Apply plan tier adjustment to churn probability
+      let rawProb = Math.round(res.data.probability * 100);
+      if (predPlanTier === "Starter") rawProb = Math.min(rawProb + 8, 99);
+      else if (predPlanTier === "Enterprise") rawProb = Math.max(rawProb - 10, 1);
+      else if (predPlanTier === "Pro") rawProb = Math.max(rawProb - 4, 1);
       
-      let mockAdvice = ["Continue providing excellent service to maintain loyalty."];
-      if (mappedRiskLevel === "High Risk") {
-        mockAdvice = [
-          "Contact customer within 24 hours to address concerns",
-          "Offer a personalized retention discount or plan upgrade",
-          "Schedule a dedicated success manager check-in"
-        ];
-      } else if (mappedRiskLevel === "Medium Risk") {
-        mockAdvice = [
-          "Send targeted engagement emails highlighting unused features",
-          "Offer a quick survey to understand any pain points",
-          "Provide a brief tutorial or webinar invite"
-        ];
+      // Re-map risk level based on adjusted probability
+      const adjustedRiskLevel = rawProb >= 70 ? "High Risk" : rawProb >= 40 ? "Medium Risk" : "Low Risk";
+      
+      let mockAdvice: string[] = ["Continue providing excellent service to maintain loyalty."];
+      if (adjustedRiskLevel === "High Risk") {
+        mockAdvice = predPlanTier === "Starter"
+          ? ["Offer a plan upgrade to Pro with 1 month free trial", "Contact within 24 hours — Starter customers churn quickly", "Send onboarding refresher to showcase unused features"]
+          : predPlanTier === "Enterprise"
+          ? ["Assign a dedicated success manager immediately", "Schedule an executive business review within 48 hours", "Offer SLA upgrade and priority support"]
+          : ["Contact customer within 24 hours to address concerns", "Offer a personalized retention discount or plan upgrade", "Schedule a dedicated success manager check-in"];
+      } else if (adjustedRiskLevel === "Medium Risk") {
+        mockAdvice = predPlanTier === "Starter"
+          ? ["Send feature highlights showing value beyond basic tier", "Offer a time-limited upgrade discount (e.g., 30% off Pro)"]
+          : ["Send targeted engagement emails highlighting unused features", "Offer a quick survey to understand any pain points", "Provide a brief tutorial or webinar invite"];
       }
 
       setPredictionResult({
         ...res.data,
-        churnProbability: Math.round(res.data.probability * 100),
-        riskLevel: mappedRiskLevel,
+        churnProbability: rawProb,
+        riskLevel: adjustedRiskLevel,
+        planTier: predPlanTier,
         advice: mockAdvice,
-        mockFactors: factors.slice(0, 3)
+        mockFactors: factors.slice(0, 4)
       });
     } catch (err: any) {
       console.error("Prediction error", err);
@@ -317,17 +329,7 @@ export default function Home() {
     }, 1500);
   };
 
-  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
-
-  const handleAuthAction = () => {
-    if (isAuthenticated) {
-      logout();
-      navigate('/');
-    } else {
-      navigate('/login');
-    }
-  };
 
   return (
     <div className="flex flex-col min-h-screen font-sans bg-[#fcfcfd]">
@@ -396,12 +398,13 @@ export default function Home() {
         {/* Right: Auth Action */}
         <div className="flex items-center gap-3 sm:gap-4">
           <button 
-            onClick={handleAuthAction}
-            className="hidden sm:block text-sm font-semibold bg-brand-600 text-white px-5 py-2 rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-600/20"
+            onClick={() => navigate('/')}
+            className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 border border-transparent hover:border-rose-100"
           >
-            {isAuthenticated ? "Logout" : "Admin Login"}
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span>Logout</span>
           </button>
-          
+
           {/* Mobile Menu Dropdown Wrapper */}
           <div className="md:hidden relative group">
             <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200">
@@ -413,6 +416,11 @@ export default function Home() {
               <button onClick={() => setActiveTab("customers")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "customers" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Customers</button>
               <button onClick={() => setActiveTab("prediction")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "prediction" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Customer Insights</button>
               <button onClick={() => setActiveTab("analysis")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "analysis" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Analysis</button>
+              <div className="h-px bg-slate-200/60 my-1"></div>
+              <button onClick={() => navigate('/')} className="text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center justify-between">
+                <span>Logout</span>
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>
@@ -846,14 +854,13 @@ export default function Home() {
                         onChange={(e) => setPredPlanTier(e.target.value)}
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-300 focus:bg-white transition-colors appearance-none cursor-pointer text-slate-700"
                       >
-                        <option value="" disabled>Select plan tier...</option>
+                        <option value="" disabled>Select tier...</option>
                         <option value="Starter">Starter</option>
                         <option value="Pro">Pro</option>
                         <option value="Enterprise">Enterprise</option>
                       </select>
                       <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1.5">Select the customer's subscription plan</p>
                   </div>
 
                   <div>
@@ -1025,12 +1032,19 @@ export default function Home() {
                         ></div>
                       </div>
 
-                      <div className={`inline-flex px-3 py-1.5 rounded-lg text-[11px] font-bold ${
-                        predictionResult.riskLevel === "High Risk" ? "bg-rose-100 text-rose-700" :
-                        predictionResult.riskLevel === "Medium Risk" ? "bg-amber-100 text-amber-700" :
-                        "bg-emerald-100 text-emerald-700"
-                      }`}>
-                        {predictionResult.riskLevel} Customer
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className={`inline-flex px-3 py-1.5 rounded-lg text-[11px] font-bold ${
+                          predictionResult.riskLevel === "High Risk" ? "bg-rose-100 text-rose-700" :
+                          predictionResult.riskLevel === "Medium Risk" ? "bg-amber-100 text-amber-700" :
+                          "bg-emerald-100 text-emerald-700"
+                        }`}>
+                          {predictionResult.riskLevel} Customer
+                        </div>
+                        {predictionResult.planTier && (
+                          <div className="inline-flex px-3 py-1.5 rounded-lg text-[11px] font-bold bg-violet-100 text-violet-700">
+                            {predictionResult.planTier} Plan
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1104,486 +1118,9 @@ export default function Home() {
         )}
 
         {/* VIEW E: VISUAL ANALYTICS TAB */}
-        {activeTab === "analysis" && (() => {
-          // Calculate Data
-          const buckets = [
-            { name: '0-3 months', count: 0, highRisk: 0 },
-            { name: '4-6 months', count: 0, highRisk: 0 },
-            { name: '7-12 months', count: 0, highRisk: 0 },
-            { name: '13-18 months', count: 0, highRisk: 0 },
-            { name: '25+ months', count: 0, highRisk: 0 }
-          ];
-          
-          customerData?.customers?.forEach((c: any) => {
-            let b;
-            if (c.tenure <= 3) b = buckets[0];
-            else if (c.tenure <= 6) b = buckets[1];
-            else if (c.tenure <= 12) b = buckets[2];
-            else if (c.tenure <= 18) b = buckets[3];
-            else b = buckets[4];
-            
-            b.count++;
-            if (c.churnProbability >= 70) b.highRisk++;
-          });
-          
-          const ageChurnData = buckets.map(b => ({
-            name: b.name,
-            val: b.count ? Math.round((b.highRisk / b.count) * 100) : 0
-          }));
-
-          const riskGroupData = summary ? [
-            { name: 'High Risk', value: summary.highRiskCount, fill: '#ef4444' }, // rose-500
-            { name: 'Medium Risk', value: summary.mediumRiskCount, fill: '#f59e0b' }, // amber-500
-            { name: 'Low Risk', value: summary.lowRiskCount, fill: '#10b981' } // emerald-500
-          ] : [];
-
-          const regions: Record<string, { total: number, atRisk: number }> = {};
-          customerData?.customers?.forEach((c: any) => {
-            const r = c.region || 'Unknown';
-            if (!regions[r]) regions[r] = { total: 0, atRisk: 0 };
-            regions[r].total++;
-            if (c.churnProbability >= 70) regions[r].atRisk++;
-          });
-          const regionRetentionData = Object.keys(regions).map(r => ({
-            name: r,
-            val: regions[r].total ? 100 - Math.round((regions[r].atRisk / regions[r].total) * 100) : 0
-          })).filter(r => r.name !== 'Unknown');
-
-          const activeInactiveData = [
-            { name: 'Jan', Active: 8400, Inactive: 1100 },
-            { name: 'Feb', Active: 8600, Inactive: 1250 },
-            { name: 'Mar', Active: 8800, Inactive: 1400 },
-            { name: 'Apr', Active: 8900, Inactive: 1600 },
-            { name: 'May', Active: 9000, Inactive: 1850 },
-            { name: 'Jun', Active: 9200, Inactive: 2210 }
-          ];
-
-          return (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
-              
-              {/* Card 1: Churn Rate by Age */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
-                <h3 className="text-lg font-bold text-slate-900 mb-1">Churn Rate by Customer Age</h3>
-                <p className="text-xs text-slate-500 mb-6">Shows how likely customers are to leave based on how long they've been with us</p>
-                
-                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
-                  <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-800 mb-2">What does this mean?</h4>
-                      <div className="text-xs text-slate-600 space-y-2">
-                        <p><span className="font-bold text-slate-700">Churn Rate:</span> The percentage of customers who stop using our service.</p>
-                        <p><span className="font-bold text-slate-700">Customer Age:</span> How many months they've been a customer (also called 'tenure').</p>
-                        <p>Lower numbers are better! This chart helps us see which customer groups need more support.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="h-64 w-full mb-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={ageChurnData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} domain={[0, 60]} />
-                      <Tooltip 
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: any) => [`${value}%`, 'Churn Rate']}
-                      />
-                      <Line type="monotone" dataKey="val" stroke="#6366f1" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
-                  <div className="flex items-center justify-between mb-4 cursor-pointer">
-                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-brand-500" />
-                      How to Read This Chart
-                    </h4>
-                    <ChevronUp className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
-                      <p className="text-xs text-slate-600">Look at the line from left to right</p>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
-                      <p className="text-xs text-slate-600">Higher points mean more customers are leaving</p>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
-                      <p className="text-xs text-slate-600">New customers (0-3 months) have the highest churn rate</p>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">4</div>
-                      <p className="text-xs text-slate-600">Long-term customers (25+ months) are most loyal</p>
-                    </li>
-                  </ul>
-                  <div className="border-t border-slate-200 pt-4">
-                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      New customers need more attention! The first 6 months are critical. Once customers stay longer than a year, they're much more likely to remain loyal.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 2: Risk Groups */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
-                <h3 className="text-lg font-bold text-slate-900 mb-1">Customer Risk Groups</h3>
-                <p className="text-xs text-slate-500 mb-6">How many customers are in each risk category</p>
-                
-                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
-                  <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-800 mb-2">What are risk groups?</h4>
-                      <p className="text-xs text-slate-600 mb-2">Our AI predicts how likely each customer is to leave and groups them:</p>
-                      <ul className="space-y-1.5 text-xs text-slate-600">
-                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-rose-500"></div><span className="font-bold text-slate-700">High Risk:</span> Very likely to leave soon (needs immediate action)</li>
-                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-500"></div><span className="font-bold text-slate-700">Medium Risk:</span> Showing some warning signs (monitor closely)</li>
-                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="font-bold text-slate-700">Low Risk:</span> Happy and engaged customers (keep them satisfied!)</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="h-64 w-full mb-6 relative">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={riskGroupData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={90}
-                        paddingAngle={5}
-                        dataKey="value"
-                        label={({ cx, cy, midAngle, innerRadius, outerRadius, value, index }) => {
-                          const RADIAN = Math.PI / 180;
-                          const radius = outerRadius + 20;
-                          const x = cx + radius * Math.cos(-(midAngle || 0) * RADIAN);
-                          const y = cy + radius * Math.sin(-(midAngle || 0) * RADIAN);
-                          return (
-                            <text x={x} y={y} fill={riskGroupData[index].fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={10} fontWeight="bold">
-                              {riskGroupData[index].name}: {value}
-                            </text>
-                          );
-                        }}
-                      >
-                        {riskGroupData.map((entry, index) => (
-                          <Cell key={`cell-\${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: any) => [value, 'Customers']}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
-                  <div className="flex items-center justify-between mb-4 cursor-pointer">
-                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-brand-500" />
-                      How to Read This Chart
-                    </h4>
-                    <ChevronUp className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
-                      <p className="text-xs text-slate-600">Each colored section represents a risk group</p>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
-                      <p className="text-xs text-slate-600">Bigger sections = more customers in that group</p>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
-                      <p className="text-xs text-slate-600">The numbers show how many customers are in each group</p>
-                    </li>
-                  </ul>
-                  <div className="border-t border-slate-200 pt-4">
-                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      Currently, most customers ({summary?.lowRiskCount?.toLocaleString()}) are low risk, which is good! However, {summary?.highRiskCount?.toLocaleString()} high-risk customers need immediate attention to prevent them from leaving.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 3: Loyalty by Location */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
-                <h3 className="text-lg font-bold text-slate-900 mb-1">Customer Loyalty by Location</h3>
-                <p className="text-xs text-slate-500 mb-6">Compares how well we retain customers in different parts of the world</p>
-                
-                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
-                  <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-800 mb-2">What is retention?</h4>
-                      <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-700">Retention:</span> The percentage of customers who stay with us (opposite of churn).</p>
-                      <p className="text-xs text-slate-600 mb-2">Higher percentages are better! If retention is 85%, that means 85 out of 100 customers stayed.</p>
-                      <p className="text-xs text-slate-600">This helps us see which regions might need different pricing, better support, or improved service.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="h-64 w-full mb-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={regionRetentionData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} domain={[0, 100]} />
-                      <Tooltip 
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: any) => [`${value}%`, 'Retention']}
-                        cursor={{ fill: '#f1f5f9' }}
-                      />
-                      <Bar dataKey="val" fill="#06b6d4" radius={[4, 4, 0, 0]} maxBarSize={60} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
-                  <div className="flex items-center justify-between mb-4 cursor-pointer">
-                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-brand-500" />
-                      How to Read This Chart
-                    </h4>
-                    <ChevronUp className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
-                      <p className="text-xs text-slate-600">Each bar represents a geographic region</p>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
-                      <p className="text-xs text-slate-600">Taller bars = better customer retention in that region</p>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
-                      <p className="text-xs text-slate-600">Compare the heights to see which regions perform best</p>
-                    </li>
-                  </ul>
-                  <div className="border-t border-slate-200 pt-4">
-                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      Look at the lowest bar - that region has the most customers at risk. Consider investigating why retention is lower there; it might be pricing, local competition, or service issues.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 4: Active vs Inactive Over Time */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
-                <h3 className="text-lg font-bold text-slate-900 mb-1">Active vs Inactive Customers Over Time</h3>
-                <p className="text-xs text-slate-500 mb-6">Tracks how many customers are actively using the service each month</p>
-                
-                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
-                  <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-800 mb-2">What is customer activity?</h4>
-                      <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-700">Active Customers:</span> Logged in and used the service within the last 30 days.</p>
-                      <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-700">Inactive Customers:</span> Haven't logged in for more than 30 days.</p>
-                      <p className="text-xs text-slate-600">Growing inactive numbers are a warning sign! Inactive customers are much more likely to cancel their subscriptions.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="h-64 w-full mb-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={activeInactiveData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} />
-                      <Tooltip 
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                      />
-                      <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
-                      <Area type="monotone" dataKey="Active" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.8} />
-                      <Area type="monotone" dataKey="Inactive" stackId="1" stroke="#b45309" fill="#b45309" fillOpacity={0.6} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
-                  <div className="flex items-center justify-between mb-4 cursor-pointer">
-                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-brand-500" />
-                      How to Read This Chart
-                    </h4>
-                    <ChevronUp className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
-                      <p className="text-xs text-slate-600">Green area shows active customers (good!)</p>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
-                      <p className="text-xs text-slate-600">Orange/Brown area shows inactive customers (warning sign)</p>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
-                      <p className="text-xs text-slate-600">Watch the trend from left to right over months</p>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">4</div>
-                      <p className="text-xs text-slate-600">Total height = all customers</p>
-                    </li>
-                  </ul>
-                  <div className="border-t border-slate-200 pt-4">
-                    <h5 className="text-[11px] font-bold text-slate-900 mb-1">What This Tells You:</h5>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      A growing active area means more customers are engaged with our service. If the inactive area is growing faster than the active area, it's a sign of decreasing engagement.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 5: Plan Tier Distribution */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
-                <h3 className="text-lg font-bold text-slate-900 mb-1">Plan Tier Distribution</h3>
-                <p className="text-xs text-slate-500 mb-6">Breakdown of customers by subscription plan</p>
-                
-                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
-                  <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-800 mb-2">What are plan tiers?</h4>
-                      <p className="text-xs text-slate-600 mb-2">Each plan has different features and price levels:</p>
-                      <ul className="space-y-1.5 text-xs text-slate-600">
-                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-rose-500"></div><span className="font-bold text-slate-700">Starter:</span> Basic features, highest churn risk</li>
-                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-500"></div><span className="font-bold text-slate-700">Pro:</span> Advanced features, moderate retention</li>
-                        <li className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="font-bold text-slate-700">Enterprise:</span> Full features, highest loyalty</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="h-64 w-full mb-6">
-                  {(() => {
-                    const planData: Record<string, number> = {};
-                    customerData?.customers?.forEach((c: any) => {
-                      const tier = c.planTier || 'Unknown';
-                      planData[tier] = (planData[tier] || 0) + 1;
-                    });
-                    const tierColors: Record<string, string> = { 'Starter': '#ef4444', 'Pro': '#f59e0b', 'Enterprise': '#10b981', 'Basic': '#6366f1', 'Unknown': '#94a3b8' };
-                    const tierChartData = Object.entries(planData).map(([name, value]) => ({ name, value, fill: tierColors[name] || '#6366f1' }));
-                    
-                    return tierChartData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={tierChartData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={55}
-                            outerRadius={85}
-                            paddingAngle={3}
-                            dataKey="value"
-                            label={({ name, value }) => `${name}: ${value}`}
-                          >
-                            {tierChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                          </Pie>
-                          <Tooltip 
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                            formatter={(value: any) => [value, 'Customers']}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">Loading plan data...</div>
-                    );
-                  })()}
-                </div>
-
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
-                  <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2 mb-3">
-                    <FileText className="w-4 h-4 text-brand-500" />
-                    What This Tells You
-                  </h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Starter plan customers have the highest churn rate. Consider incentivizing upgrades to Pro/Enterprise to improve retention. Enterprise customers are the most loyal.
-                  </p>
-                </div>
-              </div>
-
-              {/* Card 6: Churn by Gender */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-8 flex flex-col">
-                <h3 className="text-lg font-bold text-slate-900 mb-1">Churn Risk by Gender</h3>
-                <p className="text-xs text-slate-500 mb-6">Comparison of average churn probability between genders</p>
-                
-                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
-                  <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-800 mb-2">Why track by gender?</h4>
-                      <p className="text-xs text-slate-600">Understanding demographic differences in churn helps tailor retention strategies. If one group has higher churn, targeted campaigns may help.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="h-64 w-full mb-6">
-                  {(() => {
-                    const genderData: Record<string, { total: number, churnSum: number }> = {};
-                    customerData?.customers?.forEach((c: any) => {
-                      const g = c.gender === 'F' ? 'Female' : c.gender === 'M' ? 'Male' : 'Other';
-                      if (!genderData[g]) genderData[g] = { total: 0, churnSum: 0 };
-                      genderData[g].total++;
-                      genderData[g].churnSum += c.churnProbability || 0;
-                    });
-                    const genderChartData = Object.entries(genderData).map(([name, d]) => ({
-                      name,
-                      avgChurn: d.total ? Math.round(d.churnSum / d.total) : 0,
-                    }));
-                    
-                    return genderChartData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={genderChartData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} unit="%" domain={[0, 100]} />
-                          <Tooltip 
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                            formatter={(value: any) => [`${value}%`, 'Avg Churn Risk']}
-                          />
-                          <Bar dataKey="avgChurn" radius={[8, 8, 0, 0]} barSize={60}>
-                            {genderChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.avgChurn > 50 ? '#ef4444' : entry.avgChurn > 30 ? '#f59e0b' : '#10b981'} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">Loading gender data...</div>
-                    );
-                  })()}
-                </div>
-
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 mt-auto">
-                  <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2 mb-3">
-                    <FileText className="w-4 h-4 text-brand-500" />
-                    What This Tells You
-                  </h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Compare the bar heights to see which gender segment has a higher average churn risk. Use this to create targeted retention campaigns.
-                  </p>
-                </div>
-              </div>
-
-            </div>
-          );
-        })()}
+        {activeTab === "analysis" && (
+          <VisualAnalyticsTab customerData={customerData} summary={summary} />
+        )}
 
         {/* CUSTOMER DETAILS MODAL */}
         {selectedCustomer && (

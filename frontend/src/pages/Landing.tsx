@@ -18,21 +18,7 @@ export default function Landing() {
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <Activity size={18} className="text-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight text-zinc-900">ChurnSight</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link 
-            to="/login"
-            className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors"
-          >
-            Sign In
-          </Link>
-          <Link 
-            to="/user-dashboard"
-            className="text-sm font-medium bg-zinc-900 text-white px-4 py-2 rounded-md hover:bg-zinc-800 transition-colors"
-          >
-            Dashboard
-          </Link>
+          <span className="text-xl font-bold tracking-tight text-zinc-900">ChurnSense</span>
         </div>
       </header>
 
@@ -54,7 +40,7 @@ export default function Landing() {
               Enter User Dashboard <ArrowRight size={18} />
             </Link>
             <Link 
-              to="/admin/login"
+              to="/login"
               className="bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 font-medium px-8 py-3.5 rounded-lg transition-all shadow-sm"
             >
               Admin Access
@@ -121,7 +107,7 @@ export default function Landing() {
         {/* How It Works Section */}
         <section className="py-24 px-6 md:px-12 max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-zinc-900 mb-4">How ChurnSight Works</h2>
+            <h2 className="text-3xl font-bold text-zinc-900 mb-4">How ChurnSense Works</h2>
             <p className="text-zinc-500 text-lg">From data upload to actionable insights.</p>
           </div>
           
@@ -175,7 +161,7 @@ export default function Landing() {
       
       {/* Footer */}
       <footer className="py-8 border-t border-zinc-200 text-center text-zinc-400 text-sm mt-auto">
-        <p>&copy; 2026 ChurnSight Inc. All rights reserved.</p>
+        <p>&copy; 2026 ChurnSense Inc. All rights reserved.</p>
       </footer>
     </div>
   );
