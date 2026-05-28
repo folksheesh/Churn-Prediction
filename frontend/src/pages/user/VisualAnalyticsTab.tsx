@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Info, FileText, ChevronDown, CreditCard, AlertCircle, TrendingUp, TrendingDown, Sparkles, Target, AlertTriangle, Users, Activity, DollarSign, ArrowUpRight, ArrowDownRight, Lightbulb } from 'lucide-react';
 import realData from '../../data/realAnalytics.json';
+import api from '@/lib/api';
+import FeatureExplainability, { type FeatureData } from '@/components/FeatureExplainability';
 
 interface VisualAnalyticsTabProps {
   customerData: any;
@@ -13,6 +15,66 @@ export default function VisualAnalyticsTab({ customerData, summary }: VisualAnal
   // --- USE REAL DATA FROM CSV ---
   // The user explicitly requested to see the full, real data from cleaned_churn_data.csv
   const { kpi, monthlyChurnTrend, activeInactiveData, topChurnFactors, sentiment, planTier } = realData;
+
+  const [featureData, setFeatureData] = useState<FeatureData[]>([]);
+  const [featuresLoading, setFeaturesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeatureData = async () => {
+      try {
+        const [factorsRes, segmentsRes] = await Promise.all([
+          api.get(`/analytics/feature-importance`),
+          api.get(`/analytics/feature-segments`)
+        ]);
+
+        const nameMapping: Record<string, string> = {
+          'days_since_active': 'Days Since Last Active',
+          'logins_90d': 'Recent Login Frequency',
+          'tickets_opened_90d': 'Support Tickets Opened',
+          'days_since_joined': 'Customer Tenure',
+          'avg_transaction_value': 'Average Monthly Spend',
+          'api_calls_90d': 'System Usage (API Calls)',
+          'points_in_wallet': 'Points in Wallet',
+          'plan_tier': 'Plan Tier',
+          'avg_session_duration': 'Avg Session Duration',
+          'active_days_90d': 'Active Days (90d)',
+          'region_category': 'Geographic Region',
+          'gender': 'Gender',
+          'age': 'Customer Age',
+          'sentiment_score': 'Sentiment Score',
+          'sentiment_kategori': 'Sentiment Category',
+          'sentiment_confidence': 'Sentiment Confidence',
+          'sentiment_raw_score': 'Sentiment Raw Score',
+          'avg_frequency_login_days': 'Avg Login Frequency (Days)',
+          'days_since_last_login': 'Days Since Last Login',
+        };
+
+        const segments = segmentsRes.data;
+        const factors = factorsRes.data.slice(0, 8);
+        
+        const mergedFeatures: FeatureData[] = factors.map((f: any) => {
+          const featureKey = f.feature;
+          const friendlyName = nameMapping[featureKey] || featureKey.replace(/_/g, ' ');
+          const segmentData = segments[featureKey];
+
+          return {
+            feature: friendlyName,
+            importance: Math.round(f.importance * 100),
+            segments: segmentData?.segments || [],
+            insight: segmentData?.insight || `This feature contributes ${Math.round(f.importance * 100)}% to the model's predictive power.`,
+          };
+        });
+
+        setFeatureData(mergedFeatures);
+      } catch (err) {
+        console.error("Error fetching analysis data", err);
+      } finally {
+        setFeaturesLoading(false);
+      }
+    };
+
+    fetchFeatureData();
+  }, []);
 
   const riskGroupData = [
     { name: 'High Risk', value: kpi.highRisk, fill: '#ef4444' }, // rose-500
@@ -394,6 +456,11 @@ export default function VisualAnalyticsTab({ customerData, summary }: VisualAnal
           </div>
 
         </div>
+      </div>
+
+      {/* ─────────── Feature Explainability (full-width) ─────────── */}
+      <div className="mt-12 mb-8">
+        <FeatureExplainability features={featureData} loading={featuresLoading} />
       </div>
 
       {/* SECTION 5: Recommended Actions */}
