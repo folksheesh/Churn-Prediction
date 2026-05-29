@@ -19,7 +19,6 @@ numpy
 scikit-learn
 xgboost
 joblib
-shap
 openpyxl
 
 # ── NLP (lightweight – no torch needed for inference) ──

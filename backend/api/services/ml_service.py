@@ -26,7 +26,6 @@ def run_single_prediction(customer_dict: dict) -> dict:
     result = predict_single(customer_dict, pipeline)
     return result
 
-import shap
 import numpy as np
 
 # ... existing code ...
