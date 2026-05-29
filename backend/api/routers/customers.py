@@ -148,7 +148,7 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         # Read file based on extension
         filename_lower = file.filename.lower()
         if filename_lower.endswith('.xlsx') or filename_lower.endswith('.xls'):
-            df = pd.read_excel(io.BytesIO(contents))
+            df = pd.read_excel(io.BytesIO(contents), engine='openpyxl')
         else:
             df = pd.read_csv(io.BytesIO(contents))
         

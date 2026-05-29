@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 from sqlalchemy.orm import Session
 from backend.core.database import get_db
 from backend.core.models import Customer
@@ -7,7 +7,8 @@ import math
 router = APIRouter()
 
 @router.get("/overview")
-async def get_overview(region: str = "All Regions", db: Session = Depends(get_db)):
+async def get_overview(response: Response, region: str = "All Regions", db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     query = db.query(Customer)
     if region != "All Regions":
         query = query.filter(Customer.region_category == region)
@@ -39,7 +40,8 @@ async def get_regions(db: Session = Depends(get_db)):
     return ["All Regions"] + region_list
 
 @router.get("/risk-distribution")
-async def get_risk_distribution(region: str = "All Regions", db: Session = Depends(get_db)):
+async def get_risk_distribution(response: Response, region: str = "All Regions", db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     query = db.query(Customer).filter(Customer.status == "Active")
     if region != "All Regions":
         query = query.filter(Customer.region_category == region)
@@ -101,7 +103,8 @@ async def get_activity_logs(limit: int = 10, db: Session = Depends(get_db)):
     } for log in logs]
 
 @router.get("/critical-alerts")
-async def get_critical_alerts(limit: int = 5, db: Session = Depends(get_db)):
+async def get_critical_alerts(response: Response, limit: int = 5, db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     customers = db.query(Customer).filter(
         Customer.status == "Active",
         Customer.churn_risk == "High"
