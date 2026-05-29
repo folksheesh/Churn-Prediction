@@ -759,8 +759,28 @@ export default function Customers() {
                   </select>
                 </div>
                 <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">Gender</label>
+                  <select value={formData.gender} onChange={e => setFormData({...formData, gender: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400">
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
                   <label className="text-xs font-semibold text-zinc-700">Age</label>
-                  <input type="number" placeholder="30" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  <input type="number" required placeholder="30" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">Days Since Active</label>
+                  <input type="number" required placeholder="0" value={formData.days_since_active} onChange={e => setFormData({...formData, days_since_active: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">Logins (90 Days)</label>
+                  <input type="number" required placeholder="0" value={formData.logins_90d} onChange={e => setFormData({...formData, logins_90d: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">API Calls (90 Days)</label>
+                  <input type="number" required placeholder="0" value={formData.api_calls_90d} onChange={e => setFormData({...formData, api_calls_90d: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
                 </div>
               </div>
             </form>
