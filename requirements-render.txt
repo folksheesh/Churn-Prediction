@@ -1,0 +1,29 @@
+# ── Core Web Framework ──
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+
+# ── Database ──
+sqlalchemy
+
+# ── Auth ──
+passlib[bcrypt]
+python-jose[cryptography]
+bcrypt
+email-validator
+
+# ── ML / Data Science ──
+pandas
+numpy
+scikit-learn
+xgboost
+joblib
+openpyxl
+
+# ── NLP (lightweight – no torch needed for inference) ──
+textblob
+
+# ── Caching ──
+fastapi-cache2
+jinja2

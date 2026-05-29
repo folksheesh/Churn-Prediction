@@ -57,6 +57,7 @@ import {
 } from "recharts";
 
 export default function Home() {
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis">("dashboard");
   const [summary, setSummary] = useState<any>(null);
   const [customerData, setCustomerData] = useState<any>(null);
@@ -398,7 +399,7 @@ export default function Home() {
         {/* Right: Auth Action */}
         <div className="flex items-center gap-3 sm:gap-4">
           <button 
-            onClick={() => navigate('/')}
+            onClick={() => { logout(); navigate('/'); }}
             className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 border border-transparent hover:border-rose-100"
           >
             <LogOut className="w-4 h-4 shrink-0" />
@@ -417,7 +418,7 @@ export default function Home() {
               <button onClick={() => setActiveTab("prediction")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "prediction" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Customer Insights</button>
               <button onClick={() => setActiveTab("analysis")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "analysis" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Analysis</button>
               <div className="h-px bg-slate-200/60 my-1"></div>
-              <button onClick={() => navigate('/')} className="text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center justify-between">
+              <button onClick={() => { logout(); navigate('/'); }} className="text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center justify-between">
                 <span>Logout</span>
                 <LogOut className="w-3.5 h-3.5" />
               </button>

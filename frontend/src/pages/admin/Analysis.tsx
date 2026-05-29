@@ -12,22 +12,25 @@ import {
   Area
 } from 'recharts';
 import api from '@/lib/api';
+import FeatureExplainability, { type FeatureData } from '@/components/FeatureExplainability';
 
 export default function Analysis() {
   const [riskData, setRiskData] = useState<any[]>([]);
   const [trendData, setTrendData] = useState<any[]>([]);
-  const [factorsData, setFactorsData] = useState<any[]>([]);
+  const [featureData, setFeatureData] = useState<FeatureData[]>([]);
   const [totalAnalyzed, setTotalAnalyzed] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [featuresLoading, setFeaturesLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [overviewRes, riskRes, trendRes, factorsRes] = await Promise.all([
+        const [overviewRes, riskRes, trendRes, factorsRes, segmentsRes] = await Promise.all([
           api.get(`/analytics/overview`),
           api.get(`/analytics/risk-distribution`),
           api.get(`/analytics/historical-trend`),
-          api.get(`/analytics/feature-importance`)
+          api.get(`/analytics/feature-importance`),
+          api.get(`/analytics/feature-segments`)
         ]);
 
         setTotalAnalyzed(overviewRes.data.total_customers);
@@ -52,20 +55,46 @@ export default function Analysis() {
           'tickets_opened_90d': 'Support Tickets Opened',
           'days_since_joined': 'Customer Tenure',
           'avg_transaction_value': 'Average Monthly Spend',
-          'api_calls_90d': 'System Usage (API Calls)'
+          'api_calls_90d': 'System Usage (API Calls)',
+          'points_in_wallet': 'Points in Wallet',
+          'plan_tier': 'Plan Tier',
+          'avg_session_duration': 'Avg Session Duration',
+          'active_days_90d': 'Active Days (90d)',
+          'region_category': 'Geographic Region',
+          'gender': 'Gender',
+          'age': 'Customer Age',
+          'sentiment_score': 'Sentiment Score',
+          'sentiment_kategori': 'Sentiment Category',
+          'sentiment_confidence': 'Sentiment Confidence',
+          'sentiment_raw_score': 'Sentiment Raw Score',
+          'avg_frequency_login_days': 'Avg Login Frequency (Days)',
+          'days_since_last_login': 'Days Since Last Login',
         };
+
+        // Merge feature importance with segment data
+        const segments = segmentsRes.data;
+        const factors = factorsRes.data.slice(0, 8);
         
-        const friendlyFactors = factorsRes.data.slice(0, 4).map((f: any) => ({
-          factor: nameMapping[f.feature] || f.feature.replace(/_/g, ' '),
-          impact: Math.round(f.importance * 100),
-          severity: f.importance > 0.15 ? 'high' : 'medium'
-        }));
-        setFactorsData(friendlyFactors);
+        const mergedFeatures: FeatureData[] = factors.map((f: any) => {
+          const featureKey = f.feature;
+          const friendlyName = nameMapping[featureKey] || featureKey.replace(/_/g, ' ');
+          const segmentData = segments[featureKey];
+
+          return {
+            feature: friendlyName,
+            importance: Math.round(f.importance * 100),
+            segments: segmentData?.segments || [],
+            insight: segmentData?.insight || `This feature contributes ${Math.round(f.importance * 100)}% to the model's predictive power.`,
+          };
+        });
+
+        setFeatureData(mergedFeatures);
 
       } catch (err) {
         console.error("Error fetching analysis data", err);
       } finally {
         setLoading(false);
+        setFeaturesLoading(false);
       }
     };
 
@@ -150,68 +179,38 @@ export default function Analysis() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Top Churn Factors */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
-          <div className="mb-6">
-            <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2 mb-2">
-              <Target size={18} className="text-blue-600" />
-              Main Reasons for Decreased Engagement
-            </h2>
-            <p className="text-xs text-slate-500 flex items-center gap-1">
-              <Info size={12} /> Based on historical data, these factors heavily influence whether a customer stays or leaves.
-            </p>
-          </div>
-          <div className="space-y-5">
-            {factorsData.length > 0 ? factorsData.map((item, i) => (
-              <div key={i}>
-                <div className="flex justify-between text-sm mb-1.5">
-                  <span className="font-medium text-slate-700 capitalize">{item.factor}</span>
-                  <span className="text-slate-500 font-medium text-xs">{item.impact}% impact</span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full ${item.severity === 'high' ? 'bg-rose-500' : 'bg-amber-500'}`} 
-                    style={{ width: `${item.impact}%` }}
-                  ></div>
-                </div>
-              </div>
-            )) : (
-              <div className="text-sm text-slate-400 py-4 text-center">Analyzing data to determine top factors...</div>
-            )}
-          </div>
-        </div>
+      {/* ─────────── Feature Explainability (full-width) ─────────── */}
+      <FeatureExplainability features={featureData} loading={featuresLoading} />
 
-        {/* Retention Recommendations */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col transition-all hover:shadow-md">
-          <div className="mb-6">
-            <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2 mb-2">
-              <Zap size={18} className="text-blue-600" />
-              Suggested Actions for Customer Success
-            </h2>
-            <p className="text-xs text-slate-500 flex items-center gap-1">
-              <Info size={12} /> Actionable strategies based on current trends.
+      {/* Retention Recommendations */}
+      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col transition-all hover:shadow-md">
+        <div className="mb-6">
+          <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2 mb-2">
+            <Zap size={18} className="text-blue-600" />
+            Suggested Actions for Customer Success
+          </h2>
+          <p className="text-xs text-slate-500 flex items-center gap-1">
+            <Info size={12} /> Actionable strategies based on current trends.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+          <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100/50">
+            <h3 className="text-sm font-semibold text-blue-900 mb-1">Target "Low Usage" Segment</h3>
+            <p className="text-xs text-blue-700/80 leading-relaxed">
+              Launch an automated re-engagement email campaign for users who haven't logged in for 14+ days. Highlight newly released features.
             </p>
           </div>
-          <div className="space-y-4 flex-1">
-            <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100/50">
-              <h3 className="text-sm font-semibold text-blue-900 mb-1">Target "Low Usage" Segment</h3>
-              <p className="text-xs text-blue-700/80 leading-relaxed">
-                Launch an automated re-engagement email campaign for users who haven't logged in for 14+ days. Highlight newly released features.
-              </p>
-            </div>
-            <div className="p-4 bg-emerald-50/50 rounded-lg border border-emerald-100/50">
-              <h3 className="text-sm font-semibold text-emerald-900 mb-1">Proactive Support Outreach</h3>
-              <p className="text-xs text-emerald-700/80 leading-relaxed">
-                Flag accounts with 2+ open tickets older than 48 hours to the Customer Success team for immediate personal follow-up.
-              </p>
-            </div>
-            <div className="p-4 bg-purple-50/50 rounded-lg border border-purple-100/50">
-              <h3 className="text-sm font-semibold text-purple-900 mb-1">Annual Plan Upsell</h3>
-              <p className="text-xs text-purple-700/80 leading-relaxed">
-                Offer a 15% discount for converting to an annual plan to medium-risk customers with high initial satisfaction scores.
-              </p>
-            </div>
+          <div className="p-4 bg-emerald-50/50 rounded-lg border border-emerald-100/50">
+            <h3 className="text-sm font-semibold text-emerald-900 mb-1">Proactive Support Outreach</h3>
+            <p className="text-xs text-emerald-700/80 leading-relaxed">
+              Flag accounts with 2+ open tickets older than 48 hours to the Customer Success team for immediate personal follow-up.
+            </p>
+          </div>
+          <div className="p-4 bg-purple-50/50 rounded-lg border border-purple-100/50">
+            <h3 className="text-sm font-semibold text-purple-900 mb-1">Annual Plan Upsell</h3>
+            <p className="text-xs text-purple-700/80 leading-relaxed">
+              Offer a 15% discount for converting to an annual plan to medium-risk customers with high initial satisfaction scores.
+            </p>
           </div>
         </div>
       </div>
