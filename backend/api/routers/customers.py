@@ -10,9 +10,12 @@ from backend.api.schemas.customer import CustomerCreate, CustomerUpdate, Custome
 from backend.api.services.ml_service import run_single_prediction, run_batch_prediction
 import uuid
 
+from fastapi_cache.decorator import cache
+
 router = APIRouter()
 
 @router.get("/", response_model=CustomerListResponse)
+@cache(expire=60)
 def get_customers(
     skip: int = 0, 
     limit: int = 50, 

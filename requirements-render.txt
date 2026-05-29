@@ -23,3 +23,6 @@ shap
 
 # ── NLP (lightweight – no torch needed for inference) ──
 textblob
+
+# ── Caching ──
+fastapi-cache2

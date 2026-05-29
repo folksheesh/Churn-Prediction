@@ -3,10 +3,12 @@ from sqlalchemy.orm import Session
 from backend.core.database import get_db
 from backend.core.models import Customer
 import math
+from fastapi_cache.decorator import cache
 
 router = APIRouter()
 
 @router.get("/overview")
+@cache(expire=300)
 async def get_overview(region: str = "All Regions", db: Session = Depends(get_db)):
     query = db.query(Customer)
     if region != "All Regions":
@@ -33,12 +35,14 @@ async def get_overview(region: str = "All Regions", db: Session = Depends(get_db
     }
 
 @router.get("/regions")
+@cache(expire=300)
 async def get_regions(db: Session = Depends(get_db)):
     regions = db.query(Customer.region_category).distinct().all()
     region_list = sorted([r[0] for r in regions if r[0]])
     return ["All Regions"] + region_list
 
 @router.get("/risk-distribution")
+@cache(expire=300)
 async def get_risk_distribution(region: str = "All Regions", db: Session = Depends(get_db)):
     query = db.query(Customer).filter(Customer.status == "Active")
     if region != "All Regions":
@@ -59,11 +63,13 @@ from backend.core.models import ActivityLog
 from datetime import datetime, timedelta
 
 @router.get("/feature-importance")
+@cache(expire=300)
 async def get_feature_importance():
     insights = get_model_insights()
     return insights.get("feature_importance", [])
 
 @router.get("/feature-segments")
+@cache(expire=300)
 async def get_feature_segments(db: Session = Depends(get_db)):
     """Return churn distribution segments for each important feature."""
     from sqlalchemy import case, func as sqlfunc
@@ -549,6 +555,7 @@ def _generate_plan_insight(plan_tiers):
     return f"{highest.plan_tier} plan users show the highest churn risk. Targeted retention strategies are recommended."
 
 @router.get("/historical-trend")
+@cache(expire=300)
 async def get_historical_trend(db: Session = Depends(get_db)):
     # We use days_since_joined to fake a timeline up to 6 months ago
     # We group active and churned customers by how long ago they joined (in months)
@@ -575,6 +582,7 @@ async def get_historical_trend(db: Session = Depends(get_db)):
     return trend_data
 
 @router.get("/activity-logs")
+@cache(expire=60)
 async def get_activity_logs(limit: int = 10, db: Session = Depends(get_db)):
     logs = db.query(ActivityLog).order_by(ActivityLog.timestamp.desc()).limit(limit).all()
     return [{
@@ -586,6 +594,7 @@ async def get_activity_logs(limit: int = 10, db: Session = Depends(get_db)):
     } for log in logs]
 
 @router.get("/critical-alerts")
+@cache(expire=60)
 async def get_critical_alerts(limit: int = 5, db: Session = Depends(get_db)):
     customers = db.query(Customer).filter(
         Customer.status == "Active",
@@ -603,6 +612,7 @@ async def get_critical_alerts(limit: int = 5, db: Session = Depends(get_db)):
     } for c in customers]
 
 @router.get("/nlp-insights")
+@cache(expire=300)
 async def get_nlp_insights(db: Session = Depends(get_db)):
     # Total customers
     total_customers = db.query(Customer).count()

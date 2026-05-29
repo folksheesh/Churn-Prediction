@@ -1,5 +1,5 @@
-
 passlib[bcrypt]
 python-jose[cryptography]
 
 email-validator
+fastapi-cache2
