@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut, ShieldCheck, Upload, Zap, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -136,7 +137,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
               </span>
             </div>
           </div>
-          <button onClick={logout} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Logout">
+          <button onClick={() => { logout(); navigate('/'); }} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Logout">
             <LogOut size={16} />
           </button>
         </div>

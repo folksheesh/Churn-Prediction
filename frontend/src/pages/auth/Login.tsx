@@ -28,7 +28,10 @@ export default function Login() {
 
   return (
     <div className="sm:mx-auto sm:w-full sm:max-w-md">
-      <div className="flex justify-center items-center gap-2 mb-8">
+      <div className="flex justify-center items-center gap-2 mb-8 relative">
+        <Link to="/" className="absolute -top-12 left-0 sm:-left-4 text-sm text-zinc-500 hover:text-zinc-900 flex items-center gap-2 transition-colors">
+          &larr; Back to Home
+        </Link>
         <div className="bg-zinc-900 p-2 rounded-lg">
           <Activity className="text-white" size={24} />
         </div>
