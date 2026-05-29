@@ -141,17 +141,65 @@ def get_csv_template():
 async def import_customers_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
     allowed_extensions = ('.csv', '.xlsx', '.xls')
     if not file.filename.lower().endswith(allowed_extensions):
-        raise HTTPException(status_code=400, detail="Only CSV or Excel (.xlsx/.xls) files are allowed.")
+        raise HTTPException(status_code=400, detail={
+            "message": "This file type is not supported.",
+            "errors": [
+                "Please upload a file in .csv, .xlsx, or .xls format.",
+                "You can download our template to see the correct format."
+            ]
+        })
     
     try:
         contents = await file.read()
-        # Read file based on extension
         filename_lower = file.filename.lower()
-        if filename_lower.endswith('.xlsx') or filename_lower.endswith('.xls'):
-            df = pd.read_excel(io.BytesIO(contents))
-        else:
-            df = pd.read_csv(io.BytesIO(contents))
-        
+        file_type = "Excel" if filename_lower.endswith(('.xlsx', '.xls')) else "CSV"
+
+        # Read file based on extension
+        try:
+            if filename_lower.endswith('.xlsx') or filename_lower.endswith('.xls'):
+                df = pd.read_excel(io.BytesIO(contents))
+            else:
+                df = pd.read_csv(io.BytesIO(contents))
+        except Exception as parse_err:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": f"We couldn't open your {file_type} file.",
+                    "errors": [
+                        "The file might be damaged or saved in a format we don't support.",
+                        "Try re-saving the file and uploading again, or use a different file."
+                    ]
+                }
+            )
+
+        # ─── Empty file detection ─────────────────────────────────────────
+        if df.empty or len(df) == 0:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": f"Your {file_type} file is empty — there's no data in it.",
+                    "errors": [
+                        "The file only has column headers but no customer data below them.",
+                        "Please add at least one row of customer data and try again."
+                    ]
+                }
+            )
+
+        # Check if all rows are completely empty (NaN)
+        non_empty_rows = df.dropna(how='all')
+        if len(non_empty_rows) == 0:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": f"Your {file_type} file has rows, but they're all blank.",
+                    "errors": [
+                        f"We found {len(df)} row(s) in the file, but none of them contain any data.",
+                        "Please fill in the customer information and upload the file again."
+                    ]
+                }
+            )
+        df = non_empty_rows.reset_index(drop=True)
+
         # Auto-generate id column if missing
         if 'id' not in df.columns:
             df['id'] = [f"CUST-{str(uuid.uuid4())[:8].upper()}" for _ in range(len(df))]
@@ -159,6 +207,76 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         # Auto-generate name column if missing
         if 'name' not in df.columns:
             df['name'] = [f"Customer {i}" for i in df['id']]
+
+        # ─── Required column validation ───────────────────────────────────────
+        # These are the columns required by the ML model for prediction.
+        # 'id' and 'name' are auto-generated so they are not required from the file.
+        REQUIRED_COLUMNS = [
+            "age", "gender", "region_category", "days_since_joined",
+            "plan_tier", "days_since_active", "api_calls_90d", "logins_90d",
+            "active_days_90d", "avg_session_duration", "days_since_last_login",
+            "avg_frequency_login_days", "avg_transaction_value",
+            "points_in_wallet", "tickets_opened_90d"
+        ]
+        # Minimum columns that MUST be present (at least age + some activity metrics)
+        MINIMUM_REQUIRED = [
+            "age", "days_since_active", "logins_90d", "api_calls_90d"
+        ]
+
+        uploaded_columns = [c.strip() for c in df.columns.tolist()]
+        df.columns = uploaded_columns  # normalize whitespace in column names
+
+        missing_required = [col for col in REQUIRED_COLUMNS if col not in uploaded_columns]
+        missing_minimum = [col for col in MINIMUM_REQUIRED if col not in uploaded_columns]
+
+        # If none of the minimum required columns are present, this is likely a wrong file
+        if len(missing_minimum) == len(MINIMUM_REQUIRED):
+            # None of the expected columns found — completely wrong file structure
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": f"Wrong file — this doesn't look like a customer data file.",
+                    "errors": [
+                        "We couldn't find any of the expected columns (like age, logins_90d, api_calls_90d, etc.).",
+                        f"Your file has these columns: {', '.join(uploaded_columns[:10])}" + (" ..." if len(uploaded_columns) > 10 else "") + ".",
+                        "Please download our template first, fill it in with your customer data, then upload it."
+                    ]
+                }
+            )
+
+        # If some minimum required columns are missing
+        if missing_minimum:
+            COLUMN_LABELS = {
+                "age": "Age", "gender": "Gender", "region_category": "Region Category",
+                "days_since_joined": "Customer Tenure (Days)", "plan_tier": "Plan Tier",
+                "days_since_active": "Days Since Last Activity", "api_calls_90d": "API Calls (90d)",
+                "logins_90d": "Logins (90d)", "active_days_90d": "Active Days (90d)",
+                "avg_session_duration": "Avg Session Duration",
+                "days_since_last_login": "Days Since Last Login",
+                "avg_frequency_login_days": "Avg Login Frequency (Days)",
+                "avg_transaction_value": "Avg Transaction Value",
+                "points_in_wallet": "Points in Wallet",
+                "tickets_opened_90d": "Support Tickets (90d)"
+            }
+            missing_labels = [f"'{COLUMN_LABELS.get(c, c)}' ({c})" for c in missing_minimum]
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": "Your file is missing some important columns that we need.",
+                    "errors": [
+                        f"Missing column: {label}" for label in missing_labels
+                    ] + [
+                        "Without these columns, we can't run the churn prediction.",
+                        "Tip: Download our template to see all the columns you need to include."
+                    ]
+                }
+            )
+
+        # Warn about other missing (non-minimum) columns but still allow upload
+        # (the ML model will fill them with defaults)
+        if missing_required and not missing_minimum:
+            # All minimum columns are present, some optional ones are missing — allow with info
+            pass
 
         # ─── Human-readable field labels for error messages ───────────────────
         FIELD_LABELS = {
@@ -180,6 +298,46 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         def lbl(col: str) -> str:
             return FIELD_LABELS.get(col, f"'{col}'")
 
+        # ─── Data type validation (detect text in numeric columns) ─────────
+        NUMERIC_COLUMNS = [
+            "age", "days_since_joined", "days_since_last_login", "days_since_active",
+            "avg_session_duration", "avg_transaction_value", "avg_frequency_login_days",
+            "points_in_wallet", "logins_90d", "active_days_90d", "api_calls_90d",
+            "session_minutes_90d", "tickets_opened_90d"
+        ]
+        type_errors = []
+        for col in NUMERIC_COLUMNS:
+            if col not in df.columns:
+                continue
+            # Try to coerce the entire column to numeric; non-convertible values become NaN
+            original_non_null = df[col].dropna()
+            if len(original_non_null) == 0:
+                continue
+            coerced = pd.to_numeric(df[col], errors='coerce')
+            # Find rows where original is not null but coerced became NaN (i.e., text values)
+            bad_mask = df[col].notna() & coerced.isna()
+            bad_rows = df[bad_mask]
+            for idx, bad_row in bad_rows.iterrows():
+                row_num = idx + 2  # +2: 0-indexed + header row
+                type_errors.append(
+                    f"Row {row_num} — '{lbl(col)}' should be a number, but we found text: '{bad_row[col]}'. "
+                    f"Please replace it with a number (for example: 0, 25, or 100.5)."
+                )
+
+        if type_errors:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": "Some columns have text where there should be numbers.",
+                    "errors": type_errors[:15]
+                }
+            )
+
+        # Coerce all numeric columns to numeric types for downstream validation
+        for col in NUMERIC_COLUMNS:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
         # ─── Per-row field validation ─────────────────────────────────────────
         errors = []
         for index, row in df.iterrows():
@@ -188,82 +346,82 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
             # Age: required, integer 0–120
             if 'age' in df.columns:
                 if pd.isna(row['age']):
-                    errors.append(f"Row {row_num}: {lbl('age')} is required and cannot be empty.")
-                elif not isinstance(row['age'], (int, float)) or not (0 <= row['age'] <= 120):
-                    errors.append(f"Row {row_num}: {lbl('age')} must be a number between 0 and 120 (got '{row['age']}').")
+                    errors.append(f"Row {row_num}: '{lbl('age')}' is empty — please fill in a value.")
+                elif not (0 <= row['age'] <= 120):
+                    errors.append(f"Row {row_num}: '{lbl('age')}' should be between 0 and 120, but you entered '{row['age']}'.")
 
             # Customer Tenure: required, 0–3650 days (≈ 0–120 months)
             if 'days_since_joined' in df.columns:
                 if pd.isna(row['days_since_joined']):
-                    errors.append(f"Row {row_num}: {lbl('days_since_joined')} is required and cannot be empty.")
+                    errors.append(f"Row {row_num}: '{lbl('days_since_joined')}' is empty — please fill in a value.")
                 elif not (0 <= row['days_since_joined'] <= 3650):
-                    errors.append(f"Row {row_num}: {lbl('days_since_joined')} must be between 0 and 3650 days (0–120 months) (got '{row['days_since_joined']}').")
+                    errors.append(f"Row {row_num}: '{lbl('days_since_joined')}' should be between 0 and 3650 days, but you entered '{row['days_since_joined']}'.")
 
             # Days Since Last Login: non-negative
             if 'days_since_last_login' in df.columns and pd.notna(row['days_since_last_login']):
                 if row['days_since_last_login'] < 0:
-                    errors.append(f"Row {row_num}: {lbl('days_since_last_login')} must be 0 or greater (got '{row['days_since_last_login']}').")
+                    errors.append(f"Row {row_num}: '{lbl('days_since_last_login')}' can't be negative — please use 0 or higher.")
 
             # Days Since Last Activity: non-negative
             if 'days_since_active' in df.columns and pd.notna(row['days_since_active']):
                 if row['days_since_active'] < 0:
-                    errors.append(f"Row {row_num}: {lbl('days_since_active')} must be 0 or greater (got '{row['days_since_active']}').")
+                    errors.append(f"Row {row_num}: '{lbl('days_since_active')}' can't be negative — please use 0 or higher.")
 
             # Avg Session Duration: non-negative
             if 'avg_session_duration' in df.columns and pd.notna(row['avg_session_duration']):
                 if row['avg_session_duration'] < 0:
-                    errors.append(f"Row {row_num}: {lbl('avg_session_duration')} must be 0 or greater (got '{row['avg_session_duration']}').")
+                    errors.append(f"Row {row_num}: '{lbl('avg_session_duration')}' can't be negative — please use 0 or higher.")
 
             # Avg Transaction Value: non-negative
             if 'avg_transaction_value' in df.columns and pd.notna(row['avg_transaction_value']):
                 if row['avg_transaction_value'] < 0:
-                    errors.append(f"Row {row_num}: {lbl('avg_transaction_value')} must be 0 or greater (got '{row['avg_transaction_value']}').")
+                    errors.append(f"Row {row_num}: '{lbl('avg_transaction_value')}' can't be negative — please use 0 or higher.")
 
             # Avg Login Frequency: non-negative
             if 'avg_frequency_login_days' in df.columns and pd.notna(row['avg_frequency_login_days']):
                 if row['avg_frequency_login_days'] < 0:
-                    errors.append(f"Row {row_num}: {lbl('avg_frequency_login_days')} must be 0 or greater (got '{row['avg_frequency_login_days']}').")
+                    errors.append(f"Row {row_num}: '{lbl('avg_frequency_login_days')}' can't be negative — please use 0 or higher.")
 
             # Points in Wallet: non-negative
             if 'points_in_wallet' in df.columns and pd.notna(row['points_in_wallet']):
                 if row['points_in_wallet'] < 0:
-                    errors.append(f"Row {row_num}: {lbl('points_in_wallet')} must be 0 or greater (got '{row['points_in_wallet']}').")
+                    errors.append(f"Row {row_num}: '{lbl('points_in_wallet')}' can't be negative — please use 0 or higher.")
 
             # Logins (90d): non-negative
             if 'logins_90d' in df.columns and pd.notna(row['logins_90d']):
                 if row['logins_90d'] < 0:
-                    errors.append(f"Row {row_num}: {lbl('logins_90d')} must be 0 or greater (got '{row['logins_90d']}').")
+                    errors.append(f"Row {row_num}: '{lbl('logins_90d')}' can't be negative — please use 0 or higher.")
 
             # Active Days (90d): non-negative, cannot exceed logins_90d
             if 'active_days_90d' in df.columns and pd.notna(row['active_days_90d']):
                 if row['active_days_90d'] < 0:
-                    errors.append(f"Row {row_num}: {lbl('active_days_90d')} must be 0 or greater (got '{row['active_days_90d']}').")
+                    errors.append(f"Row {row_num}: '{lbl('active_days_90d')}' can't be negative — please use 0 or higher.")
                 elif 'logins_90d' in df.columns and pd.notna(row['logins_90d']) and row['active_days_90d'] > row['logins_90d']:
                     errors.append(
-                        f"Row {row_num}: {lbl('active_days_90d')} ({int(row['active_days_90d'])}) "
-                        f"cannot be greater than {lbl('logins_90d')} ({int(row['logins_90d'])})."
+                        f"Row {row_num}: '{lbl('active_days_90d')}' is {int(row['active_days_90d'])}, "
+                        f"but that can't be more than '{lbl('logins_90d')}' which is {int(row['logins_90d'])}."
                     )
 
             # API Calls (90d): non-negative
             if 'api_calls_90d' in df.columns and pd.notna(row['api_calls_90d']):
                 if row['api_calls_90d'] < 0:
-                    errors.append(f"Row {row_num}: {lbl('api_calls_90d')} must be 0 or greater (got '{row['api_calls_90d']}').")
+                    errors.append(f"Row {row_num}: '{lbl('api_calls_90d')}' can't be negative — please use 0 or higher.")
 
             # Session Minutes (90d): non-negative
             if 'session_minutes_90d' in df.columns and pd.notna(row['session_minutes_90d']):
                 if row['session_minutes_90d'] < 0:
-                    errors.append(f"Row {row_num}: {lbl('session_minutes_90d')} must be 0 or greater (got '{row['session_minutes_90d']}').")
+                    errors.append(f"Row {row_num}: '{lbl('session_minutes_90d')}' can't be negative — please use 0 or higher.")
 
             # Support Tickets (90d): non-negative
             if 'tickets_opened_90d' in df.columns and pd.notna(row['tickets_opened_90d']):
                 if row['tickets_opened_90d'] < 0:
-                    errors.append(f"Row {row_num}: {lbl('tickets_opened_90d')} must be 0 or greater (got '{row['tickets_opened_90d']}').")
+                    errors.append(f"Row {row_num}: '{lbl('tickets_opened_90d')}' can't be negative — please use 0 or higher.")
 
         if errors:
             raise HTTPException(
                 status_code=422,
                 detail={
-                    "message": "Validation failed. Please fix the errors below and re-upload your file.",
+                    "message": "We found some problems with your data. Please fix them and try again.",
                     "errors": errors[:15]
                 }
             )
@@ -343,6 +501,12 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
     except HTTPException as he:
         raise he
     except Exception as e:
-        print(f"Error importing CSV: {e}")
+        print(f"Error importing file: {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to process CSV: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Something went wrong while processing your file. Please double-check your file and try again.",
+                "errors": [f"Error details: {str(e)}"]
+            }
+        )

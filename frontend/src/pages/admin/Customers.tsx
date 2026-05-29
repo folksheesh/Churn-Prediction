@@ -142,26 +142,23 @@ export default function Customers() {
       fetchHistory();
     } catch (err: any) {
       console.error(err);
-      if (err.response?.data?.detail?.errors) {
+      const detail = err.response?.data?.detail;
+      if (detail && typeof detail === 'object' && detail.message) {
+        // Structured error from backend: { message, errors[] }
         setUploadStatus({
           success: false,
-          message: 'Beberapa data tidak sesuai format yang diharapkan. Silakan periksa file Anda dan coba lagi.',
-          errors: err.response.data.detail.errors
+          message: detail.message,
+          errors: detail.errors || []
         });
-      } else if (typeof err.response?.data?.detail === 'string') {
-        const detail = err.response.data.detail;
-        let friendlyMsg = detail;
-        if (detail.includes('missing')) friendlyMsg = `Kolom yang dibutuhkan tidak ditemukan di file. ${detail}`;
-        else if (detail.includes('format')) friendlyMsg = `Format file tidak sesuai. Pastikan file mengikuti template yang disediakan.`;
-        else if (detail.includes('empty')) friendlyMsg = `File kosong atau tidak memiliki data. Pastikan file memiliki setidaknya 1 baris data.`;
+      } else if (detail && typeof detail === 'string') {
         setUploadStatus({
           success: false,
-          message: friendlyMsg
+          message: detail
         });
       } else {
         setUploadStatus({
           success: false,
-          message: 'Gagal mengimpor file. Pastikan file berformat .csv atau .xlsx dan mengikuti template yang disediakan.'
+          message: 'Failed to import file. Please ensure your file is in .csv or .xlsx format and follows the provided template.'
         });
       }
     } finally {
@@ -464,7 +461,7 @@ export default function Customers() {
                     <XCircle className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
                     <div>
                       <h3 className="text-[13px] font-semibold text-zinc-900">
-                        Upload Gagal
+                        Upload Failed
                       </h3>
                       <p className="text-xs text-zinc-600 mt-1">{uploadStatus.message}</p>
                       {importFile && (
@@ -481,11 +478,11 @@ export default function Customers() {
                       <div className="flex items-center gap-2 mb-4">
                         <AlertCircle className="w-5 h-5 text-rose-500" />
                         <h4 className="text-[13px] font-semibold text-zinc-900">
-                          {uploadStatus.errors.length} Validation Error{uploadStatus.errors.length > 1 ? "s" : ""} Found
+                          {uploadStatus.errors.length} Issue{uploadStatus.errors.length > 1 ? "s" : ""} Found
                         </h4>
                       </div>
                       <p className="text-xs text-zinc-500 mb-4">
-                        Perbaiki masalah berikut di file Anda, lalu upload ulang:
+                        Here's what needs to be fixed before you can upload:
                       </p>
 
                       <div className="space-y-2">
@@ -499,7 +496,7 @@ export default function Customers() {
 
                       {uploadStatus.errors.length >= 15 && (
                         <p className="text-[10px] text-zinc-400 mt-3 italic">
-                          Menampilkan 15 error pertama. Perbaiki masalah ini dan upload ulang untuk memeriksa sisanya.
+                          Showing the first 15 issues. Fix these first, then re-upload to see if there are more.
                         </p>
                       )}
                     </div>
@@ -512,7 +509,7 @@ export default function Customers() {
                       onClick={() => { setImportFile(null); setUploadStatus(null); }}
                       className="px-8 h-9 text-[13px] bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-md transition-colors"
                     >
-                      Coba File Lain
+                      Try Another File
                     </button>
                   </div>
                 </div>
@@ -528,7 +525,7 @@ export default function Customers() {
                     <Upload className="w-8 h-8 text-zinc-500" />
                   </div>
                   <h3 className="text-lg font-extrabold text-zinc-900 mb-2">Drop your XLSX/CSV file here</h3>
-                  <p className="text-sm text-zinc-500 mb-6">atau klik untuk memilih file</p>
+                  <p className="text-sm text-zinc-500 mb-6">or click to select a file</p>
                   
                   {importFile ? (
                     <div className="text-center z-20 relative">
@@ -692,8 +689,8 @@ export default function Customers() {
                       1
                     </div>
                     <div>
-                      <h5 className="text-sm font-bold text-zinc-800">Siapkan file XLSX Anda</h5>
-                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Download template dan isi data customer</p>
+                      <h5 className="text-sm font-bold text-zinc-800">Prepare your XLSX file</h5>
+                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Download the template and fill in customer data</p>
                     </div>
                   </div>
                   
@@ -702,8 +699,8 @@ export default function Customers() {
                       2
                     </div>
                     <div>
-                      <h5 className="text-sm font-bold text-zinc-800">Upload file</h5>
-                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Drag and drop atau klik untuk memilih file XLSX/CSV Anda</p>
+                      <h5 className="text-sm font-bold text-zinc-800">Upload your file</h5>
+                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Drag and drop or click to select your XLSX/CSV file</p>
                     </div>
                   </div>
                   
@@ -712,8 +709,8 @@ export default function Customers() {
                       3
                     </div>
                     <div>
-                      <h5 className="text-sm font-bold text-zinc-800">Dapatkan prediksi</h5>
-                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Lihat hasil dengan probabilitas churn</p>
+                      <h5 className="text-sm font-bold text-zinc-800">Get predictions</h5>
+                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">View results with churn probability analysis</p>
                     </div>
                   </div>
                 </div>
