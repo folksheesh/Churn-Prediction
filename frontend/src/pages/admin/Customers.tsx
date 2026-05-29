@@ -21,7 +21,8 @@ export default function Customers() {
 
   const [formData, setFormData] = useState({
     id: '', name: '', age: '', gender: 'Male', plan_tier: 'Starter', 
-    api_calls_90d: 0, logins_90d: 0, days_since_active: 0
+    api_calls_90d: 0, logins_90d: 0, days_since_active: 0,
+    points_in_wallet: 0, avg_transaction_value: 0, avg_session_duration: 0
   });
 
   const filteredCustomers = useMemo(() => {
@@ -265,6 +266,7 @@ export default function Customers() {
                     <th className="px-5 py-2.5">Plan Tier</th>
                     <th className="px-5 py-2.5">Recent Feedback</th>
                     <th className="px-5 py-2.5">Churn Risk</th>
+                    <th className="px-5 py-2.5">Financials</th>
                     <th className="px-5 py-2.5">Activity</th>
                     <th className="px-5 py-2.5 text-right">Actions</th>
                   </tr>
@@ -313,6 +315,12 @@ export default function Customers() {
                              </div>
                              <span className="text-[10px] font-mono text-zinc-400">{Math.round((c.churn_probability || 0)*100)}%</span>
                           </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-2.5">
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-semibold text-zinc-700">${c.avg_transaction_value || 0}</span>
+                          <span className="text-[10px] text-zinc-500">{c.points_in_wallet || 0} pts</span>
                         </div>
                       </td>
                       <td className="px-5 py-2.5 text-zinc-500 text-xs">
@@ -781,6 +789,18 @@ export default function Customers() {
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-zinc-700">API Calls (90 Days)</label>
                   <input type="number" required placeholder="0" value={formData.api_calls_90d} onChange={e => setFormData({...formData, api_calls_90d: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">Points in Wallet</label>
+                  <input type="number" required placeholder="0" value={formData.points_in_wallet} onChange={e => setFormData({...formData, points_in_wallet: parseFloat(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">Avg Transaction Value</label>
+                  <input type="number" required placeholder="0" value={formData.avg_transaction_value} onChange={e => setFormData({...formData, avg_transaction_value: parseFloat(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">Avg Session (Mins)</label>
+                  <input type="number" required placeholder="0" value={formData.avg_session_duration} onChange={e => setFormData({...formData, avg_session_duration: parseFloat(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
                 </div>
               </div>
             </form>
