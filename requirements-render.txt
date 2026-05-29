@@ -27,3 +27,4 @@ textblob
 
 # ── Caching ──
 fastapi-cache2
+jinja2
