@@ -45,3 +45,6 @@ Thumbs.db
 *.pkl
 *.h5
 *.joblib
+
+# BUT keep the trained models needed for deployment
+!models/*.pkl
