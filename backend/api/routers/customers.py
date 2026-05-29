@@ -160,7 +160,14 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         # Read file based on extension
         try:
             if filename_lower.endswith('.xlsx') or filename_lower.endswith('.xls'):
-                df = pd.read_excel(io.BytesIO(contents))
+                try:
+                    df = pd.read_excel(io.BytesIO(contents))
+                except Exception as excel_err:
+                    # Fallback: Many users rename .csv to .xlsx without converting format
+                    try:
+                        df = pd.read_csv(io.BytesIO(contents))
+                    except Exception:
+                        raise excel_err  # raise original if fallback fails
             else:
                 df = pd.read_csv(io.BytesIO(contents))
         except Exception as parse_err:
