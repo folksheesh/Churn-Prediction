@@ -97,19 +97,24 @@ export default function CsManagement() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="saas-heading text-2xl font-black flex items-center gap-2">
-            <Headphones className="text-indigo-600" size={24} /> 
-            Customer Service Management
-          </h1>
-          <p className="text-zinc-500 text-sm mt-1">Manage CS Agents, monitor their workload, and update contact information.</p>
+    <>
+      <header className="h-16 flex items-center px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
+        <h1 className="text-lg font-semibold tracking-tight text-zinc-900 flex items-center gap-2">
+          <Headphones size={18} className="text-indigo-600" />
+          CS Management
+        </h1>
+      </header>
+
+      <div className="p-4 sm:p-8 max-w-[1200px] mx-auto w-full space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-zinc-900">Customer Service Team</h2>
+            <p className="text-zinc-500 text-sm mt-1">Manage CS Agents, monitor their workload, and update contact information.</p>
+          </div>
+          <button onClick={handleOpenAdd} className="btn-primary flex items-center gap-2">
+            <Plus size={16} /> Add CS Agent
+          </button>
         </div>
-        <button onClick={handleOpenAdd} className="btn-primary flex items-center gap-2">
-          <Plus size={16} /> Add CS Agent
-        </button>
-      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {agents.map(agent => (
@@ -223,5 +228,6 @@ export default function CsManagement() {
         </div>
       )}
     </div>
+    </>
   );
 }
