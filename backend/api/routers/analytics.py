@@ -608,7 +608,8 @@ async def get_critical_alerts(response: Response, limit: int = 5, db: Session = 
         "plan": c.plan_tier,
         "signal": f"Inactive for {c.days_since_active}d" if c.days_since_active and c.days_since_active > 14 else (
             f"Tickets: {c.tickets_opened_90d}" if c.tickets_opened_90d and c.tickets_opened_90d > 2 else "Low activity"
-        )
+        ),
+        "mitigation_status": c.mitigation_status
     } for c in customers]
 
 @router.get("/nlp-insights")

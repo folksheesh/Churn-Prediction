@@ -65,10 +65,26 @@ export default function Dashboard() {
       
       // Set smart default triage for each customer
       const defaults: Record<string, string> = {};
+      const initialProcessing: Record<string, 'idle' | 'processing' | 'done' | 'error'> = {};
+      
       alertData.forEach((row: any) => {
-        defaults[row.id] = getSmartDefaultTriage(row);
+        if (row.mitigation_status) {
+          initialProcessing[row.id] = 'done';
+          // Map database status back to action type
+          if (row.mitigation_status === 'Escalated') defaults[row.id] = 'escalate_cs';
+          else if (row.mitigation_status === 'Contacted') defaults[row.id] = 'contact_customer';
+          else if (row.mitigation_status === 'Assigned to CS') defaults[row.id] = 'assign_agent';
+          else if (row.mitigation_status === 'Offer Sent') defaults[row.id] = 'send_offer';
+          else if (row.mitigation_status === 'Engagement Sent') defaults[row.id] = 'send_engagement';
+          else if (row.mitigation_status === 'Monitoring') defaults[row.id] = 'monitor';
+          else defaults[row.id] = getSmartDefaultTriage(row);
+        } else {
+          defaults[row.id] = getSmartDefaultTriage(row);
+        }
       });
+      
       setTriageActions(defaults);
+      setTriageProcessing(initialProcessing);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
     } finally {
@@ -292,9 +308,17 @@ export default function Dashboard() {
                           <td className="px-5 py-3 text-right">
                             <div className="flex items-center justify-end gap-2">
                               {processState === 'done' ? (
-                                <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-2 py-1.5 rounded flex items-center gap-1">
-                                  <CheckCircle2 size={10} /> Done
-                                </span>
+                                <>
+                                  <span className="text-[11px] font-semibold bg-blue-50/50 text-blue-600 border border-blue-100 px-2.5 py-1.5 rounded flex items-center gap-1.5">
+                                    {currentTriage === 'assign_agent' ? <><Headphones size={12} /> Forward to CS</> :
+                                     currentTriage === 'contact_customer' ? <><Phone size={12} /> Contacted</> :
+                                     currentTriage === 'escalate_cs' ? <><ShieldAlert size={12} /> Escalated</> :
+                                     <><Check size={12} /> {triageOptions.find(o => o.value === currentTriage)?.label || 'Executed'}</>}
+                                  </span>
+                                  <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-600 px-2 py-1.5 rounded flex items-center gap-1">
+                                    <CheckCircle2 size={12} /> Done
+                                  </span>
+                                </>
                               ) : processState === 'error' ? (
                                 <button 
                                   onClick={() => handleExecuteTriage(row.id)}

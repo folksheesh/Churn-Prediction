@@ -93,6 +93,8 @@ def execute_mitigation(
         email_status = result["status"]
         if result["status"] == "Failed":
             mitigation_status = "Failed"
+        else:
+            customer.mitigation_status = "Contacted"
 
     elif req.action_type == "send_engagement":
         # Send engagement email
@@ -102,6 +104,8 @@ def execute_mitigation(
         email_status = result["status"]
         if result["status"] == "Failed":
             mitigation_status = "Failed"
+        else:
+            customer.mitigation_status = "Engagement Sent"
 
     elif req.action_type == "send_offer":
         # Send retention offer email
@@ -111,6 +115,8 @@ def execute_mitigation(
         email_status = result["status"]
         if result["status"] == "Failed":
             mitigation_status = "Failed"
+        else:
+            customer.mitigation_status = "Offer Sent"
 
     elif req.action_type == "assign_agent":
         # Assign to CS Agent
