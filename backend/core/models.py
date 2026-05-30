@@ -72,6 +72,8 @@ class AdminUser(Base):
     hashed_password = Column(String)
     role = Column(String, default=ROLE_ADMIN)       # Super Admin, Admin, CS Manager, CS Agent
     status = Column(String, default="Active")       # Active, Inactive, Suspended
+    phone = Column(String, nullable=True)           # For CS Agent profiles
+    department = Column(String, nullable=True)      # e.g., Retention, Support, Onboarding
     last_login = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

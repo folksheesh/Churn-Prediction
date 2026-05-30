@@ -26,6 +26,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
   const adminNavItems = [
     { name: 'System Status', href: '/admin', icon: Zap },
     { name: 'Manage Admins', href: '/manage-admins', icon: ShieldCheck },
+    { name: 'CS Management', href: '/cs-management', icon: Users },
   ];
 
   return (

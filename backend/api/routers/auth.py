@@ -29,12 +29,16 @@ class AdminCreate(BaseModel):
     name: str
     password: str
     role: str = ROLE_ADMIN
+    phone: Optional[str] = None
+    department: Optional[str] = None
 
 class AdminUpdate(BaseModel):
     email: Optional[EmailStr] = None
     name: Optional[str] = None
     password: Optional[str] = None
     role: Optional[str] = None
+    phone: Optional[str] = None
+    department: Optional[str] = None
 
 class ChangePassword(BaseModel):
     current_password: str
@@ -46,6 +50,8 @@ class AdminResponse(BaseModel):
     name: str
     role: str
     status: str
+    phone: Optional[str] = None
+    department: Optional[str] = None
     last_login: Optional[str] = None
     created_at: Optional[str] = None
 
@@ -190,7 +196,9 @@ def create_admin(admin_data: AdminCreate, current_admin: AdminUser = Depends(get
         name=admin_data.name,
         hashed_password=hashed_password,
         role=admin_data.role,
-        status="Active"
+        status="Active",
+        phone=admin_data.phone,
+        department=admin_data.department
     )
     db.add(new_admin)
     
@@ -227,6 +235,12 @@ def update_admin(admin_id: int, admin_data: AdminUpdate, current_admin: AdminUse
         if admin_data.role not in ALL_ROLES:
             raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(ALL_ROLES)}")
         admin.role = admin_data.role
+        
+    if admin_data.phone is not None:
+        admin.phone = admin_data.phone
+        
+    if admin_data.department is not None:
+        admin.department = admin_data.department
         
     if admin_data.password:
         validate_password_strength(admin_data.password)
@@ -274,8 +288,10 @@ def delete_admin(admin_id: int, current_admin: AdminUser = Depends(get_current_a
     if admin.email == "admin@churnsense.com":
         raise HTTPException(status_code=400, detail="Cannot delete default admin")
         
-    if current_admin.id == admin.id:
-        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    if admin.id == current_admin.id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+        
+    db.delete(admin)
     
     # Log activity
     log = ActivityLog(
@@ -285,7 +301,37 @@ def delete_admin(admin_id: int, current_admin: AdminUser = Depends(get_current_a
         result="success"
     )
     db.add(log)
-        
-    db.delete(admin)
+    
     db.commit()
-    return None
+    return {"detail": "Admin successfully deleted"}
+
+from backend.core.models import Customer
+from sqlalchemy import func
+
+@router.get("/cs-team")
+def get_cs_team(current_admin: AdminUser = Depends(get_current_admin), db: Session = Depends(get_db)):
+    # Get all CS Agents and CS Managers
+    cs_admins = db.query(AdminUser).filter(
+        AdminUser.role.in_([ROLE_CS_AGENT, ROLE_CS_MANAGER])
+    ).all()
+    
+    # Calculate workloads (assigned customers where status is Active and mitigation is assigned)
+    workloads = db.query(
+        Customer.assigned_to, 
+        func.count(Customer.id).label("customer_count")
+    ).filter(
+        Customer.assigned_to.isnot(None),
+        Customer.status == "Active"
+    ).group_by(Customer.assigned_to).all()
+    
+    workload_map = {email: count for email, count in workloads}
+    
+    results = []
+    for a in cs_admins:
+        admin_data = _admin_to_response(a)
+        results.append({
+            **admin_data,
+            "assigned_customers_count": workload_map.get(a.email, 0)
+        })
+        
+    return results

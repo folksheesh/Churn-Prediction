@@ -38,6 +38,10 @@ def _migrate_database():
         cursor.execute("ALTER TABLE admin_users ADD COLUMN status VARCHAR DEFAULT 'Active'")
     if "last_login" not in admin_columns:
         cursor.execute("ALTER TABLE admin_users ADD COLUMN last_login DATETIME")
+    if "phone" not in admin_columns:
+        cursor.execute("ALTER TABLE admin_users ADD COLUMN phone VARCHAR")
+    if "department" not in admin_columns:
+        cursor.execute("ALTER TABLE admin_users ADD COLUMN department VARCHAR")
     
     # Get existing columns for activity_logs
     cursor.execute("PRAGMA table_info(activity_logs)")

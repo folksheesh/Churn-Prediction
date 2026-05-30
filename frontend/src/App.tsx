@@ -15,6 +15,8 @@ import AdminManagement from '@/pages/admin/AdminManagement';
 import Landing from '@/pages/Landing';
 import UserDashboard from '@/pages/user/Dashboard';
 
+import CsManagement from '@/pages/admin/CsManagement';
+
 export default function App() {
   return (
     <AuthProvider>
@@ -36,6 +38,7 @@ export default function App() {
               <Route path="/customers" element={<Customers />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/manage-admins" element={<AdminManagement />} />
+              <Route path="/cs-management" element={<CsManagement />} />
               <Route path="/analysis" element={<Analysis />} />
             </Route>
           </Route>
