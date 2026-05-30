@@ -96,7 +96,9 @@ def seed_db():
     default_admin = AdminUser(
         email="admin@churnsense.com",
         name="Super Admin",
-        hashed_password=hashed_pwd
+        hashed_password=hashed_pwd,
+        role="Super Admin",
+        status="Active"
     )
     db.add(default_admin)
     db.commit()

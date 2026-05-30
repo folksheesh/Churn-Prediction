@@ -1,7 +1,22 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { ShieldCheck, Plus, Trash2, CheckCircle, XCircle, Edit2, Eye, EyeOff, X } from 'lucide-react';
+import { ShieldCheck, Plus, Trash2, CheckCircle, XCircle, Edit2, Eye, EyeOff, X, Clock, User } from 'lucide-react';
+
+const ROLES = ['Super Admin', 'Admin', 'CS Manager', 'CS Agent'];
+
+const roleBadgeColors: Record<string, string> = {
+  'Super Admin': 'bg-violet-100 text-violet-700 border-violet-200',
+  'Admin': 'bg-blue-100 text-blue-700 border-blue-200',
+  'CS Manager': 'bg-amber-100 text-amber-700 border-amber-200',
+  'CS Agent': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+};
+
+const statusColors: Record<string, string> = {
+  'Active': 'bg-emerald-50 text-emerald-700',
+  'Inactive': 'bg-zinc-100 text-zinc-500',
+  'Suspended': 'bg-rose-50 text-rose-600',
+};
 
 export default function AdminManagement() {
   const { token } = useAuth();
@@ -12,6 +27,7 @@ export default function AdminManagement() {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('Admin');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
@@ -19,12 +35,12 @@ export default function AdminManagement() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Password validation state
+  // Password validation — accepts ANY non-alphanumeric, non-whitespace character
   const valLength = password.length >= 8;
   const valUpper = /[A-Z]/.test(password);
   const valLower = /[a-z]/.test(password);
   const valNum = /\d/.test(password);
-  const valSpec = /[@$!%*?&#]/.test(password);
+  const valSpec = /[^A-Za-z0-9\s]/.test(password);
   const isPasswordValid = valLength && valUpper && valLower && valNum && valSpec;
   
   // Password is required for creating, but optional for editing
@@ -32,9 +48,7 @@ export default function AdminManagement() {
 
   const fetchAdmins = async () => {
     try {
-      const res = await api.get('/auth/admins', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get('/auth/admins');
       setAdmins(res.data);
     } catch (err) {
       console.error('Failed to fetch admins:', err);
@@ -58,15 +72,14 @@ export default function AdminManagement() {
     }
 
     try {
-      const payload: any = { email, name };
+      const payload: any = { email, name, role };
       if (password) payload.password = password;
-      const authHeader = { headers: { Authorization: `Bearer ${token}` } };
 
       if (editingId) {
-        await api.put(`/auth/admins/${editingId}`, payload, authHeader);
+        await api.put(`/auth/admins/${editingId}`, payload);
         setSuccess('Admin successfully updated!');
       } else {
-        await api.post('/auth/admins', payload, authHeader);
+        await api.post('/auth/admins', payload);
         setSuccess('Admin successfully added!');
       }
       
@@ -81,6 +94,7 @@ export default function AdminManagement() {
     setEditingId(admin.id);
     setName(admin.name);
     setEmail(admin.email);
+    setRole(admin.role || 'Admin');
     setPassword('');
     setError('');
     setSuccess('');
@@ -91,6 +105,7 @@ export default function AdminManagement() {
     setName('');
     setEmail('');
     setPassword('');
+    setRole('Admin');
     setError('');
     setSuccess('');
   };
@@ -99,13 +114,26 @@ export default function AdminManagement() {
     if (!window.confirm("Are you sure you want to delete this admin?")) return;
     
     try {
-      await api.delete(`/auth/admins/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/auth/admins/${id}`);
       fetchAdmins();
     } catch (err: any) {
       alert(err.response?.data?.detail || "Failed to delete admin");
     }
+  };
+
+  const formatLastLogin = (dateStr: string | null) => {
+    if (!dateStr) return 'Never';
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHrs = Math.floor(diffMins / 60);
+    if (diffHrs < 24) return `${diffHrs}h ago`;
+    const diffDays = Math.floor(diffHrs / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -121,6 +149,7 @@ export default function AdminManagement() {
           <div className="px-6 py-4 border-b border-zinc-100 flex items-center gap-2">
             <ShieldCheck size={18} className="text-zinc-500" />
             <h2 className="text-sm font-semibold text-zinc-900">Active Admins</h2>
+            <span className="ml-auto text-[11px] font-medium text-zinc-400">{admins.length} total</span>
           </div>
           
           {loading ? (
@@ -134,14 +163,41 @@ export default function AdminManagement() {
                 <tr>
                   <th className="px-6 py-3 font-medium">Name</th>
                   <th className="px-6 py-3 font-medium">Email</th>
+                  <th className="px-6 py-3 font-medium">Role</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
+                  <th className="px-6 py-3 font-medium">Last Login</th>
                   <th className="px-6 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {admins.map((admin) => (
                   <tr key={admin.id} className="hover:bg-zinc-50 transition-colors">
-                    <td className="px-6 py-3 font-medium text-zinc-900">{admin.name}</td>
+                    <td className="px-6 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[10px] font-bold text-zinc-600">
+                          {admin.name?.substring(0, 2).toUpperCase() || 'AD'}
+                        </div>
+                        <span className="font-medium text-zinc-900">{admin.name}</span>
+                      </div>
+                    </td>
                     <td className="px-6 py-3 text-zinc-600">{admin.email}</td>
+                    <td className="px-6 py-3">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${roleBadgeColors[admin.role] || 'bg-zinc-100 text-zinc-600 border-zinc-200'}`}>
+                        {admin.role || 'Admin'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${statusColors[admin.status] || 'bg-zinc-100 text-zinc-500'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${admin.status === 'Active' ? 'bg-emerald-500' : admin.status === 'Suspended' ? 'bg-rose-500' : 'bg-zinc-400'}`}></span>
+                        {admin.status || 'Active'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
+                        <Clock size={12} className="text-zinc-400" />
+                        {formatLastLogin(admin.last_login)}
+                      </div>
+                    </td>
                     <td className="px-6 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button 
@@ -210,6 +266,19 @@ export default function AdminManagement() {
             </div>
 
             <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-700">Role</label>
+              <select 
+                value={role}
+                onChange={e => setRole(e.target.value)}
+                className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900/10 bg-white"
+              >
+                {ROLES.map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
               <label className="text-xs font-semibold text-zinc-700">Password {editingId && <span className="text-zinc-400 font-normal">(leave blank to keep current)</span>}</label>
               <div className="relative">
                 <input 
@@ -249,7 +318,7 @@ export default function AdminManagement() {
                 {valNum ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Number
               </div>
               <div className={`flex items-center gap-1.5 ${valSpec ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                {valSpec ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Special character (@$!%*?&#)
+                {valSpec ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Special character (e.g. @$!%*?&#/\-_+.())
               </div>
             </div>
 

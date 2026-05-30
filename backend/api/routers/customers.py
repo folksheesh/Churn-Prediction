@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import pandas as pd
 import io
+from datetime import datetime, timedelta
 from backend.core.database import get_db
-from backend.core.models import Customer, ActivityLog
+from backend.core.models import Customer, ActivityLog, UploadAttempt
 from backend.api.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse, CustomerListResponse
 from backend.api.services.ml_service import run_single_prediction, run_batch_prediction
 import uuid
@@ -13,6 +14,43 @@ import uuid
 from fastapi_cache.decorator import cache
 
 router = APIRouter()
+
+# ── Upload Rate Limiting ─────────────────────────────────────────────────────
+UPLOAD_MAX_FAILED = 5
+UPLOAD_WINDOW_MINUTES = 10
+
+def check_upload_rate_limit(db: Session, user_email: str = "anonymous"):
+    """Check if user has exceeded upload attempt limit."""
+    cutoff = datetime.utcnow() - timedelta(minutes=UPLOAD_WINDOW_MINUTES)
+    recent_failures = db.query(UploadAttempt).filter(
+        UploadAttempt.user_email == user_email,
+        UploadAttempt.status == "failed",
+        UploadAttempt.attempted_at >= cutoff
+    ).count()
+    
+    if recent_failures >= UPLOAD_MAX_FAILED:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "message": "Upload limit exceeded. Please try again later.",
+                "errors": [
+                    f"You have made {recent_failures} failed upload attempts in the last {UPLOAD_WINDOW_MINUTES} minutes.",
+                    f"Maximum {UPLOAD_MAX_FAILED} failed attempts allowed per {UPLOAD_WINDOW_MINUTES}-minute window.",
+                    "Please wait a few minutes before trying again."
+                ]
+            }
+        )
+
+def record_upload_attempt(db: Session, user_email: str, filename: str, status: str, error_message: str = None):
+    """Record an upload attempt in the database."""
+    attempt = UploadAttempt(
+        user_email=user_email,
+        filename=filename,
+        status=status,
+        error_message=error_message
+    )
+    db.add(attempt)
+    db.commit()
 
 @router.get("/", response_model=CustomerListResponse)
 @cache(expire=60)
@@ -142,8 +180,14 @@ def get_csv_template():
 
 @router.post("/import")
 async def import_customers_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    user_email = "anonymous"  # Will be replaced with auth user when token is provided
+    
+    # Check upload rate limit
+    check_upload_rate_limit(db, user_email)
+    
     allowed_extensions = ('.csv', '.xlsx', '.xls')
     if not file.filename.lower().endswith(allowed_extensions):
+        record_upload_attempt(db, user_email, file.filename, "failed", "Unsupported file type")
         raise HTTPException(status_code=400, detail={
             "message": "This file type is not supported.",
             "errors": [
@@ -451,10 +495,11 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
                 row_dict['churn_probability'] = float(prob)
                 row_dict['churn_risk'] = "High" if prob > 0.7 else "Medium" if prob > 0.4 else "Low"
             
-            # Check if customer exists
+            # Check if customer exists (duplicate detection)
             cust_id = str(row_dict.get('id'))
             existing = db.query(Customer).filter(Customer.id == cust_id).first()
             if existing:
+                # Update existing customer
                 for k, v in row_dict.items():
                     if hasattr(existing, k):
                         setattr(existing, k, v)
@@ -468,10 +513,18 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
             db.add_all(customers_to_add)
             
         # Log activity
-        log = ActivityLog(action="CSV Import", user="System", details=f"Imported {len(df)} customers")
+        log = ActivityLog(
+            action="CSV Import", 
+            user=user_email, 
+            details=f"Imported {len(df)} customers ({len(customers_to_add)} new, {len(df) - len(customers_to_add)} updated)",
+            result="success"
+        )
         db.add(log)
         
         db.commit()
+        
+        # Record successful upload attempt
+        record_upload_attempt(db, user_email, file.filename, "success")
 
         # Build prediction results for frontend table display
         prediction_rows = []
@@ -508,10 +561,20 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         }
         
     except HTTPException as he:
+        # Record failed upload attempt for non-rate-limit errors
+        if he.status_code != 429:
+            try:
+                record_upload_attempt(db, user_email, file.filename, "failed", str(he.detail))
+            except Exception:
+                pass
         raise he
     except Exception as e:
         print(f"Error importing file: {e}")
         db.rollback()
+        try:
+            record_upload_attempt(db, user_email, file.filename, "failed", str(e))
+        except Exception:
+            pass
         raise HTTPException(
             status_code=500,
             detail={

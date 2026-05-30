@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/api';
-import { Users, Activity, DollarSign, ArrowUpRight, ArrowDownRight, ShieldAlert, CheckCircle2, BellRing, ArrowRight, Zap, Target, ChevronDown, Headphones, Mail, Phone, Tag, Send, Loader2, Check } from 'lucide-react';
+import { Users, Activity, DollarSign, ArrowUpRight, ArrowDownRight, ShieldAlert, CheckCircle2, BellRing, ArrowRight, Zap, Target, ChevronDown, Headphones, Mail, Phone, Tag, Send, Loader2, Check, AlertTriangle, UserCheck, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 
@@ -44,21 +44,24 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
   const [triageActions, setTriageActions] = useState<Record<string, string>>({});
-  const [triageProcessing, setTriageProcessing] = useState<Record<string, 'idle' | 'processing' | 'done'>>({});
-  const [csProcessing, setCsProcessing] = useState<Record<string, boolean>>({});
-  const [csProcessed, setCsProcessed] = useState<Record<string, boolean>>({});
+  const [triageProcessing, setTriageProcessing] = useState<Record<string, 'idle' | 'processing' | 'done' | 'error'>>({});
+  const [triageErrors, setTriageErrors] = useState<Record<string, string>>({});
+  const [mitigationStats, setMitigationStats] = useState<any>(null);
 
-  useEffect(() => {
-    Promise.all([
-      api.get('/analytics/overview'),
-      api.get('/analytics/critical-alerts?limit=6'),
-      api.get('/analytics/activity-logs?limit=5')
-    ])
-    .then(([overviewRes, alertsRes, activityRes]) => {
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const [overviewRes, alertsRes, activityRes, statsRes] = await Promise.all([
+        api.get('/analytics/overview'),
+        api.get('/analytics/critical-alerts?limit=6'),
+        api.get('/analytics/activity-logs?limit=5'),
+        api.get('/mitigation/stats').catch(() => ({ data: null })),
+      ]);
+
       setMetrics(overviewRes.data);
       const alertData = alertsRes.data;
       setAlerts(alertData);
       setActivities(activityRes.data || []);
+      if (statsRes.data) setMitigationStats(statsRes.data);
       
       // Set smart default triage for each customer
       const defaults: Record<string, string> = {};
@@ -66,54 +69,66 @@ export default function Dashboard() {
         defaults[row.id] = getSmartDefaultTriage(row);
       });
       setTriageActions(defaults);
-    })
-    .catch(err => console.error("Error fetching dashboard data:", err))
-    .finally(() => setLoading(false));
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const handleTriageChange = (customerId: string, value: string) => {
     setTriageActions(prev => ({ ...prev, [customerId]: value }));
     // Reset processing state when action changes
     setTriageProcessing(prev => ({ ...prev, [customerId]: 'idle' }));
+    setTriageErrors(prev => ({ ...prev, [customerId]: '' }));
   };
 
-  const handleExecuteTriage = (customerId: string) => {
+  const handleExecuteTriage = async (customerId: string) => {
+    const action = triageActions[customerId];
+    if (!action) return;
+
     setTriageProcessing(prev => ({ ...prev, [customerId]: 'processing' }));
+    setTriageErrors(prev => ({ ...prev, [customerId]: '' }));
     
-    // Simulate processing
-    setTimeout(() => {
+    try {
+      // Call real mitigation API
+      const res = await api.post('/mitigation/execute', {
+        customer_id: customerId,
+        action_type: action,
+        notes: `Executed from Dashboard triage`,
+      });
+
       setTriageProcessing(prev => ({ ...prev, [customerId]: 'done' }));
       
-      // Log to activity
-      const action = triageActions[customerId];
+      // Log result to activities (local state for immediate feedback)
       const label = triageOptions.find(o => o.value === action)?.label || action;
       const customer = alerts.find(a => a.id === customerId);
       
-      // Add to activities
       setActivities(prev => [{
         timestamp: new Date().toISOString(),
-        action: 'Triage Executed',
-        details: `${label} for ${customer?.name || customerId}`,
+        action: `Mitigation: ${label}`,
+        details: `${label} for ${customer?.name || customerId} — ${res.data.status}${res.data.email_status ? ` (Email: ${res.data.email_status})` : ''}`,
         user: 'Admin'
       }, ...prev.slice(0, 4)]);
-    }, 1500);
-  };
 
-  const handleProcessToCS = (customerId: string) => {
-    setCsProcessing(prev => ({ ...prev, [customerId]: true }));
-    
-    setTimeout(() => {
-      setCsProcessing(prev => ({ ...prev, [customerId]: false }));
-      setCsProcessed(prev => ({ ...prev, [customerId]: true }));
-      
-      const customer = alerts.find(a => a.id === customerId);
-      setActivities(prev => [{
-        timestamp: new Date().toISOString(),
-        action: 'CS Process Started',
-        details: `Forwarded ${customer?.name || customerId} to Customer Service team`,
-        user: 'System'
-      }, ...prev.slice(0, 4)]);
-    }, 2000);
+      // Refresh mitigation stats
+      try {
+        const statsRes = await api.get('/mitigation/stats');
+        setMitigationStats(statsRes.data);
+      } catch {}
+
+    } catch (err: any) {
+      console.error("Triage execution failed:", err);
+      setTriageProcessing(prev => ({ ...prev, [customerId]: 'error' }));
+      setTriageErrors(prev => ({ 
+        ...prev, 
+        [customerId]: err.response?.data?.detail || 'Execution failed. Please try again.' 
+      }));
+    }
   };
 
   if (loading) {
@@ -169,6 +184,18 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* Mitigation Stats Bar */}
+        {mitigationStats && mitigationStats.total_mitigations > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <MiniStat label="Total Mitigations" value={mitigationStats.total_mitigations} color="bg-zinc-100 text-zinc-700" />
+            <MiniStat label="Contacted" value={mitigationStats.contacted_customers} color="bg-blue-50 text-blue-700" />
+            <MiniStat label="Assigned" value={mitigationStats.assigned_customers} color="bg-indigo-50 text-indigo-700" />
+            <MiniStat label="Escalated" value={mitigationStats.escalated_customers} color="bg-rose-50 text-rose-700" />
+            <MiniStat label="Offers Sent" value={mitigationStats.retention_offers_sent} color="bg-amber-50 text-amber-700" />
+            <MiniStat label="Engagement Emails" value={mitigationStats.engagement_emails_sent} color="bg-emerald-50 text-emerald-700" />
+          </div>
+        )}
+
         {/* Asymmetric Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
@@ -216,8 +243,7 @@ export default function Dashboard() {
                     {alerts.map((row, i) => {
                       const currentTriage = triageActions[row.id] || getSmartDefaultTriage(row);
                       const processState = triageProcessing[row.id] || 'idle';
-                      const isCsProcessing = csProcessing[row.id] || false;
-                      const isCsProcessed = csProcessed[row.id] || false;
+                      const errorMsg = triageErrors[row.id] || '';
                       
                       return (
                         <tr key={i} className="hover:bg-zinc-50/50 transition-colors group">
@@ -259,32 +285,23 @@ export default function Dashboard() {
                               </select>
                               <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                             </div>
+                            {errorMsg && (
+                              <p className="text-[10px] text-rose-500 mt-1">{errorMsg}</p>
+                            )}
                           </td>
                           <td className="px-5 py-3 text-right">
                             <div className="flex items-center justify-end gap-2">
                               {processState === 'done' ? (
-                                <>
-                                  {!isCsProcessed ? (
-                                    <button
-                                      onClick={() => handleProcessToCS(row.id)}
-                                      disabled={isCsProcessing}
-                                      className="text-[10px] font-semibold bg-blue-50 border border-blue-200 text-blue-700 px-2 py-1.5 rounded hover:bg-blue-100 transition-all flex items-center gap-1"
-                                    >
-                                      {isCsProcessing ? (
-                                        <><Loader2 size={10} className="animate-spin" /> Processing...</>
-                                      ) : (
-                                        <><Headphones size={10} /> Forward to CS</>
-                                      )}
-                                    </button>
-                                  ) : (
-                                    <span className="text-[10px] font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-1.5 rounded flex items-center gap-1">
-                                      <Check size={10} /> CS Notified
-                                    </span>
-                                  )}
-                                  <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-2 py-1.5 rounded flex items-center gap-1">
-                                    <CheckCircle2 size={10} /> Done
-                                  </span>
-                                </>
+                                <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-2 py-1.5 rounded flex items-center gap-1">
+                                  <CheckCircle2 size={10} /> Done
+                                </span>
+                              ) : processState === 'error' ? (
+                                <button 
+                                  onClick={() => handleExecuteTriage(row.id)}
+                                  className="text-[11px] font-semibold px-2.5 py-1.5 rounded transition-all shadow-sm flex items-center gap-1.5 bg-rose-100 text-rose-700 hover:bg-rose-200 active:scale-[0.97]"
+                                >
+                                  <AlertTriangle size={11} /> Retry
+                                </button>
                               ) : (
                                 <button 
                                   onClick={() => handleExecuteTriage(row.id)}
@@ -326,7 +343,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2 text-xs text-zinc-600">
                     <Headphones size={14} className="text-blue-500" />
                     <span className="font-medium">Customer Service Integration</span>
-                    <span className="text-zinc-400">— Triage actions yang sudah di-execute akan otomatis di-forward ke tim CS</span>
+                    <span className="text-zinc-400">— All executed triage actions create real database records and send emails</span>
                   </div>
                 </div>
               )}
@@ -340,22 +357,22 @@ export default function Dashboard() {
             <div className="saas-card p-5">
                <h3 className="saas-heading mb-4 flex items-center gap-1.5"><Target size={14} className="text-zinc-500"/> Quarterly Retention Goal</h3>
                <div className="relative pt-1">
-                  <div className="flex mb-2 items-center justify-between">
-                    <div>
-                      <span className="text-2xl font-bold text-zinc-900">92.4%</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs font-semibold inline-block text-zinc-500">
-                        Target: 95.0%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-zinc-100">
-                    <div style={{ width: "85%" }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-zinc-900"></div>
-                  </div>
-                  <p className="text-[11px] text-zinc-500 leading-relaxed">
-                    You are currently trailing behind the Q3 retention target. Focus on mitigating Starter plan churn.
-                  </p>
+                 <div className="flex mb-2 items-center justify-between">
+                   <div>
+                     <span className="text-2xl font-bold text-zinc-900">92.4%</span>
+                   </div>
+                   <div className="text-right">
+                     <span className="text-xs font-semibold inline-block text-zinc-500">
+                       Target: 95.0%
+                     </span>
+                   </div>
+                 </div>
+                 <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-zinc-100">
+                   <div style={{ width: "85%" }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-zinc-900"></div>
+                 </div>
+                 <p className="text-[11px] text-zinc-500 leading-relaxed">
+                   You are currently trailing behind the Q3 retention target. Focus on mitigating Starter plan churn.
+                 </p>
                </div>
             </div>
 
@@ -402,7 +419,7 @@ export default function Dashboard() {
                     <div key={idx} className="relative pl-4">
                       <div className={cn(
                         "absolute w-2 h-2 border-2 rounded-full -left-[5px] top-1",
-                        log.action?.includes('Triage') || log.action?.includes('CS') 
+                        log.action?.includes('Mitigation') || log.action?.includes('CS') 
                           ? "bg-indigo-500 border-indigo-200" 
                           : "bg-white border-zinc-300"
                       )}></div>
@@ -451,6 +468,15 @@ function MetricCard({ title, value, trend, isPositive, icon, alert }: { title: s
         </span>
         <span className="text-[11px] text-zinc-400">vs last month</span>
       </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, color }: { label: string, value: number, color: string }) {
+  return (
+    <div className={cn("rounded-md p-3 text-center", color)}>
+      <div className="text-lg font-bold">{value}</div>
+      <div className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{label}</div>
     </div>
   );
 }

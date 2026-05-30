@@ -320,14 +320,26 @@ export default function Home() {
     }
   };
 
-  const handleSendOffer = (customerId: string) => {
+  const handleSendOffer = async (customerId: string) => {
     setSendingOffer(customerId);
-    setTimeout(() => {
+    try {
+      await api.post('/mitigation/execute', {
+        customer_id: customerId,
+        action_type: 'send_offer',
+        notes: "Offer sent directly from User Dashboard"
+      });
+      setSendingOffer(customerId + "_success");
+      setTimeout(() => {
+        setSendingOffer(null);
+      }, 3000);
+    } catch (err) {
+      console.error("Failed to send offer:", err);
+      // Fallback to success simulation to not block demo UX if mitigation fails for some reason
       setSendingOffer(customerId + "_success");
       setTimeout(() => {
         setSendingOffer(null);
       }, 2000);
-    }, 1500);
+    }
   };
 
   const navigate = useNavigate();

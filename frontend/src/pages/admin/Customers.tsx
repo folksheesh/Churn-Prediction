@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Plus, MoreHorizontal, UserX, UserCheck, X, Lightbulb, AlertTriangle, MessageSquare, TrendingDown, TrendingUp, BarChart2, Activity, UploadCloud, Download, CheckCircle2, XCircle, AlertCircle, Upload, Info, FileText, ArrowLeft } from 'lucide-react';
+import { Search, Filter, Plus, MoreHorizontal, UserX, UserCheck, X, Lightbulb, AlertTriangle, MessageSquare, TrendingDown, TrendingUp, BarChart2, Activity, UploadCloud, Download, CheckCircle2, XCircle, AlertCircle, Upload, Info, FileText, ArrowLeft, Loader2, Send } from 'lucide-react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +24,9 @@ export default function Customers() {
     api_calls_90d: 0, logins_90d: 0, days_since_active: 0,
     points_in_wallet: 0, avg_transaction_value: 0, avg_session_duration: 0
   });
+  const [addCustomerStatus, setAddCustomerStatus] = useState<{type: 'error'|'success', msg: string}|null>(null);
+  const [mitigationProcessing, setMitigationProcessing] = useState(false);
+  const [mitigationResult, setMitigationResult] = useState<{success: boolean, msg: string}|null>(null);
 
   const filteredCustomers = useMemo(() => {
     if (filterRisk === 'All') return customers;
@@ -92,17 +95,59 @@ export default function Customers() {
 
   const handleAddCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAddCustomerStatus(null);
     try {
       await api.post('/customers/', {
         ...formData,
         age: parseInt(formData.age as string) || 30,
         id: formData.id || `CUST-${Math.floor(Math.random()*10000)}`
       });
-      setIsAddDrawerOpen(false);
+      setAddCustomerStatus({type: 'success', msg: 'Customer successfully added!'});
+      setTimeout(() => {
+        setIsAddDrawerOpen(false);
+        setAddCustomerStatus(null);
+      }, 1500);
       fetchCustomers();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to add customer", err);
-      alert("Failed to add customer. Check console.");
+      setAddCustomerStatus({type: 'error', msg: err.response?.data?.detail || "Failed to add customer"});
+    }
+  };
+  
+  const handleExecuteMitigation = async (actionType: string) => {
+    if (!selectedCustomer) return;
+    setMitigationProcessing(true);
+    setMitigationResult(null);
+    try {
+      const res = await api.post('/mitigation/execute', {
+        customer_id: selectedCustomer.id,
+        action_type: actionType,
+        notes: "Executed from Customer Details drawer"
+      });
+      setMitigationResult({
+        success: true, 
+        msg: `Mitigation successful: ${res.data.status}${res.data.email_status ? ` (Email: ${res.data.email_status})` : ''}`
+      });
+      // Optionally refresh customers if needed
+    } catch (err: any) {
+      console.error(err);
+      let errorMsg = "Failed to upload file";
+      let errorList = [];
+      if (err.response?.data?.detail) {
+          if (typeof err.response.data.detail === 'string') {
+              errorMsg = err.response.data.detail;
+          } else {
+              errorMsg = err.response.data.detail.message || errorMsg;
+              errorList = err.response.data.detail.errors || [];
+          }
+      }
+      setUploadStatus({
+        success: false,
+        message: errorMsg,
+        errors: errorList.length > 0 ? errorList : undefined
+      });
+    } finally {
+      setMitigationProcessing(false);
     }
   };
 
@@ -723,9 +768,9 @@ export default function Customers() {
                   </div>
                 </div>
 
-                <a href="/template_churn.xlsx" download className="block text-center w-full mt-8 py-2.5 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 font-bold rounded-md border border-zinc-200 transition-colors text-xs">
+                <button onClick={handleDownloadTemplate} className="block text-center w-full mt-8 py-2.5 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 font-bold rounded-md border border-zinc-200 transition-colors text-xs">
                   Download Template
-                </a>
+                </button>
               </div>
 
 
@@ -748,71 +793,78 @@ export default function Customers() {
               </button>
             </div>
             
-            <form onSubmit={handleAddCustomer} className="p-6 space-y-4 flex-1 overflow-y-auto">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-zinc-700">Customer ID</label>
-                <input required type="text" placeholder="e.g. CUST-123" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+            <form onSubmit={handleAddCustomer} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+                {addCustomerStatus && (
+                  <div className={`p-3 text-xs rounded border ${addCustomerStatus.type === 'error' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                    {addCustomerStatus.msg}
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">Customer ID</label>
+                  <input required type="text" placeholder="e.g. CUST-123" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">Full Name</label>
+                  <input required type="text" placeholder="Jane Doe" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Plan Tier</label>
+                    <select value={formData.plan_tier} onChange={e => setFormData({...formData, plan_tier: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400">
+                      <option>Starter</option>
+                      <option>Pro</option>
+                      <option>Enterprise</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Gender</label>
+                    <select value={formData.gender} onChange={e => setFormData({...formData, gender: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400">
+                      <option>Male</option>
+                      <option>Female</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Age</label>
+                    <input type="number" required placeholder="30" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Days Since Active</label>
+                    <input type="number" required placeholder="0" value={formData.days_since_active} onChange={e => setFormData({...formData, days_since_active: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Logins (90 Days)</label>
+                    <input type="number" required placeholder="0" value={formData.logins_90d} onChange={e => setFormData({...formData, logins_90d: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">API Calls (90 Days)</label>
+                    <input type="number" required placeholder="0" value={formData.api_calls_90d} onChange={e => setFormData({...formData, api_calls_90d: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Points in Wallet</label>
+                    <input type="number" required placeholder="0" value={formData.points_in_wallet} onChange={e => setFormData({...formData, points_in_wallet: parseFloat(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Avg Transaction Value</label>
+                    <input type="number" required placeholder="0" value={formData.avg_transaction_value} onChange={e => setFormData({...formData, avg_transaction_value: parseFloat(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-zinc-700">Avg Session (Mins)</label>
+                    <input type="number" required placeholder="0" value={formData.avg_session_duration} onChange={e => setFormData({...formData, avg_session_duration: parseFloat(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-zinc-700">Full Name</label>
-                <input required type="text" placeholder="Jane Doe" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">Plan Tier</label>
-                  <select value={formData.plan_tier} onChange={e => setFormData({...formData, plan_tier: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400">
-                    <option>Starter</option>
-                    <option>Pro</option>
-                    <option>Enterprise</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">Gender</label>
-                  <select value={formData.gender} onChange={e => setFormData({...formData, gender: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400">
-                    <option>Male</option>
-                    <option>Female</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">Age</label>
-                  <input type="number" required placeholder="30" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">Days Since Active</label>
-                  <input type="number" required placeholder="0" value={formData.days_since_active} onChange={e => setFormData({...formData, days_since_active: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">Logins (90 Days)</label>
-                  <input type="number" required placeholder="0" value={formData.logins_90d} onChange={e => setFormData({...formData, logins_90d: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">API Calls (90 Days)</label>
-                  <input type="number" required placeholder="0" value={formData.api_calls_90d} onChange={e => setFormData({...formData, api_calls_90d: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">Points in Wallet</label>
-                  <input type="number" required placeholder="0" value={formData.points_in_wallet} onChange={e => setFormData({...formData, points_in_wallet: parseFloat(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">Avg Transaction Value</label>
-                  <input type="number" required placeholder="0" value={formData.avg_transaction_value} onChange={e => setFormData({...formData, avg_transaction_value: parseFloat(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">Avg Session (Mins)</label>
-                  <input type="number" required placeholder="0" value={formData.avg_session_duration} onChange={e => setFormData({...formData, avg_session_duration: parseFloat(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
-                </div>
+
+              <div className="p-4 border-t border-zinc-100 flex justify-end gap-3 bg-zinc-50/50">
+                <button type="button" onClick={() => setIsAddDrawerOpen(false)} className="px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 rounded border border-zinc-200 transition-colors shadow-sm">
+                  Cancel
+                </button>
+                <button type="submit" className="px-3 py-1.5 text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 rounded transition-colors shadow-sm">
+                  Save Customer
+                </button>
               </div>
             </form>
-
-            <div className="p-4 border-t border-zinc-100 flex justify-end gap-3 bg-zinc-50/50">
-              <button type="button" onClick={() => setIsAddDrawerOpen(false)} className="px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 rounded border border-zinc-200 transition-colors shadow-sm">
-                Cancel
-              </button>
-              <button onClick={handleAddCustomer} className="px-3 py-1.5 text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 rounded transition-colors shadow-sm">
-                Save Customer
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -915,17 +967,33 @@ export default function Customers() {
               </div>
             </div>
 
+              </div>
+            </div>
+
             {selectedCustomer.churn_risk === 'High' && (
-              <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex justify-end gap-3">
-                <button 
-                  onClick={() => {
-                    alert(`Mitigation applied for ${selectedCustomer.name}`);
-                    setSelectedCustomer(null);
-                  }}
-                  className="w-full px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-md transition-colors shadow-sm flex items-center justify-center gap-2"
-                >
-                  <AlertTriangle size={14} /> Execute Mitigation Playbook
-                </button>
+              <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex flex-col gap-3">
+                {mitigationResult && (
+                  <div className={`p-3 text-xs rounded border flex items-start gap-2 ${mitigationResult.success ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+                    {mitigationResult.success ? <CheckCircle2 size={14} className="shrink-0 mt-0.5" /> : <XCircle size={14} className="shrink-0 mt-0.5" />}
+                    <span>{mitigationResult.msg}</span>
+                  </div>
+                )}
+                <div className="flex gap-2 w-full">
+                  <button 
+                    onClick={() => handleExecuteMitigation('escalate_cs')}
+                    disabled={mitigationProcessing}
+                    className="flex-1 px-4 py-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-md transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {mitigationProcessing ? <Loader2 size={14} className="animate-spin" /> : <AlertTriangle size={14} />} Escalate
+                  </button>
+                  <button 
+                    onClick={() => handleExecuteMitigation('send_offer')}
+                    disabled={mitigationProcessing}
+                    className="flex-1 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {mitigationProcessing ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Send Offer
+                  </button>
+                </div>
               </div>
             )}
           </div>

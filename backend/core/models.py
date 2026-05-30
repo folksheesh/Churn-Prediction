@@ -1,6 +1,13 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.sql import func
 from backend.core.database import Base
+
+# ── Role constants for RBAC ──────────────────────────────────────────────────
+ROLE_SUPER_ADMIN = "Super Admin"
+ROLE_ADMIN = "Admin"
+ROLE_CS_MANAGER = "CS Manager"
+ROLE_CS_AGENT = "CS Agent"
+ALL_ROLES = [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_CS_MANAGER, ROLE_CS_AGENT]
 
 class Customer(Base):
     __tablename__ = "customers"
@@ -37,6 +44,10 @@ class Customer(Base):
     churn_risk = Column(String, nullable=True) # High, Medium, Low
     churn_probability = Column(Float, nullable=True)
     
+    # Mitigation status
+    mitigation_status = Column(String, nullable=True)  # Assigned to CS, Escalated, Monitoring, etc.
+    assigned_to = Column(String, nullable=True)  # email of assigned CS Agent
+    
     # Audit
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -48,6 +59,8 @@ class ActivityLog(Base):
     action = Column(String)
     user = Column(String)
     details = Column(String, nullable=True)
+    result = Column(String, nullable=True)       # success, failed, etc.
+    email_status = Column(String, nullable=True)  # Pending, Sent, Delivered, Failed
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
 class AdminUser(Base):
@@ -57,4 +70,32 @@ class AdminUser(Base):
     email = Column(String, unique=True, index=True)
     name = Column(String)
     hashed_password = Column(String)
+    role = Column(String, default=ROLE_ADMIN)       # Super Admin, Admin, CS Manager, CS Agent
+    status = Column(String, default="Active")       # Active, Inactive, Suspended
+    last_login = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class MitigationLog(Base):
+    __tablename__ = "mitigation_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(String, index=True, nullable=False)
+    action_type = Column(String, nullable=False)      # escalate_cs, contact_customer, assign_agent, send_offer, send_engagement, monitor
+    executed_by = Column(String, nullable=False)       # admin email
+    executed_at = Column(DateTime(timezone=True), server_default=func.now())
+    status = Column(String, default="Pending")         # Pending, Completed, Failed
+    email_status = Column(String, nullable=True)       # Pending, Sent, Delivered, Failed
+    notes = Column(Text, nullable=True)
+    assigned_agent = Column(String, nullable=True)     # For assign_agent action
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class UploadAttempt(Base):
+    __tablename__ = "upload_attempts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_email = Column(String, nullable=False, index=True)
+    filename = Column(String, nullable=True)
+    status = Column(String, default="failed")  # success, failed
+    error_message = Column(Text, nullable=True)
+    attempted_at = Column(DateTime(timezone=True), server_default=func.now())
