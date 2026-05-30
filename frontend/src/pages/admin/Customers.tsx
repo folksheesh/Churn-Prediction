@@ -967,9 +967,6 @@ export default function Customers() {
               </div>
             </div>
 
-              </div>
-            </div>
-
             {selectedCustomer.churn_risk === 'High' && (
               <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex flex-col gap-3">
                 {mitigationResult && (
