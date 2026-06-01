@@ -20,6 +20,11 @@ export default function Landing() {
           </div>
           <span className="text-xl font-bold tracking-tight text-zinc-900">ChurnSense</span>
         </div>
+        <div className="flex items-center gap-4">
+          <Link to="/login" className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 transition-colors">
+            Admin Login
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1 w-full">
@@ -37,13 +42,7 @@ export default function Landing() {
               to="/user-dashboard"
               className="bg-zinc-900 hover:bg-zinc-800 text-white font-medium px-8 py-3.5 rounded-lg transition-all shadow-md flex items-center gap-2"
             >
-              Enter User Dashboard <ArrowRight size={18} />
-            </Link>
-            <Link 
-              to="/login"
-              className="bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 font-medium px-8 py-3.5 rounded-lg transition-all shadow-sm"
-            >
-              Admin Access
+              Let's Get Started <ArrowRight size={18} />
             </Link>
           </div>
         </section>

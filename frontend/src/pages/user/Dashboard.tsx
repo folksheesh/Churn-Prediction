@@ -36,8 +36,10 @@ import {
   Info,
   HelpCircle,
   Wand2,
-  LogOut
+  LogOut,
+  Target
 } from "lucide-react";
+import Campaigns from '@/pages/admin/Campaigns';
 import {
   ResponsiveContainer,
   LineChart,
@@ -57,13 +59,15 @@ import {
 } from "recharts";
 
 export default function Home() {
-  const { logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis">("dashboard");
+  const { logout, isAuthenticated } = useAuth();
+  const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis" | "campaigns">("dashboard");
   const [summary, setSummary] = useState<any>(null);
   const [customerData, setCustomerData] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [regionFilter, setRegionFilter] = useState("All");
   const [riskFilter, setRiskFilter] = useState("All");
+  const [sendingOffer, setSendingOffer] = useState<string | null>(null);
+  const [selectedCampaigns, setSelectedCampaigns] = useState<Record<string, string>>({});
   
   // Single prediction state
   const [predName, setPredName] = useState("");
@@ -174,6 +178,22 @@ export default function Home() {
         riskPct: regionData[reg].total ? Math.round((regionData[reg].atRisk / regionData[reg].total) * 100) : 0
       })).sort((a, b) => b.riskPct - a.riskPct);
 
+      const planData: Record<string, number> = {};
+      data.forEach((c: any) => {
+        const p = c.plan_tier || 'Basic';
+        planData[p] = (planData[p] || 0) + 1;
+      });
+      const planStats = Object.keys(planData).map(p => ({
+        name: p,
+        value: planData[p]
+      }));
+
+      const riskStats = [
+        { name: 'Low Risk', value: lowRiskCount, fill: '#10b981' },
+        { name: 'Medium Risk', value: mediumRiskCount, fill: '#f59e0b' },
+        { name: 'High Risk', value: highRiskCount, fill: '#f43f5e' }
+      ];
+
       // Update summary using REAL global metrics from backend
       setSummary({
         totalCustomers,
@@ -190,6 +210,8 @@ export default function Home() {
         ],
         sparkline: [88, 89, 90, 92, 94, 93, 95],
         regionStats: realRegionStats.slice(0, 5),
+        planStats,
+        riskStats,
         lowRiskCustomers: mappedCustomers.filter((c: any) => c.riskLevel === 'Low Risk').slice(0, 4),
         highRiskCustomers: mappedCustomers
           .filter((c: any) => c.riskLevel === 'High Risk' || c.churnProbability >= 70)
@@ -321,12 +343,26 @@ export default function Home() {
   };
 
   const handleSendOffer = async (customerId: string) => {
+    const campaign = selectedCampaigns[customerId] || "Discount Campaign";
     setSendingOffer(customerId);
     try {
-      await api.post('/mitigation/execute', {
-        customer_id: customerId,
-        action_type: 'send_offer',
-        notes: "Offer sent directly from User Dashboard"
+      await api.put(`/customers/${customerId}`, {
+        retention_campaign: campaign,
+        mitigation_status: 'Mitigated',
+        campaign_assigned_date: new Date().toISOString()
+      });
+      // Update local state to reflect mitigation immediately
+      setCustomerData((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          customers: prev.customers.map((c: any) => 
+            c.customerId === customerId ? { ...c, retention_campaign: campaign, mitigation_status: 'Mitigated' } : c
+          ),
+          highRiskCustomers: prev.highRiskCustomers.map((c: any) => 
+            c.customerId === customerId ? { ...c, retention_campaign: campaign, mitigation_status: 'Mitigated' } : c
+          )
+        };
       });
       setSendingOffer(customerId + "_success");
       setTimeout(() => {
@@ -334,7 +370,7 @@ export default function Home() {
       }, 3000);
     } catch (err) {
       console.error("Failed to send offer:", err);
-      // Fallback to success simulation to not block demo UX if mitigation fails for some reason
+      // Fallback
       setSendingOffer(customerId + "_success");
       setTimeout(() => {
         setSendingOffer(null);
@@ -406,17 +442,38 @@ export default function Home() {
             <Activity className={`w-4 h-4 shrink-0 transition-colors ${activeTab === "analysis" ? "text-brand-600" : ""}`} />
             <span>Analysis</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab("campaigns")}
+            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+              activeTab === "campaigns"
+                ? "bg-white text-brand-700 shadow-sm border border-slate-200/60 ring-1 ring-slate-100/50"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent"
+            }`}
+          >
+            <Target className={`w-4 h-4 shrink-0 transition-colors ${activeTab === "campaigns" ? "text-brand-600" : ""}`} />
+            <span>Campaigns</span>
+          </button>
         </div>
 
         {/* Right: Auth Action */}
         <div className="flex items-center gap-3 sm:gap-4">
-          <button 
-            onClick={() => { logout(); navigate('/'); }}
-            className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 border border-transparent hover:border-rose-100"
-          >
-            <LogOut className="w-4 h-4 shrink-0" />
-            <span>Logout</span>
-          </button>
+          {isAuthenticated ? (
+            <button 
+              onClick={() => { logout(); navigate('/'); }}
+              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 border border-transparent hover:border-rose-100"
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span>Logout</span>
+            </button>
+          ) : (
+            <Link 
+              to="/login"
+              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 border border-transparent hover:border-brand-100"
+            >
+              <span>Admin Login</span>
+            </Link>
+          )}
 
           {/* Mobile Menu Dropdown Wrapper */}
           <div className="md:hidden relative group">
@@ -429,11 +486,18 @@ export default function Home() {
               <button onClick={() => setActiveTab("customers")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "customers" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Customers</button>
               <button onClick={() => setActiveTab("prediction")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "prediction" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Customer Insights</button>
               <button onClick={() => setActiveTab("analysis")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "analysis" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Analysis</button>
+              <button onClick={() => setActiveTab("campaigns")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "campaigns" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Campaigns</button>
               <div className="h-px bg-slate-200/60 my-1"></div>
-              <button onClick={() => { logout(); navigate('/'); }} className="text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center justify-between">
-                <span>Logout</span>
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
+              {isAuthenticated ? (
+                <button onClick={() => { logout(); navigate('/'); }} className="text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center justify-between">
+                  <span>Logout</span>
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <Link to="/login" className="text-left px-3 py-2 rounded-lg text-sm font-semibold text-brand-600 hover:bg-brand-50 flex items-center justify-between">
+                  <span>Admin Login</span>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -450,18 +514,21 @@ export default function Home() {
               {activeTab === "customers" && "Directory"}
               {activeTab === "prediction" && "Calculator"}
               {activeTab === "analysis" && "Analytics"}
+              {activeTab === "campaigns" && "Campaigns"}
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-outfit">
               {activeTab === "dashboard" && "Dashboard Overview"}
               {activeTab === "customers" && "Customer Health Directory"}
               {activeTab === "prediction" && "Customer Insights Calculator"}
               {activeTab === "analysis" && "Visual Analytics"}
+              {activeTab === "campaigns" && "Active Campaigns"}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
               {activeTab === "dashboard" && "Welcome back! Here is your custom customer health analysis."}
               {activeTab === "customers" && "Real-time list of customers filterable by risk and location categories."}
               {activeTab === "prediction" && "Calculate simulated customer insights using pre-trained boundaries."}
               {activeTab === "analysis" && "These charts help you see patterns and trends in your customer data. Don't worry if you're not familiar with charts - each one includes a guide on how to read it!"}
+              {activeTab === "campaigns" && "Track and manage customers assigned to retention campaigns."}
             </p>
           </div>
         </header>
@@ -521,132 +588,222 @@ export default function Home() {
               </div>
             )}
 
-            {/* CHARTS CONTAINER */}
-            <div className="grid grid-cols-1 gap-8">
+            {/* 2x2 CHARTS GRID */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
-              {/* Churn Forecast Line Chart */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h4 className="text-base font-extrabold text-slate-900 font-outfit">Customer Activity Trend</h4>
-                    <p className="text-xs text-slate-400">Projected 7-day customer engagement trend.</p>
-                  </div>
+              {/* Top Left: Churn Forecast Line Chart */}
+              <div className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow rounded-xl p-6">
+                <div className="mb-6">
+                  <h4 className="text-base font-extrabold text-slate-900 font-outfit">Customer Activity Trend</h4>
+                  <p className="text-xs text-slate-400">Projected 7-day engagement trend.</p>
                 </div>
                 {summary && summary.churnForecast ? (
-                  <div className="h-[280px] w-full">
+                  <div className="h-[240px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={summary.churnForecast}>
                         <defs>
                           <linearGradient id="colorChurn" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#6d5dfc" stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor="#6d5dfc" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis dataKey="day" tickLine={false} axisLine={false} style={{ fontSize: '11px', fill: '#94a3b8' }} />
                         <YAxis tickLine={false} axisLine={false} style={{ fontSize: '11px', fill: '#94a3b8' }} unit="%" />
                         <Tooltip contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px' }} />
-                        <Area type="monotone" dataKey="predictedChurn" stroke="#6d5dfc" strokeWidth={3} fillOpacity={1} fill="url(#colorChurn)" name="Churn Rate" />
+                        <Area type="monotone" dataKey="predictedChurn" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorChurn)" name="Churn Rate" />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="h-[280px] flex items-center justify-center text-slate-400">Loading forecast chart...</div>
+                  <div className="h-[240px] flex items-center justify-center text-slate-400">Loading forecast...</div>
                 )}
               </div>
 
-            </div>
-
-            {/* BOTTOM SECTION GRID: REGION RETENTION & ACTIVITIES */}
-            <div className="grid grid-cols-1 gap-8">
-              
-              {/* Region Retention and table list */}
-              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-6">
+              {/* Top Right: Risk Distribution */}
+              <div className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow rounded-xl p-6">
                 <div className="mb-6">
-                  <h4 className="text-base font-extrabold text-slate-900 font-outfit">Regional Customer Insights</h4>
-                  <p className="text-xs text-slate-400">Engagement metrics grouped by geographic region.</p>
+                  <h4 className="text-base font-extrabold text-slate-900 font-outfit">Risk Distribution</h4>
+                  <p className="text-xs text-slate-400">Current portfolio risk breakdown.</p>
                 </div>
+                {summary && summary.riskStats ? (
+                  <div className="h-[240px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={summary.riskStats}
+                          innerRadius={65}
+                          outerRadius={90}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {summary.riskStats.map((entry: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }} />
+                        <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-[240px] flex items-center justify-center text-slate-400">Loading risk stats...</div>
+                )}
+              </div>
 
+              {/* Bottom Left: Regional Customer Insights */}
+              <div className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow rounded-xl p-6">
+                <div className="mb-6">
+                  <h4 className="text-base font-extrabold text-slate-900 font-outfit">Regional Insights</h4>
+                  <p className="text-xs text-slate-400">High-risk rate by geographic region.</p>
+                </div>
                 {summary && summary.regionStats ? (
-                  <div className="h-[200px] w-full mb-6">
+                  <div className="h-[240px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={summary.regionStats}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis dataKey="region" tickLine={false} axisLine={false} style={{ fontSize: '11px', fill: '#94a3b8' }} />
                         <YAxis tickLine={false} axisLine={false} style={{ fontSize: '11px', fill: '#94a3b8' }} unit="%" />
                         <Tooltip contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px' }} />
-                        <Bar dataKey="riskPct" fill="#6d5dfc" radius={[8, 8, 0, 0]} barSize={36} name="At-Risk Rate (%)" />
+                        <Bar dataKey="riskPct" fill="#8b5cf6" radius={[6, 6, 0, 0]} barSize={28} name="At-Risk (%)" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-slate-400">Loading region statistics...</div>
+                  <div className="h-[240px] flex items-center justify-center text-slate-400">Loading region stats...</div>
                 )}
+              </div>
 
-                {/* Customer Attention Cards */}
-                <div className="mt-8">
-                  <h4 className="text-sm font-extrabold text-slate-900 mb-4">Customers Needing Attention</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {summary?.highRiskCustomers?.length > 0 ? summary.highRiskCustomers.map((c: any, i: number) => {
-                      const isHigh = c.churnProbability >= 75;
-                      const isMed = !isHigh;
-                      const btnClass = isHigh ? "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-100" : "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-100";
-                      const textClass = isHigh ? "text-rose-600 bg-rose-50 border-rose-100" : "text-amber-600 bg-amber-50 border-amber-100";
-                      const dotClass = isHigh ? "bg-rose-500 shadow-rose-200" : "bg-amber-500 shadow-amber-200";
-                      const avatarClass = isHigh ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700";
-                      
-                      const btnState = sendingOffer === c.customerId ? "loading" : sendingOffer === c.customerId + "_success" ? "success" : "idle";
-                      
-                      return (
-                        <div key={c.customerId} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-                          <div 
-                            className="cursor-pointer group flex-1"
-                            onClick={() => openCustomerModal(c)}
-                          >
-                            <div className="flex justify-between items-start mb-4">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm shrink-0 transition-transform group-hover:scale-105 ${avatarClass}`}>
-                                  {c.initials}
-                                </div>
-                                <div>
-                                  <h5 className="font-bold text-slate-900 text-sm truncate max-w-[120px] group-hover:text-brand-600 transition-colors">{c.name}</h5>
-                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${textClass}`}>
-                                    {isHigh ? "High Attention" : "Medium Attention"}
-                                  </span>
-                                </div>
-                              </div>
-                              <span className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 shadow-sm ${dotClass}`}></span>
-                            </div>
-                            <p className="text-xs text-slate-600 mb-5 leading-relaxed h-8 line-clamp-2">
-                              {c.recommendations?.[0] || "Engagement decreasing recently."}
-                            </p>
-                          </div>
-                          <button 
-                            onClick={() => handleSendOffer(c.customerId)}
-                            disabled={btnState !== "idle"}
-                            className={`w-full py-2.5 font-bold text-xs rounded-xl transition-all border flex justify-center items-center gap-2 ${
-                              btnState === "success" 
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
-                                : btnClass
-                            }`}
-                          >
-                            {btnState === "loading" ? (
-                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                            ) : btnState === "success" ? (
-                              "Offer Sent!"
-                            ) : (
-                              "Send Offer"
-                            )}
-                          </button>
-                        </div>
-                      );
-                    }) : (
-                      <div className="col-span-3 text-center py-8 text-sm text-slate-400">
-                        No high risk customers at this time.
-                      </div>
-                    )}
-                  </div>
+              {/* Bottom Right: Plan Tier Distribution */}
+              <div className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow rounded-xl p-6">
+                <div className="mb-6">
+                  <h4 className="text-base font-extrabold text-slate-900 font-outfit">Plan Tier Distribution</h4>
+                  <p className="text-xs text-slate-400">Active subscriptions breakdown.</p>
                 </div>
+                {summary && summary.planStats ? (
+                  <div className="h-[240px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={summary.planStats}
+                          innerRadius={0}
+                          outerRadius={90}
+                          dataKey="value"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                        >
+                          {summary.planStats.map((entry: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={['#3b82f6', '#ec4899', '#14b8a6', '#f59e0b', '#6366f1'][index % 5]} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-[240px] flex items-center justify-center text-slate-400">Loading plan stats...</div>
+                )}
+              </div>
+            </div>
+
+            {/* CUSTOMERS NEEDING ATTENTION (MITIGATION) */}
+            <div className="mt-8">
+              <h4 className="text-lg font-black text-slate-900 font-outfit mb-6 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-rose-500" /> Mitigation Action Center
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {summary?.highRiskCustomers?.length > 0 ? summary.highRiskCustomers.map((c: any) => {
+                  const isHigh = c.churnProbability >= 75;
+                  
+                  const btnState = sendingOffer === c.customerId ? "loading" : sendingOffer === c.customerId + "_success" ? "success" : "idle";
+                  
+                  return (
+                    <div key={c.customerId} className="relative group bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                      {/* Premium Card Header */}
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-amber-500" />
+                      <div className="p-5">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-100 to-rose-50 flex items-center justify-center font-black text-rose-700 shadow-inner">
+                                {c.initials}
+                              </div>
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-rose-500 border-2 border-white animate-pulse" />
+                            </div>
+                            <div className="min-w-0">
+                              <h5 className="font-bold text-slate-900 text-base truncate group-hover:text-brand-600 transition-colors">{c.name}</h5>
+                              <p className="text-[11px] font-bold text-slate-500">{c.planTier} Plan • ${c.monthlyValue}/mo</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-rose-600 font-black text-lg">{c.churnProbability}%</div>
+                            <div className="text-[10px] uppercase font-bold tracking-wider text-rose-400">Risk</div>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-slate-50 rounded-xl p-3 mb-5 border border-slate-100">
+                          <p className="text-xs text-slate-600 font-medium leading-relaxed line-clamp-2 italic">
+                            <span className="font-bold text-slate-800 not-italic">AI Note:</span> "{c.recommendations?.[0] || 'Engagement has steadily decreased over the last 30 days.'}"
+                          </p>
+                        </div>
+                        
+                        {/* Interactive Action Buttons */}
+                        <div className="space-y-2">
+                          {(c.mitigation_status === "Mitigated" || c.retention_campaign || btnState === "success") ? (
+                            <div className="w-full py-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex flex-col items-center justify-center gap-1">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 size={16} /> <span className="uppercase tracking-wider">Mitigated</span>
+                              </div>
+                              <span className="text-[10px] font-medium text-emerald-600/80 mt-1">
+                                Active Campaign: {c.retention_campaign || (selectedCampaigns[c.customerId] || "Discount Campaign")}
+                              </span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex gap-2">
+                                <select 
+                                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                                  value={selectedCampaigns[c.customerId] || "Discount Campaign"}
+                                  onChange={(e) => setSelectedCampaigns(prev => ({ ...prev, [c.customerId]: e.target.value }))}
+                                >
+                                  <option value="Discount Campaign">Discount Campaign</option>
+                                  <option value="Customer Support Follow-up">Customer Support</option>
+                                  <option value="Loyalty Program Enrollment">Loyalty Program</option>
+                                  <option value="Product Recommendation Campaign">Product Recommend</option>
+                                </select>
+                                <button 
+                                  onClick={() => handleSendOffer(c.customerId)}
+                                  disabled={btnState === "loading"}
+                                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex justify-center items-center gap-2 disabled:opacity-70 shrink-0"
+                                >
+                                  {btnState === "loading" ? (
+                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                  ) : (
+                                    "Apply"
+                                  )}
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 mt-2">
+                                <button className="py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-[11px] font-bold transition-all flex justify-center items-center gap-1.5">
+                                  <Mail size={12} /> Email Support
+                                </button>
+                                <button className="py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-[11px] font-bold transition-all flex justify-center items-center gap-1.5">
+                                  <Phone size={12} /> Call User
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }) : (
+                  <div className="col-span-3 py-16 flex flex-col items-center justify-center bg-white border border-slate-100 rounded-2xl border-dashed">
+                    <CheckCircle className="w-10 h-10 text-emerald-400 mb-3" />
+                    <h3 className="text-sm font-bold text-slate-900">All Clear!</h3>
+                    <p className="text-xs text-slate-500 mt-1">No high-risk customers requiring immediate mitigation.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1133,6 +1290,13 @@ export default function Home() {
         {/* VIEW E: VISUAL ANALYTICS TAB */}
         {activeTab === "analysis" && (
           <VisualAnalyticsTab customerData={customerData} summary={summary} />
+        )}
+
+        {/* VIEW F: CAMPAIGNS TAB */}
+        {activeTab === "campaigns" && (
+          <div className="bg-white border border-slate-100 shadow-sm rounded-xl overflow-hidden h-[800px] flex">
+            <Campaigns hideHeader={true} />
+          </div>
         )}
 
         {/* CUSTOMER DETAILS MODAL */}

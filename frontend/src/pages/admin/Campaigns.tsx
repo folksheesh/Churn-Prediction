@@ -11,7 +11,7 @@ const CAMPAIGNS = [
   { id: 'Product Recommendation Campaign', icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
 ];
 
-export default function Campaigns() {
+export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean } = {}) {
   const [activeTab, setActiveTab] = useState(CAMPAIGNS[0].id);
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,13 +40,15 @@ export default function Campaigns() {
   );
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#fcfcfd]">
-      <header className="h-16 flex flex-col justify-center px-8 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900">Active Campaigns</h1>
-        <p className="text-xs text-zinc-500">Track and manage customers assigned to retention campaigns.</p>
-      </header>
+    <div className={cn("flex-1 flex flex-col h-full", hideHeader ? "" : "bg-[#fcfcfd]")}>
+      {!hideHeader && (
+        <header className="h-16 flex flex-col justify-center px-8 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
+          <h1 className="text-xl font-bold tracking-tight text-zinc-900">Active Campaigns</h1>
+          <p className="text-xs text-zinc-500">Track and manage customers assigned to retention campaigns.</p>
+        </header>
+      )}
 
-      <div className="p-8 max-w-[1400px] mx-auto w-full space-y-6 animate-fadeIn">
+      <div className={cn("max-w-[1400px] mx-auto w-full space-y-6 animate-fadeIn", hideHeader ? "pt-0 pb-8" : "p-8")}>
         
         {/* Campaign Tabs */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

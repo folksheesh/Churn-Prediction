@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Activity, Eye, EyeOff } from 'lucide-react';
+import { Activity, Eye, EyeOff, ArrowLeft, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -27,76 +27,157 @@ export default function Login() {
   };
 
   return (
-    <div className="sm:mx-auto sm:w-full sm:max-w-md">
-      <div className="flex justify-center items-center gap-2 mb-8 relative">
-        <Link to="/" className="absolute -top-12 left-0 sm:-left-4 text-sm text-zinc-500 hover:text-zinc-900 flex items-center gap-2 transition-colors">
-          &larr; Back to Home
-        </Link>
-        <div className="bg-zinc-900 p-2 rounded-lg">
-          <Activity className="text-white" size={24} />
+    <div className="flex w-full min-h-screen font-outfit">
+      {/* LEFT SIDE: Interactive Hero / Branding */}
+      <div className="hidden lg:flex w-[55%] relative overflow-hidden bg-zinc-950 p-12 flex-col justify-between">
+        {/* Animated Gradient Background Elements */}
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-600/30 blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-brand-600/30 blur-[120px] pointer-events-none" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
+        
+        {/* Top Logo Area */}
+        <div className="relative z-10">
+          <Link to="/" className="inline-flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="w-10 h-10 bg-gradient-to-tr from-brand-600 to-brand-400 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-brand-500/20">
+              <Activity size={20} strokeWidth={3} />
+            </div>
+            <span className="text-2xl font-black tracking-tight text-white">ChurnSense</span>
+          </Link>
         </div>
-        <span className="text-xl font-bold tracking-tight text-zinc-900">ChurnSense</span>
+
+        {/* Center Content */}
+        <div className="relative z-10 max-w-xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/80 border border-zinc-800 text-brand-400 text-xs font-bold mb-6 backdrop-blur-sm">
+            <Zap size={14} className="fill-brand-500" />
+            V2.0 is now live
+          </div>
+          <h1 className="text-5xl font-black text-white leading-[1.1] mb-6">
+            Predict churn before it <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-indigo-400">happens.</span>
+          </h1>
+          <p className="text-lg text-zinc-400 leading-relaxed max-w-md">
+            Empower your retention teams with real-time AI insights, automated campaigns, and powerful visual analytics.
+          </p>
+
+          <div className="mt-12 grid grid-cols-2 gap-6">
+            <div className="flex gap-4 items-start">
+              <div className="mt-1 bg-zinc-900 rounded-lg p-2 shrink-0 border border-zinc-800">
+                <ShieldCheck size={20} className="text-emerald-400" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Enterprise Security</h4>
+                <p className="text-zinc-500 text-xs mt-1">Bank-grade encryption for all your customer data.</p>
+              </div>
+            </div>
+            <div className="flex gap-4 items-start">
+              <div className="mt-1 bg-zinc-900 rounded-lg p-2 shrink-0 border border-zinc-800">
+                <Activity size={20} className="text-brand-400" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">99% Accuracy</h4>
+                <p className="text-zinc-500 text-xs mt-1">Advanced ML models trained on millions of signals.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Footer Area */}
+        <div className="relative z-10 flex items-center justify-between text-zinc-500 text-xs font-semibold">
+          <p>&copy; 2026 ChurnSense Inc.</p>
+          <div className="flex gap-4">
+            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white py-8 px-4 shadow-sm border border-zinc-200/80 sm:rounded-xl sm:px-10">
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-900">Sign in to your workspace</h2>
-            <p className="mt-1 text-sm text-zinc-500">Welcome back! Please enter your details.</p>
+      {/* RIGHT SIDE: Login Form */}
+      <div className="flex-1 flex flex-col justify-center bg-white relative">
+        <Link to="/" className="absolute top-8 left-8 lg:hidden flex items-center gap-2 text-sm font-semibold text-zinc-500 hover:text-zinc-900 transition-colors">
+          <ArrowLeft size={16} /> Back
+        </Link>
+
+        <div className="w-full max-w-md mx-auto px-8 sm:px-12 py-12">
+          
+          {/* Mobile Logo */}
+          <div className="lg:hidden flex items-center gap-3 mb-10">
+            <div className="w-10 h-10 bg-gradient-to-tr from-brand-600 to-brand-400 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-brand-500/20">
+              <Activity size={20} strokeWidth={3} />
+            </div>
+            <span className="text-2xl font-black tracking-tight text-zinc-900">ChurnSense</span>
+          </div>
+
+          <div className="mb-10">
+            <h2 className="text-3xl font-black text-zinc-900 tracking-tight">Welcome back</h2>
+            <p className="mt-2 text-zinc-500 font-medium">Please enter your credentials to access your workspace.</p>
           </div>
           
-          {error && <div className="p-3 bg-rose-50 text-rose-700 text-sm rounded-md border border-rose-200">{error}</div>}
+          {error && (
+            <div className="mb-6 p-4 bg-rose-50 border border-rose-200/60 rounded-xl flex items-start gap-3 animate-fade-in">
+              <div className="bg-rose-100 p-1 rounded-full shrink-0 mt-0.5">
+                <ShieldCheck size={14} className="text-rose-600" />
+              </div>
+              <p className="text-sm font-semibold text-rose-800 leading-snug">{error}</p>
+            </div>
+          )}
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-700">Email Address</label>
-              <div className="mt-1">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-bold text-zinc-700 mb-2">Email Address</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-zinc-200 rounded-md shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900/20 focus:border-zinc-400 sm:text-sm transition-colors"
-                  placeholder="admin@example.com"
+                  className="appearance-none block w-full px-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-xl placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white text-zinc-900 font-medium transition-all"
+                  placeholder="name@company.com"
                 />
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-bold text-zinc-700">Password</label>
+                  <a href="#" className="text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors">Forgot password?</a>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="appearance-none block w-full px-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-xl placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white text-zinc-900 font-medium transition-all pr-12"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowPassword(prev => !prev);
+                    }}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-zinc-400 hover:text-zinc-700 transition-colors z-10 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-700">Password</label>
-              <div className="mt-1 relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-zinc-200 rounded-md shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900/20 focus:border-zinc-400 sm:text-sm transition-colors pr-10"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowPassword(prev => !prev);
-                  }}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 transition-colors z-10 cursor-pointer"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="group w-full flex items-center justify-center gap-2 py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-zinc-900 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-900 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Authenticating...' : 'Sign In to Workspace'}
+                {!loading && <ArrowRight size={16} className="opacity-70 group-hover:translate-x-1 transition-transform" />}
+              </button>
             </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-zinc-900 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-900 transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </div>
-        </form>
+            
+            <p className="text-center text-sm font-medium text-zinc-500 mt-8">
+              Don't have an account? <a href="#" className="text-brand-600 font-bold hover:text-brand-700 hover:underline">Contact Sales</a>
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   );
