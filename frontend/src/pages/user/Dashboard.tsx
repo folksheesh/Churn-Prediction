@@ -86,8 +86,7 @@ export default function Home() {
   // Modal tracking
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
 
-  // Send Offer state
-  const [sendingOffer, setSendingOffer] = useState<string | null>(null);
+  // Send Offer state removed (duplicate)
 
   // Fetch Customers and compute summary
   const fetchCustomers = async () => {
