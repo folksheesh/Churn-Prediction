@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Plus, MoreHorizontal, UserX, UserCheck, X, Lightbulb, AlertTriangle, MessageSquare, TrendingDown, TrendingUp, BarChart2, Activity, UploadCloud, Download, CheckCircle2, XCircle, AlertCircle, Upload, Info, FileText, ArrowLeft, Loader2, Send } from 'lucide-react';
+import { Search, Filter, Plus, MoreHorizontal, UserX, UserCheck, X, Lightbulb, AlertTriangle, MessageSquare, TrendingDown, TrendingUp, BarChart2, Activity, UploadCloud, Download, CheckCircle2, XCircle, AlertCircle, Upload, Info, FileText, ArrowLeft, Loader2, Sparkles, Shield, Tag } from 'lucide-react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
+import RetentionActionCenter from '@/components/RetentionActionCenter';
 
 export default function Customers() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,8 +26,9 @@ export default function Customers() {
     points_in_wallet: 0, avg_transaction_value: 0, avg_session_duration: 0
   });
   const [addCustomerStatus, setAddCustomerStatus] = useState<{type: 'error'|'success', msg: string}|null>(null);
-  const [mitigationProcessing, setMitigationProcessing] = useState(false);
-  const [mitigationResult, setMitigationResult] = useState<{success: boolean, msg: string}|null>(null);
+
+  // Retention Action Center modal
+  const [retentionModalCustomer, setRetentionModalCustomer] = useState<any | null>(null);
 
   const filteredCustomers = useMemo(() => {
     if (filterRisk === 'All') return customers;
@@ -113,43 +115,6 @@ export default function Customers() {
       setAddCustomerStatus({type: 'error', msg: err.response?.data?.detail || "Failed to add customer"});
     }
   };
-  
-  const handleExecuteMitigation = async (actionType: string) => {
-    if (!selectedCustomer) return;
-    setMitigationProcessing(true);
-    setMitigationResult(null);
-    try {
-      const res = await api.post('/mitigation/execute', {
-        customer_id: selectedCustomer.id,
-        action_type: actionType,
-        notes: "Executed from Customer Details drawer"
-      });
-      setMitigationResult({
-        success: true, 
-        msg: `Mitigation successful: ${res.data.status}${res.data.email_status ? ` (Email: ${res.data.email_status})` : ''}`
-      });
-      // Optionally refresh customers if needed
-    } catch (err: any) {
-      console.error(err);
-      let errorMsg = "Failed to upload file";
-      let errorList = [];
-      if (err.response?.data?.detail) {
-          if (typeof err.response.data.detail === 'string') {
-              errorMsg = err.response.data.detail;
-          } else {
-              errorMsg = err.response.data.detail.message || errorMsg;
-              errorList = err.response.data.detail.errors || [];
-          }
-      }
-      setUploadStatus({
-        success: false,
-        message: errorMsg,
-        errors: errorList.length > 0 ? errorList : undefined
-      });
-    } finally {
-      setMitigationProcessing(false);
-    }
-  };
 
   const handleDownloadTemplate = async () => {
     try {
@@ -210,6 +175,10 @@ export default function Customers() {
     } finally {
       setIsImporting(false);
     }
+  };
+
+  const handleRetentionSuccess = () => {
+    fetchCustomers(); // Refresh to show updated campaign assignment
   };
 
   return (
@@ -311,7 +280,7 @@ export default function Customers() {
                     <th className="px-5 py-2.5">Plan Tier</th>
                     <th className="px-5 py-2.5">Recent Feedback</th>
                     <th className="px-5 py-2.5">Churn Risk</th>
-                    <th className="px-5 py-2.5">Financials</th>
+                    <th className="px-5 py-2.5">Retention Campaign</th>
                     <th className="px-5 py-2.5">Activity</th>
                     <th className="px-5 py-2.5 text-right">Actions</th>
                   </tr>
@@ -363,10 +332,14 @@ export default function Customers() {
                         </div>
                       </td>
                       <td className="px-5 py-2.5">
-                        <div className="flex flex-col">
-                          <span className="text-[11px] font-semibold text-zinc-700">${c.avg_transaction_value || 0}</span>
-                          <span className="text-[10px] text-zinc-500">{c.points_in_wallet || 0} pts</span>
-                        </div>
+                        {c.retention_campaign ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-sm border border-indigo-200/50">
+                            <Tag size={10} />
+                            {c.retention_campaign}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-zinc-400 italic">Not Assigned</span>
+                        )}
                       </td>
                       <td className="px-5 py-2.5 text-zinc-500 text-xs">
                         {c.days_since_active ? `${c.days_since_active} days ago` : 'Unknown'}
@@ -383,7 +356,7 @@ export default function Customers() {
                   ))}
                   {filteredCustomers.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
+                      <td colSpan={7} className="px-6 py-12 text-center text-zinc-500">
                         No customers found matching your criteria.
                       </td>
                     </tr>
@@ -602,8 +575,6 @@ export default function Customers() {
               {/* ── PREDICTION RESULTS TABLE (shown after successful upload) ── */}
               {uploadStatus?.success && uploadStatus.results && uploadStatus.results.length > 0 && (
                 <div className="space-y-6 animate-fadeIn mt-6">
-
-
 
                   {/* Avg Churn Probability Banner */}
                   <div className="bg-zinc-50 border border-zinc-200 rounded-md p-4 flex items-center gap-4">
@@ -925,16 +896,48 @@ export default function Customers() {
                   
                   {selectedCustomer.churn_risk === 'High' && (
                     <div className="bg-white rounded border border-rose-100 p-3 shadow-sm">
-                      <h4 className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-1 flex items-center gap-1"><Lightbulb size={12}/> AI Recommended Action</h4>
+                      <h4 className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-1 flex items-center gap-1"><Sparkles size={12}/> AI Recommended Action</h4>
                       <p className="text-[13px] font-medium text-zinc-800">
-                        {selectedCustomer.feedback?.toLowerCase().includes('website') 
-                          ? "Escalate UI/UX complaint ticket directly to engineering team today."
-                          : selectedCustomer.days_since_active > 14 
-                          ? "Initiate proactive outreach call to verify technical blockers."
-                          : "Issue an automated 15% retention discount via email sequence."}
+                        Open the Retention Action Center to assign an AI-recommended campaign strategy for this customer.
                       </p>
                     </div>
                   )}
+                </div>
+
+                {/* Retention Campaign Card */}
+                <div>
+                  <h3 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Retention Campaign</h3>
+                  <div className="saas-card p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-zinc-500">Campaign Name</span>
+                        <span className="text-[13px] font-semibold text-zinc-900">
+                          {selectedCustomer.retention_campaign || '—'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-zinc-500">Assigned Date</span>
+                        <span className="text-[13px] font-medium text-zinc-700">
+                          {selectedCustomer.campaign_assigned_date 
+                            ? new Date(selectedCustomer.campaign_assigned_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                            : '—'
+                          }
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-zinc-500">Status</span>
+                        {selectedCustomer.retention_campaign ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <CheckCircle2 size={10} /> Assigned
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold bg-zinc-100 text-zinc-500 border border-zinc-200">
+                            Not Assigned
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Behavioral Metrics */}
@@ -967,34 +970,34 @@ export default function Customers() {
               </div>
             </div>
 
-            {selectedCustomer.churn_risk === 'High' && (
-              <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex flex-col gap-3">
-                {mitigationResult && (
-                  <div className={`p-3 text-xs rounded border flex items-start gap-2 ${mitigationResult.success ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
-                    {mitigationResult.success ? <CheckCircle2 size={14} className="shrink-0 mt-0.5" /> : <XCircle size={14} className="shrink-0 mt-0.5" />}
-                    <span>{mitigationResult.msg}</span>
-                  </div>
-                )}
-                <div className="flex gap-2 w-full">
-                  <button 
-                    onClick={() => handleExecuteMitigation('escalate_cs')}
-                    disabled={mitigationProcessing}
-                    className="flex-1 px-4 py-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-md transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {mitigationProcessing ? <Loader2 size={14} className="animate-spin" /> : <AlertTriangle size={14} />} Escalate
-                  </button>
-                  <button 
-                    onClick={() => handleExecuteMitigation('send_offer')}
-                    disabled={mitigationProcessing}
-                    className="flex-1 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {mitigationProcessing ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Send Offer
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Mitigate Customer Button */}
+            <div className="p-4 border-t border-zinc-100 bg-zinc-50">
+              <button 
+                onClick={() => {
+                  setRetentionModalCustomer(selectedCustomer);
+                }}
+                className="w-full px-4 py-2.5 text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg transition-all active:scale-[0.98] shadow-sm hover:shadow flex items-center justify-center gap-2"
+              >
+                <Shield size={14} /> Mitigate Customer
+              </button>
+            </div>
           </div>
         </div>
+      )}
+
+      {/* Retention Action Center Modal */}
+      {retentionModalCustomer && (
+        <RetentionActionCenter
+          customer={retentionModalCustomer}
+          onClose={() => setRetentionModalCustomer(null)}
+          onSuccess={() => {
+            handleRetentionSuccess();
+            // Refresh the selected customer data
+            if (selectedCustomer && selectedCustomer.id === retentionModalCustomer.id) {
+              // Re-fetch will update the table, drawer will close naturally
+            }
+          }}
+        />
       )}
 
       </>

@@ -27,6 +27,10 @@ class CustomerBase(BaseModel):
     
     churn_risk: Optional[str] = None
     churn_probability: Optional[float] = None
+    
+    mitigation_status: Optional[str] = None
+    retention_campaign: Optional[str] = None
+    campaign_assigned_date: Optional[datetime] = None
 
 class CustomerCreate(CustomerBase):
     id: str

@@ -296,7 +296,7 @@ export default function Home() {
       } else if (adjustedRiskLevel === "Medium Risk") {
         mockAdvice = predPlanTier === "Starter"
           ? ["Send feature highlights showing value beyond basic tier", "Offer a time-limited upgrade discount (e.g., 30% off Pro)"]
-          : ["Send targeted engagement emails highlighting unused features", "Offer a quick survey to understand any pain points", "Provide a brief tutorial or webinar invite"];
+          : ["Provide targeted feature highlights showing value", "Offer a quick survey to understand any pain points", "Provide a brief tutorial or webinar invite"];
       }
 
       setPredictionResult({

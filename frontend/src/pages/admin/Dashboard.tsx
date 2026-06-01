@@ -1,41 +1,40 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/api';
-import { Users, Activity, DollarSign, ArrowUpRight, ArrowDownRight, ShieldAlert, CheckCircle2, BellRing, ArrowRight, Zap, Target, ChevronDown, Headphones, Mail, Phone, Tag, Send, Loader2, Check, AlertTriangle, UserCheck, MessageSquare } from 'lucide-react';
+import { Users, Activity, DollarSign, ArrowUpRight, ArrowDownRight, ShieldAlert, CheckCircle2, BellRing, ArrowRight, Zap, Target, ChevronDown, Headphones, Tag, Star, Package, Loader2, Check, AlertTriangle, UserCheck, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 
-// Smart triage options per risk profile
+// Campaign-based triage options
 const triageOptions = [
-  { value: 'escalate_cs', label: 'Escalate to CS Manager', icon: '🔴', forRisk: 'critical' },
-  { value: 'contact_customer', label: 'Contact Customer', icon: '📞', forRisk: 'high' },
-  { value: 'assign_agent', label: 'Assign CS Agent', icon: '👤', forRisk: 'high' },
-  { value: 'send_offer', label: 'Send Retention Offer', icon: '🎁', forRisk: 'medium' },
-  { value: 'send_engagement', label: 'Send Engagement Email', icon: '✉️', forRisk: 'medium' },
-  { value: 'monitor', label: 'Monitor Only', icon: '👁️', forRisk: 'low' },
+  { value: 'discount_campaign', label: 'Discount Campaign', icon: '🏷️' },
+  { value: 'customer_support_followup', label: 'Customer Support Follow-up', icon: '🎧' },
+  { value: 'loyalty_program_enrollment', label: 'Loyalty Program Enrollment', icon: '⭐' },
+  { value: 'product_recommendation', label: 'Product Recommendation', icon: '📦' },
 ];
 
-function getSmartDefaultTriage(row: any): string {
-  // Per-customer smart triage based on risk profile
-  const score = row.score || 0;
+function getSmartDefaultCampaign(row: any): string {
+  // AI-powered campaign recommendation based on customer signals
   const signal = (row.signal || '').toLowerCase();
-  const plan = (row.plan || '').toLowerCase();
+  const score = row.score || 0;
   
-  // Critical: very high score + negative feedback
-  if (score >= 90 && (signal.includes('negative') || signal.includes('complaint'))) {
-    return 'escalate_cs';
+  // High inactivity → Loyalty Program to re-engage
+  if (signal.includes('inactive') || signal.includes('no login')) {
+    return 'loyalty_program_enrollment';
   }
-  // High risk: score > 80 or inactive
-  if (score >= 80) {
-    if (signal.includes('inactive') || signal.includes('no login')) return 'contact_customer';
-    return 'assign_agent';
+  // Support ticket issues → Customer Support Follow-up
+  if (signal.includes('ticket') || signal.includes('support')) {
+    return 'customer_support_followup';
   }
-  // Medium-high: score 65-80
-  if (score >= 65) {
-    if (plan.includes('enterprise') || plan.includes('pro')) return 'send_offer';
-    return 'send_engagement';
+  // Very high churn score → Discount to retain
+  if (score >= 85) {
+    return 'discount_campaign';
+  }
+  // Low activity → Product Recommendation
+  if (signal.includes('low activity')) {
+    return 'product_recommendation';
   }
   // Default
-  return 'monitor';
+  return 'discount_campaign';
 }
 
 export default function Dashboard() {
@@ -46,7 +45,7 @@ export default function Dashboard() {
   const [triageActions, setTriageActions] = useState<Record<string, string>>({});
   const [triageProcessing, setTriageProcessing] = useState<Record<string, 'idle' | 'processing' | 'done' | 'error'>>({});
   const [triageErrors, setTriageErrors] = useState<Record<string, string>>({});
-  const [mitigationStats, setMitigationStats] = useState<any>(null);
+  const [campaignStats, setCampaignStats] = useState<any>(null);
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -61,25 +60,18 @@ export default function Dashboard() {
       const alertData = alertsRes.data;
       setAlerts(alertData);
       setActivities(activityRes.data || []);
-      if (statsRes.data) setMitigationStats(statsRes.data);
+      if (statsRes.data) setCampaignStats(statsRes.data);
       
-      // Set smart default triage for each customer
+      // Set smart default campaign for each customer
       const defaults: Record<string, string> = {};
       const initialProcessing: Record<string, 'idle' | 'processing' | 'done' | 'error'> = {};
       
       alertData.forEach((row: any) => {
-        if (row.mitigation_status) {
+        if (row.mitigation_status === 'Assigned') {
           initialProcessing[row.id] = 'done';
-          // Map database status back to action type
-          if (row.mitigation_status === 'Escalated') defaults[row.id] = 'escalate_cs';
-          else if (row.mitigation_status === 'Contacted') defaults[row.id] = 'contact_customer';
-          else if (row.mitigation_status === 'Assigned to CS') defaults[row.id] = 'assign_agent';
-          else if (row.mitigation_status === 'Offer Sent') defaults[row.id] = 'send_offer';
-          else if (row.mitigation_status === 'Engagement Sent') defaults[row.id] = 'send_engagement';
-          else if (row.mitigation_status === 'Monitoring') defaults[row.id] = 'monitor';
-          else defaults[row.id] = getSmartDefaultTriage(row);
+          defaults[row.id] = getSmartDefaultCampaign(row);
         } else {
-          defaults[row.id] = getSmartDefaultTriage(row);
+          defaults[row.id] = getSmartDefaultCampaign(row);
         }
       });
       
@@ -104,37 +96,37 @@ export default function Dashboard() {
   };
 
   const handleExecuteTriage = async (customerId: string) => {
-    const action = triageActions[customerId];
-    if (!action) return;
+    const campaign = triageActions[customerId];
+    if (!campaign) return;
 
     setTriageProcessing(prev => ({ ...prev, [customerId]: 'processing' }));
     setTriageErrors(prev => ({ ...prev, [customerId]: '' }));
     
     try {
-      // Call real mitigation API
+      // Call campaign assignment API
       const res = await api.post('/mitigation/execute', {
         customer_id: customerId,
-        action_type: action,
-        notes: `Executed from Dashboard triage`,
+        campaign_name: campaign,
+        notes: `Assigned from Dashboard triage`,
       });
 
       setTriageProcessing(prev => ({ ...prev, [customerId]: 'done' }));
       
       // Log result to activities (local state for immediate feedback)
-      const label = triageOptions.find(o => o.value === action)?.label || action;
+      const label = triageOptions.find(o => o.value === campaign)?.label || campaign;
       const customer = alerts.find(a => a.id === customerId);
       
       setActivities(prev => [{
         timestamp: new Date().toISOString(),
-        action: `Mitigation: ${label}`,
-        details: `${label} for ${customer?.name || customerId} — ${res.data.status}${res.data.email_status ? ` (Email: ${res.data.email_status})` : ''}`,
+        action: `Campaign Assigned: ${label}`,
+        details: `${label} assigned to ${customer?.name || customerId}`,
         user: 'Admin'
       }, ...prev.slice(0, 4)]);
 
-      // Refresh mitigation stats
+      // Refresh campaign stats
       try {
         const statsRes = await api.get('/mitigation/stats');
-        setMitigationStats(statsRes.data);
+        setCampaignStats(statsRes.data);
       } catch {}
 
     } catch (err: any) {
@@ -142,7 +134,7 @@ export default function Dashboard() {
       setTriageProcessing(prev => ({ ...prev, [customerId]: 'error' }));
       setTriageErrors(prev => ({ 
         ...prev, 
-        [customerId]: err.response?.data?.detail || 'Execution failed. Please try again.' 
+        [customerId]: err.response?.data?.detail || 'Assignment failed. Please try again.' 
       }));
     }
   };
@@ -200,15 +192,14 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Mitigation Stats Bar */}
-        {mitigationStats && mitigationStats.total_mitigations > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <MiniStat label="Total Mitigations" value={mitigationStats.total_mitigations} color="bg-zinc-100 text-zinc-700" />
-            <MiniStat label="Contacted" value={mitigationStats.contacted_customers} color="bg-blue-50 text-blue-700" />
-            <MiniStat label="Assigned" value={mitigationStats.assigned_customers} color="bg-indigo-50 text-indigo-700" />
-            <MiniStat label="Escalated" value={mitigationStats.escalated_customers} color="bg-rose-50 text-rose-700" />
-            <MiniStat label="Offers Sent" value={mitigationStats.retention_offers_sent} color="bg-amber-50 text-amber-700" />
-            <MiniStat label="Engagement Emails" value={mitigationStats.engagement_emails_sent} color="bg-emerald-50 text-emerald-700" />
+        {/* Campaign Stats Bar */}
+        {campaignStats && campaignStats.total_campaigns > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <MiniStat label="Total Campaigns" value={campaignStats.total_campaigns} color="bg-zinc-100 text-zinc-700" />
+            <MiniStat label="Discount" value={campaignStats.discount_campaigns} color="bg-amber-50 text-amber-700" />
+            <MiniStat label="Support Follow-up" value={campaignStats.support_followups} color="bg-blue-50 text-blue-700" />
+            <MiniStat label="Loyalty Program" value={campaignStats.loyalty_enrollments} color="bg-purple-50 text-purple-700" />
+            <MiniStat label="Product Rec." value={campaignStats.product_recommendations} color="bg-emerald-50 text-emerald-700" />
           </div>
         )}
 
@@ -224,16 +215,16 @@ export default function Dashboard() {
               <div className="flex-1">
                 <h3 className="saas-heading text-indigo-950">AI Retention Opportunity Detected</h3>
                 <p className="text-[13px] text-indigo-800/80 mt-1 leading-relaxed">
-                  Our model indicates that offering a 15% discount to users who have experienced 
-                  "Poor Website" performance in the last 7 days can reduce their churn probability by 40%.
+                  Our model recommends assigning targeted retention campaigns to high-risk customers. 
+                  Use the triage table below to assign the AI-recommended campaign for each customer.
                 </p>
               </div>
-              <button className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded shadow-sm hover:bg-indigo-700 transition-all active:scale-[0.97] hover:shadow">
-                Apply Mitigation
-              </button>
+              <Link to="/customers" className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded shadow-sm hover:bg-indigo-700 transition-all active:scale-[0.97] hover:shadow shrink-0">
+                Open CRM
+              </Link>
             </div>
 
-            {/* Operational Triage Table - Enhanced with per-customer triage */}
+            {/* Operational Triage Table - Campaign-based */}
             <div className="saas-card flex flex-col overflow-hidden flex-1">
               <div className="px-5 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
                 <div className="flex items-center gap-2">
@@ -251,13 +242,13 @@ export default function Dashboard() {
                     <tr>
                       <th className="px-5 py-2.5 font-medium">Customer</th>
                       <th className="px-5 py-2.5 font-medium">Risk Signal</th>
-                      <th className="px-5 py-2.5 font-medium">Triage Action</th>
-                      <th className="px-5 py-2.5 font-medium text-right">Execute</th>
+                      <th className="px-5 py-2.5 font-medium">Retention Campaign</th>
+                      <th className="px-5 py-2.5 font-medium text-right">Assign</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
                     {alerts.map((row, i) => {
-                      const currentTriage = triageActions[row.id] || getSmartDefaultTriage(row);
+                      const currentCampaign = triageActions[row.id] || getSmartDefaultCampaign(row);
                       const processState = triageProcessing[row.id] || 'idle';
                       const errorMsg = triageErrors[row.id] || '';
                       
@@ -281,15 +272,13 @@ export default function Dashboard() {
                           <td className="px-5 py-3">
                             <div className="relative">
                               <select 
-                                value={currentTriage}
+                                value={currentCampaign}
                                 onChange={(e) => handleTriageChange(row.id, e.target.value)}
                                 disabled={processState === 'done'}
                                 className={cn(
                                   "w-full text-[11px] font-semibold pl-3 pr-7 py-1.5 rounded border appearance-none cursor-pointer transition-all",
                                   processState === 'done' 
                                     ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                                    : currentTriage === 'escalate_cs' ? "bg-rose-50 border-rose-200 text-rose-700"
-                                    : currentTriage === 'contact_customer' || currentTriage === 'assign_agent' ? "bg-amber-50 border-amber-200 text-amber-700"
                                     : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50"
                                 )}
                               >
@@ -309,11 +298,8 @@ export default function Dashboard() {
                             <div className="flex items-center justify-end gap-2">
                               {processState === 'done' ? (
                                 <>
-                                  <span className="text-[11px] font-semibold bg-blue-50/50 text-blue-600 border border-blue-100 px-2.5 py-1.5 rounded flex items-center gap-1.5">
-                                    {currentTriage === 'assign_agent' ? <><Headphones size={12} /> Forward to CS</> :
-                                     currentTriage === 'contact_customer' ? <><Phone size={12} /> Contacted</> :
-                                     currentTriage === 'escalate_cs' ? <><ShieldAlert size={12} /> Escalated</> :
-                                     <><Check size={12} /> {triageOptions.find(o => o.value === currentTriage)?.label || 'Executed'}</>}
+                                  <span className="text-[11px] font-semibold bg-indigo-50/50 text-indigo-600 border border-indigo-100 px-2.5 py-1.5 rounded flex items-center gap-1.5">
+                                    <Tag size={12} /> Assigned
                                   </span>
                                   <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-600 px-2 py-1.5 rounded flex items-center gap-1">
                                     <CheckCircle2 size={12} /> Done
@@ -338,9 +324,9 @@ export default function Dashboard() {
                                   )}
                                 >
                                   {processState === 'processing' ? (
-                                    <><Loader2 size={12} className="animate-spin" /> Processing...</>
+                                    <><Loader2 size={12} className="animate-spin" /> Assigning...</>
                                   ) : (
-                                    <><Send size={11} /> Execute</>
+                                    <><Sparkles size={11} /> Assign</>
                                   )}
                                 </button>
                               )}
@@ -361,13 +347,13 @@ export default function Dashboard() {
                 </table>
               </div>
 
-              {/* Bulk CS Process Banner */}
+              {/* Campaign Assignment Integration Banner */}
               {alerts.length > 0 && (
-                <div className="px-5 py-3 border-t border-zinc-100 bg-blue-50/30 flex items-center justify-between">
+                <div className="px-5 py-3 border-t border-zinc-100 bg-indigo-50/20 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs text-zinc-600">
-                    <Headphones size={14} className="text-blue-500" />
-                    <span className="font-medium">Customer Service Integration</span>
-                    <span className="text-zinc-400">— All executed triage actions create real database records and send emails</span>
+                    <Sparkles size={14} className="text-indigo-500" />
+                    <span className="font-medium">Retention Action Center</span>
+                    <span className="text-zinc-400">— All campaign assignments are recorded and tracked in the system</span>
                   </div>
                 </div>
               )}
@@ -395,15 +381,15 @@ export default function Dashboard() {
                    <div style={{ width: "85%" }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-zinc-900"></div>
                  </div>
                  <p className="text-[11px] text-zinc-500 leading-relaxed">
-                   You are currently trailing behind the Q3 retention target. Focus on mitigating Starter plan churn.
+                   You are currently trailing behind the Q3 retention target. Focus on assigning campaigns to high-risk customers.
                  </p>
                </div>
             </div>
 
-            {/* Triage Summary */}
+            {/* Campaign Summary */}
             <div className="saas-card p-5">
               <h3 className="saas-heading mb-4 flex items-center gap-1.5">
-                <Tag size={14} className="text-zinc-500" /> Triage Summary
+                <Tag size={14} className="text-zinc-500" /> Campaign Summary
               </h3>
               <div className="space-y-2.5">
                 {triageOptions.map(opt => {
@@ -420,7 +406,7 @@ export default function Dashboard() {
                   <div className="pt-2 mt-2 border-t border-zinc-100">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                        <CheckCircle2 size={12} /> Executed
+                        <CheckCircle2 size={12} /> Assigned
                       </span>
                       <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
                         {Object.values(triageProcessing).filter(v => v === 'done').length}
@@ -443,7 +429,7 @@ export default function Dashboard() {
                     <div key={idx} className="relative pl-4">
                       <div className={cn(
                         "absolute w-2 h-2 border-2 rounded-full -left-[5px] top-1",
-                        log.action?.includes('Mitigation') || log.action?.includes('CS') 
+                        log.action?.includes('Campaign') || log.action?.includes('Assigned')
                           ? "bg-indigo-500 border-indigo-200" 
                           : "bg-white border-zinc-300"
                       )}></div>

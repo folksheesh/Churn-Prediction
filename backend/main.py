@@ -60,6 +60,10 @@ def _migrate_database():
         cursor.execute("ALTER TABLE customers ADD COLUMN mitigation_status VARCHAR")
     if "assigned_to" not in cust_columns:
         cursor.execute("ALTER TABLE customers ADD COLUMN assigned_to VARCHAR")
+    if "retention_campaign" not in cust_columns:
+        cursor.execute("ALTER TABLE customers ADD COLUMN retention_campaign VARCHAR")
+    if "campaign_assigned_date" not in cust_columns:
+        cursor.execute("ALTER TABLE customers ADD COLUMN campaign_assigned_date DATETIME")
     
     # Set default role for existing admin (Super Admin for the seed account)
     cursor.execute("UPDATE admin_users SET role = 'Super Admin' WHERE email = 'admin@churnsense.com' AND (role IS NULL OR role = 'Admin')")

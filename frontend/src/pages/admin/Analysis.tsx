@@ -197,7 +197,7 @@ export default function Analysis() {
           <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100/50">
             <h3 className="text-sm font-semibold text-blue-900 mb-1">Target "Low Usage" Segment</h3>
             <p className="text-xs text-blue-700/80 leading-relaxed">
-              Launch an automated re-engagement email campaign for users who haven't logged in for 14+ days. Highlight newly released features.
+              Enroll users who haven't logged in for 14+ days in a Loyalty Program campaign to re-engage them.
             </p>
           </div>
           <div className="p-4 bg-emerald-50/50 rounded-lg border border-emerald-100/50">

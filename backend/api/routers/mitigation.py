@@ -1,5 +1,6 @@
 """
-Mitigation workflow API — single source of truth for all mitigation actions.
+Retention Action Center API — campaign-based retention workflow.
+Replaces the old email-based mitigation system.
 Used by Dashboard, Customer Detail, Customer Management, and User Dashboard.
 """
 from fastapi import APIRouter, Depends, HTTPException
@@ -15,62 +16,99 @@ from backend.core.models import (
     ROLE_CS_MANAGER, ROLE_CS_AGENT
 )
 from backend.api.routers.auth import get_current_admin
-from backend.api.services.email_service import (
-    send_email,
-    build_contact_customer_email,
-    build_engagement_email,
-    build_retention_offer_email,
-)
 
 router = APIRouter()
 
+# ── Campaign Definitions ─────────────────────────────────────────────────────
+
+CAMPAIGNS = {
+    "discount_campaign": {
+        "label": "Discount Campaign",
+        "description": "Offer vouchers, discounts, or promotional incentives.",
+        "icon": "tag",
+    },
+    "customer_support_followup": {
+        "label": "Customer Support Follow-up",
+        "description": "Flag customer for support outreach and issue resolution.",
+        "icon": "headphones",
+    },
+    "loyalty_program_enrollment": {
+        "label": "Loyalty Program Enrollment",
+        "description": "Enroll customer into rewards and retention programs.",
+        "icon": "star",
+    },
+    "product_recommendation": {
+        "label": "Product Recommendation Campaign",
+        "description": "Recommend relevant products based on customer behavior.",
+        "icon": "package",
+    },
+}
+
+VALID_CAMPAIGNS = list(CAMPAIGNS.keys())
+
+# ── Churn Reason → Campaign Recommendation Map ──────────────────────────────
+
+RECOMMENDATION_RULES = [
+    {"keywords": ["too many ads", "ads", "advertisement"], "campaign": "discount_campaign"},
+    {"keywords": ["poor customer service", "bad service", "customer service", "rude staff"], "campaign": "customer_support_followup"},
+    {"keywords": ["poor product quality", "product quality", "defective", "low quality"], "campaign": "customer_support_followup"},
+    {"keywords": ["better competitor", "competitor", "cheaper elsewhere", "switched"], "campaign": "discount_campaign"},
+    {"keywords": ["low engagement", "not engaged", "disengaged", "inactive"], "campaign": "loyalty_program_enrollment"},
+    {"keywords": ["no recent purchases", "stopped buying", "not purchasing", "no purchase"], "campaign": "product_recommendation"},
+]
+
+def _recommend_campaign(feedback: Optional[str]) -> str:
+    """Determine the recommended campaign based on customer feedback/churn reason."""
+    if not feedback:
+        return "discount_campaign"  # Default when no feedback
+    
+    text = feedback.lower().strip()
+    for rule in RECOMMENDATION_RULES:
+        for keyword in rule["keywords"]:
+            if keyword in text:
+                return rule["campaign"]
+    
+    # Default fallback
+    return "discount_campaign"
+
+
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
-class MitigationRequest(BaseModel):
+class CampaignAssignRequest(BaseModel):
     customer_id: str
-    action_type: str  # escalate_cs, contact_customer, assign_agent, send_offer, send_engagement, monitor
+    campaign_name: str  # discount_campaign, customer_support_followup, loyalty_program_enrollment, product_recommendation
     notes: Optional[str] = None
-    assigned_agent_email: Optional[str] = None  # Only for assign_agent
 
-class MitigationResponse(BaseModel):
+class CampaignAssignResponse(BaseModel):
     id: int
     customer_id: str
     customer_name: Optional[str] = None
-    action_type: str
-    executed_by: str
-    executed_at: Optional[str] = None
+    campaign_name: str
+    campaign_label: str
+    assigned_by: str
+    assigned_date: Optional[str] = None
     status: str
-    email_status: Optional[str] = None
     notes: Optional[str] = None
-    assigned_agent: Optional[str] = None
-    created_at: Optional[str] = None
 
-# ── Action Labels ────────────────────────────────────────────────────────────
+class CampaignRecommendation(BaseModel):
+    recommended_campaign: str
+    campaign_label: str
+    reason: str
 
-ACTION_LABELS = {
-    "escalate_cs": "Escalate to CS Manager",
-    "contact_customer": "Contact Customer",
-    "assign_agent": "Assign CS Agent",
-    "send_offer": "Send Retention Offer",
-    "send_engagement": "Send Engagement Email",
-    "monitor": "Monitor Only",
-}
 
-VALID_ACTIONS = list(ACTION_LABELS.keys())
+# ── Assign Campaign ─────────────────────────────────────────────────────────
 
-# ── Execute Mitigation ───────────────────────────────────────────────────────
-
-@router.post("/execute", response_model=MitigationResponse)
-def execute_mitigation(
-    req: MitigationRequest,
+@router.post("/execute", response_model=CampaignAssignResponse)
+def assign_campaign(
+    req: CampaignAssignRequest,
     current_admin: AdminUser = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
-    # Validate action type
-    if req.action_type not in VALID_ACTIONS:
+    # Validate campaign name
+    if req.campaign_name not in VALID_CAMPAIGNS:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid action type. Must be one of: {', '.join(VALID_ACTIONS)}"
+            detail=f"Invalid campaign. Must be one of: {', '.join(VALID_CAMPAIGNS)}"
         )
 
     # Get customer
@@ -78,132 +116,79 @@ def execute_mitigation(
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
 
-    action_label = ACTION_LABELS[req.action_type]
-    email_status = None
-    mitigation_status = "Completed"
-    assigned_agent = None
+    campaign_info = CAMPAIGNS[req.campaign_name]
+    now = datetime.utcnow()
 
-    # ── Process each action type ─────────────────────────────────────────
+    # Update customer with campaign assignment
+    customer.retention_campaign = campaign_info["label"]
+    customer.campaign_assigned_date = now
+    customer.mitigation_status = "Assigned"
 
-    if req.action_type == "contact_customer":
-        # Send contact email
-        customer_email = f"{customer.name.split(' ')[0].lower()}.{customer.name.split(' ')[-1].lower()}@email.com" if customer.name else "customer@email.com"
-        template = build_contact_customer_email(customer.name or "Valued Customer")
-        result = send_email(customer_email, template["subject"], template["body"])
-        email_status = result["status"]
-        if result["status"] == "Failed":
-            mitigation_status = "Failed"
-        else:
-            customer.mitigation_status = "Contacted"
-
-    elif req.action_type == "send_engagement":
-        # Send engagement email
-        customer_email = f"{customer.name.split(' ')[0].lower()}.{customer.name.split(' ')[-1].lower()}@email.com" if customer.name else "customer@email.com"
-        template = build_engagement_email(customer.name or "Valued Customer")
-        result = send_email(customer_email, template["subject"], template["body"])
-        email_status = result["status"]
-        if result["status"] == "Failed":
-            mitigation_status = "Failed"
-        else:
-            customer.mitigation_status = "Engagement Sent"
-
-    elif req.action_type == "send_offer":
-        # Send retention offer email
-        customer_email = f"{customer.name.split(' ')[0].lower()}.{customer.name.split(' ')[-1].lower()}@email.com" if customer.name else "customer@email.com"
-        template = build_retention_offer_email(customer.name or "Valued Customer")
-        result = send_email(customer_email, template["subject"], template["body"])
-        email_status = result["status"]
-        if result["status"] == "Failed":
-            mitigation_status = "Failed"
-        else:
-            customer.mitigation_status = "Offer Sent"
-
-    elif req.action_type == "assign_agent":
-        # Assign to CS Agent
-        if req.assigned_agent_email:
-            agent = db.query(AdminUser).filter(
-                AdminUser.email == req.assigned_agent_email,
-            ).first()
-            if not agent:
-                raise HTTPException(status_code=404, detail="Assigned agent not found")
-            assigned_agent = agent.email
-        else:
-            # Auto-assign: find any CS Agent
-            agent = db.query(AdminUser).filter(
-                AdminUser.role == ROLE_CS_AGENT,
-                AdminUser.status == "Active"
-            ).first()
-            if agent:
-                assigned_agent = agent.email
-            else:
-                assigned_agent = current_admin.email  # Fallback to self
-        
-        customer.mitigation_status = "Assigned to CS"
-        customer.assigned_to = assigned_agent
-
-    elif req.action_type == "escalate_cs":
-        # Escalate to CS Manager
-        customer.mitigation_status = "Escalated"
-        
-        # Find a CS Manager to notify
-        cs_manager = db.query(AdminUser).filter(
-            AdminUser.role == ROLE_CS_MANAGER,
-            AdminUser.status == "Active"
-        ).first()
-        if cs_manager:
-            assigned_agent = cs_manager.email
-
-    elif req.action_type == "monitor":
-        # Monitor only — no email, no assignment
-        customer.mitigation_status = "Monitoring"
-        email_status = None
-
-    # ── Create mitigation log record ─────────────────────────────────────
-
+    # Create mitigation log record
     mitigation_log = MitigationLog(
         customer_id=req.customer_id,
-        action_type=req.action_type,
+        action_type=req.campaign_name,
         executed_by=current_admin.email,
-        status=mitigation_status,
-        email_status=email_status,
+        status="Assigned",
         notes=req.notes,
-        assigned_agent=assigned_agent,
     )
     db.add(mitigation_log)
 
-    # ── Create audit trail activity log ──────────────────────────────────
-
+    # Create audit trail activity log
     activity_log = ActivityLog(
-        action=f"Mitigation: {action_label}",
+        action=f"Campaign Assigned: {campaign_info['label']}",
         user=current_admin.email,
-        details=f"{action_label} for {customer.name or req.customer_id}",
-        result=mitigation_status,
-        email_status=email_status,
+        details=f"{campaign_info['label']} assigned to {customer.name or req.customer_id}",
+        result="Assigned",
     )
     db.add(activity_log)
 
     db.commit()
     db.refresh(mitigation_log)
 
-    return MitigationResponse(
+    return CampaignAssignResponse(
         id=mitigation_log.id,
         customer_id=mitigation_log.customer_id,
         customer_name=customer.name,
-        action_type=mitigation_log.action_type,
-        executed_by=mitigation_log.executed_by,
-        executed_at=mitigation_log.executed_at.isoformat() if mitigation_log.executed_at else None,
-        status=mitigation_log.status,
-        email_status=mitigation_log.email_status,
+        campaign_name=req.campaign_name,
+        campaign_label=campaign_info["label"],
+        assigned_by=mitigation_log.executed_by,
+        assigned_date=now.isoformat(),
+        status="Assigned",
         notes=mitigation_log.notes,
-        assigned_agent=mitigation_log.assigned_agent,
-        created_at=mitigation_log.created_at.isoformat() if mitigation_log.created_at else None,
     )
 
 
-# ── Mitigation History for a Customer ────────────────────────────────────────
+# ── AI Campaign Recommendation ──────────────────────────────────────────────
+
+@router.get("/recommend/{customer_id}", response_model=CampaignRecommendation)
+def recommend_campaign(
+    customer_id: str,
+    db: Session = Depends(get_db),
+):
+    """Return AI-recommended campaign based on customer feedback/churn reason."""
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    recommended = _recommend_campaign(customer.feedback)
+    campaign_info = CAMPAIGNS[recommended]
+
+    # Build human-readable reason
+    feedback_text = customer.feedback or "No feedback available"
+    reason = f"Based on customer feedback: \"{feedback_text}\""
+
+    return CampaignRecommendation(
+        recommended_campaign=recommended,
+        campaign_label=campaign_info["label"],
+        reason=reason,
+    )
+
+
+# ── Campaign Assignment History for a Customer ──────────────────────────────
 
 @router.get("/logs/{customer_id}")
-def get_mitigation_logs(customer_id: str, db: Session = Depends(get_db)):
+def get_campaign_logs(customer_id: str, db: Session = Depends(get_db)):
     logs = (
         db.query(MitigationLog)
         .filter(MitigationLog.customer_id == customer_id)
@@ -211,67 +196,53 @@ def get_mitigation_logs(customer_id: str, db: Session = Depends(get_db)):
         .all()
     )
 
-    # Enrich with executor names
     result = []
     for log in logs:
         executor = db.query(AdminUser).filter(AdminUser.email == log.executed_by).first()
+        campaign_label = CAMPAIGNS.get(log.action_type, {}).get("label", log.action_type)
         result.append({
             "id": log.id,
             "customer_id": log.customer_id,
-            "action_type": log.action_type,
-            "action_label": ACTION_LABELS.get(log.action_type, log.action_type),
-            "executed_by": log.executed_by,
-            "executor_name": executor.name if executor else log.executed_by,
-            "executed_at": log.executed_at.isoformat() if log.executed_at else None,
+            "campaign_name": log.action_type,
+            "campaign_label": campaign_label,
+            "assigned_by": log.executed_by,
+            "assigned_by_name": executor.name if executor else log.executed_by,
+            "assigned_date": log.executed_at.isoformat() if log.executed_at else None,
             "status": log.status,
-            "email_status": log.email_status,
             "notes": log.notes,
-            "assigned_agent": log.assigned_agent,
             "created_at": log.created_at.isoformat() if log.created_at else None,
         })
 
     return result
 
 
-# ── Mitigation Stats for Dashboard ───────────────────────────────────────────
+# ── Campaign Stats for Dashboard ─────────────────────────────────────────────
 
 @router.get("/stats")
-def get_mitigation_stats(db: Session = Depends(get_db)):
-    """Return aggregate mitigation statistics for the dashboard."""
+def get_campaign_stats(db: Session = Depends(get_db)):
+    """Return aggregate campaign assignment statistics for the dashboard."""
     total = db.query(MitigationLog).count()
 
     stats = {
-        "total_mitigations": total,
-        "contacted_customers": db.query(MitigationLog).filter(
-            MitigationLog.action_type == "contact_customer"
+        "total_campaigns": total,
+        "discount_campaigns": db.query(MitigationLog).filter(
+            MitigationLog.action_type == "discount_campaign"
         ).count(),
-        "assigned_customers": db.query(MitigationLog).filter(
-            MitigationLog.action_type == "assign_agent"
+        "support_followups": db.query(MitigationLog).filter(
+            MitigationLog.action_type == "customer_support_followup"
         ).count(),
-        "escalated_customers": db.query(MitigationLog).filter(
-            MitigationLog.action_type == "escalate_cs"
+        "loyalty_enrollments": db.query(MitigationLog).filter(
+            MitigationLog.action_type == "loyalty_program_enrollment"
         ).count(),
-        "retention_offers_sent": db.query(MitigationLog).filter(
-            MitigationLog.action_type == "send_offer"
-        ).count(),
-        "engagement_emails_sent": db.query(MitigationLog).filter(
-            MitigationLog.action_type == "send_engagement"
-        ).count(),
-        "monitoring": db.query(MitigationLog).filter(
-            MitigationLog.action_type == "monitor"
-        ).count(),
-        "emails_sent": db.query(MitigationLog).filter(
-            MitigationLog.email_status == "Sent"
-        ).count(),
-        "emails_failed": db.query(MitigationLog).filter(
-            MitigationLog.email_status == "Failed"
+        "product_recommendations": db.query(MitigationLog).filter(
+            MitigationLog.action_type == "product_recommendation"
         ).count(),
     }
 
     return stats
 
 
-# ── Get CS Agents (for assign dropdown) ──────────────────────────────────────
+# ── Get CS Agents (for assignment dropdown) ──────────────────────────────────
 
 @router.get("/agents")
 def get_cs_agents(

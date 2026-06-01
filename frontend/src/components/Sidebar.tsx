@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut, ShieldCheck, Upload, Zap, X } from 'lucide-react';
+import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut, ShieldCheck, Upload, Zap, X, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Analysis', href: '/analysis', icon: BarChart3 },
     { name: 'Customers', href: '/customers', icon: Users },
+    { name: 'Active Campaigns', href: '/campaigns', icon: Target },
   ];
 
   const adminNavItems = [

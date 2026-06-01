@@ -44,9 +44,11 @@ class Customer(Base):
     churn_risk = Column(String, nullable=True) # High, Medium, Low
     churn_probability = Column(Float, nullable=True)
     
-    # Mitigation status
-    mitigation_status = Column(String, nullable=True)  # Assigned to CS, Escalated, Monitoring, etc.
+    # Mitigation / Retention
+    mitigation_status = Column(String, nullable=True)  # Assigned, Not Assigned
     assigned_to = Column(String, nullable=True)  # email of assigned CS Agent
+    retention_campaign = Column(String, nullable=True)  # Discount Campaign, Customer Support Follow-up, etc.
+    campaign_assigned_date = Column(DateTime(timezone=True), nullable=True)
     
     # Audit
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -82,11 +84,10 @@ class MitigationLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     customer_id = Column(String, index=True, nullable=False)
-    action_type = Column(String, nullable=False)      # escalate_cs, contact_customer, assign_agent, send_offer, send_engagement, monitor
+    action_type = Column(String, nullable=False)      # discount_campaign, customer_support_followup, loyalty_program_enrollment, product_recommendation
     executed_by = Column(String, nullable=False)       # admin email
     executed_at = Column(DateTime(timezone=True), server_default=func.now())
-    status = Column(String, default="Pending")         # Pending, Completed, Failed
-    email_status = Column(String, nullable=True)       # Pending, Sent, Delivered, Failed
+    status = Column(String, default="Assigned")        # Assigned
     notes = Column(Text, nullable=True)
     assigned_agent = Column(String, nullable=True)     # For assign_agent action
     created_at = Column(DateTime(timezone=True), server_default=func.now())

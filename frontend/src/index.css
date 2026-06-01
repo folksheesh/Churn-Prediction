@@ -73,8 +73,85 @@
   .animate-slide-in-right {
     animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+  .animate-scale-in {
+    animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-fade-up {
+    animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-toast {
+    animation: toast-slide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background-size: 200% 100%;
+  }
 }
 
+/* ── Campaign Card ───────────────────────────────────────────────────────── */
+.campaign-card {
+  position: relative;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: white;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.04);
+}
+.campaign-card:hover {
+  border-color: #d4d4d8;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgb(0 0 0 / 0.06);
+}
+.campaign-card.selected {
+  border-color: #18181b;
+  box-shadow: 0 0 0 1px #18181b, 0 8px 25px rgb(0 0 0 / 0.08);
+}
+.campaign-card.recommended {
+  border-color: #6366f1;
+  background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%);
+  box-shadow: 0 0 0 1px #6366f1, 0 0 20px rgb(99 102 241 / 0.1);
+}
+.campaign-card.recommended.selected {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px #4f46e5, 0 0 30px rgb(99 102 241 / 0.15);
+}
+
+/* ── AI Badge ────────────────────────────────────────────────────────────── */
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #4f46e5;
+  background: linear-gradient(90deg, #eef2ff, #f5f3ff, #eef2ff);
+  border: 1px solid #c7d2fe;
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite linear;
+}
+
+/* ── Toast ────────────────────────────────────────────────────────────────── */
+.toast-success {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  padding: 14px 24px;
+  border-radius: 10px;
+  background: #18181b;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.2);
+  animation: toast-slide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -83,4 +160,24 @@
 @keyframes slide-in-right {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fade-up {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes toast-slide {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
 }

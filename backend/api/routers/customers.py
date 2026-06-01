@@ -59,6 +59,7 @@ def get_customers(
     limit: int = 50, 
     search: Optional[str] = None,
     risk: Optional[str] = None,
+    campaign: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     query = db.query(Customer)
@@ -69,6 +70,8 @@ def get_customers(
         )
     if risk:
         query = query.filter(Customer.churn_risk == risk)
+    if campaign:
+        query = query.filter(Customer.retention_campaign == campaign)
         
     total = query.count()
     items = query.offset(skip).limit(limit).all()
