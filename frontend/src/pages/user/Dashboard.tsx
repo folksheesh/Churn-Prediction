@@ -40,6 +40,7 @@ import {
   Target
 } from "lucide-react";
 import Campaigns from '@/pages/admin/Campaigns';
+import RetentionActionCenter from '@/components/RetentionActionCenter';
 import {
   ResponsiveContainer,
   LineChart,
@@ -85,6 +86,7 @@ export default function Home() {
 
   // Modal tracking
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+  const [retentionModalCustomer, setRetentionModalCustomer] = useState<any | null>(null);
 
   // Send Offer state removed (duplicate)
 
@@ -142,6 +144,11 @@ export default function Home() {
           planTier: c.plan_tier || 'Basic',
           loginFrequency: `${c.logins_90d || 0} in 90d`,
           supportTickets: c.tickets_opened_90d || 0,
+          mitigation_status: c.mitigation_status,
+          retention_campaign: c.retention_campaign,
+          id: c.id,
+          churn_risk: c.churn_risk,
+          churn_probability: c.churn_probability,
           sentimentKategori: c.feedback ? 'Neutral' : 'N/A',
           feedback: c.feedback || 'No recent feedback',
           lastActive: c.days_since_active ? `${c.days_since_active} days ago` : '2 days ago',
@@ -762,29 +769,15 @@ export default function Home() {
                             </div>
                           ) : (
                             <>
-                              <div className="flex gap-2">
-                                <select 
-                                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
-                                  value={selectedCampaigns[c.customerId] || "Discount Campaign"}
-                                  onChange={(e) => setSelectedCampaigns(prev => ({ ...prev, [c.customerId]: e.target.value }))}
-                                >
-                                  <option value="Discount Campaign">Discount Campaign</option>
-                                  <option value="Customer Support Follow-up">Customer Support</option>
-                                  <option value="Loyalty Program Enrollment">Loyalty Program</option>
-                                  <option value="Product Recommendation Campaign">Product Recommend</option>
-                                </select>
-                                <button 
-                                  onClick={() => handleSendOffer(c.customerId)}
-                                  disabled={btnState === "loading"}
-                                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex justify-center items-center gap-2 disabled:opacity-70 shrink-0"
-                                >
-                                  {btnState === "loading" ? (
-                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                  ) : (
-                                    "Apply"
-                                  )}
-                                </button>
-                              </div>
+                              <button 
+                                onClick={() => setRetentionModalCustomer({
+                                  ...c,
+                                  id: c.customerId,
+                                })}
+                                className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex justify-center items-center gap-2"
+                              >
+                                <Sparkles size={14} className="text-amber-400" /> Apply Mitigation
+                              </button>
                               <div className="grid grid-cols-2 gap-2 mt-2">
                                 <button className="py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-[11px] font-bold transition-all flex justify-center items-center gap-1.5">
                                   <Mail size={12} /> Email Support
@@ -1498,6 +1491,17 @@ export default function Home() {
         )}
 
       </main>
+      {/* Retention Action Center Modal */}
+      {retentionModalCustomer && (
+        <RetentionActionCenter
+          customer={retentionModalCustomer}
+          onClose={() => setRetentionModalCustomer(null)}
+          onSuccess={() => {
+            setRetentionModalCustomer(null);
+            fetchCustomers();
+          }}
+        />
+      )}
     </div>
   );
 }
