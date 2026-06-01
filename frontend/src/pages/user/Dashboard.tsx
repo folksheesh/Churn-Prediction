@@ -692,7 +692,7 @@ export default function Home() {
                           outerRadius={90}
                           dataKey="value"
                           labelLine={false}
-                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          label={({ name, percent }) => percent !== undefined ? `${name} (${(percent * 100).toFixed(0)}%)` : name}
                         >
                           {summary.planStats.map((entry: any, index: number) => (
                             <Cell key={`cell-${index}`} fill={['#3b82f6', '#ec4899', '#14b8a6', '#f59e0b', '#6366f1'][index % 5]} />
