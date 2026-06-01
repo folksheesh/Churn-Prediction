@@ -355,12 +355,15 @@ export default function Home() {
         if (!prev) return prev;
         return {
           ...prev,
-          customers: prev.customers.map((c: any) => 
+          ...(prev.customers ? { customers: prev.customers.map((c: any) => 
             c.customerId === customerId ? { ...c, retention_campaign: campaign, mitigation_status: 'Mitigated' } : c
-          ),
-          highRiskCustomers: prev.highRiskCustomers.map((c: any) => 
+          )} : {}),
+          ...(prev.highRiskCustomers ? { highRiskCustomers: prev.highRiskCustomers.map((c: any) => 
             c.customerId === customerId ? { ...c, retention_campaign: campaign, mitigation_status: 'Mitigated' } : c
-          )
+          )} : {}),
+          ...(prev.lowRiskCustomers ? { lowRiskCustomers: prev.lowRiskCustomers.map((c: any) => 
+            c.customerId === customerId ? { ...c, retention_campaign: campaign, mitigation_status: 'Mitigated' } : c
+          )} : {})
         };
       });
       setSendingOffer(customerId + "_success");
