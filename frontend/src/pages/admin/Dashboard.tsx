@@ -64,7 +64,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="p-8 max-w-[1600px] mx-auto w-full space-y-8 bg-zinc-50/30 min-h-screen">
+      <div className="p-8 w-full space-y-8 bg-zinc-50/30 min-h-screen">
         
         {/* Top KPI Widgets - Premium Style */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-up">

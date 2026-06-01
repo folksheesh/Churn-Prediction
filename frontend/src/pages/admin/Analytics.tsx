@@ -81,7 +81,7 @@ export default function Analytics() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-6 max-w-[1600px] mx-auto w-full space-y-6">
+      <div className="flex-1 overflow-y-auto p-6 w-full space-y-6">
         
         {/* Main Historical Chart */}
         <div className="saas-card flex flex-col overflow-hidden col-span-full">

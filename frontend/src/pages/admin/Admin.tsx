@@ -92,7 +92,7 @@ export default function Admin() {
         <h1 className="text-lg font-semibold tracking-tight text-zinc-900">Platform Administration</h1>
       </header>
 
-      <div className="p-8 max-w-[1200px] mx-auto w-full space-y-6">
+      <div className="p-8 w-full space-y-6">
         
         {/* Top Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

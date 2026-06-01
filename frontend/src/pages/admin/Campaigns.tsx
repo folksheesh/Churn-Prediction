@@ -48,7 +48,7 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
         </header>
       )}
 
-      <div className={cn("max-w-[1400px] mx-auto w-full space-y-6 animate-fadeIn", hideHeader ? "pt-0 pb-8" : "p-8")}>
+      <div className={cn("w-full space-y-6 animate-fadeIn", hideHeader ? "pt-0 pb-8" : "p-8")}>
         
         {/* Campaign Tabs */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

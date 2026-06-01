@@ -142,7 +142,7 @@ export default function AdminManagement() {
         <h1 className="text-lg font-semibold tracking-tight text-zinc-900">Manage Admins</h1>
       </header>
 
-      <div className="p-4 sm:p-8 max-w-[1200px] mx-auto w-full flex flex-col lg:flex-row gap-6 items-start">
+      <div className="p-4 sm:p-8 w-full flex flex-col lg:flex-row gap-6 items-start">
         
         {/* Admin List */}
         <div className="flex-1 bg-white border border-zinc-200 rounded-lg shadow-sm flex flex-col overflow-hidden">

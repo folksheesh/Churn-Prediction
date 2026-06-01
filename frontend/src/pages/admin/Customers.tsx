@@ -201,7 +201,7 @@ export default function Customers() {
         </div>
       </header>
 
-      <div className="p-6 max-w-[1600px] mx-auto w-full">
+      <div className="p-6 w-full">
         
         {/* Segmented Control Tabs / Back Button */}
         {activeTab !== 'import_xlsx' ? (

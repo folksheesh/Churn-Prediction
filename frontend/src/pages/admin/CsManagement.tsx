@@ -105,7 +105,7 @@ export default function CsManagement() {
         </h1>
       </header>
 
-      <div className="p-4 sm:p-8 max-w-[1200px] mx-auto w-full space-y-6">
+      <div className="p-4 sm:p-8 w-full space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold text-zinc-900">Customer Service Team</h2>

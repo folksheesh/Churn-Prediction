@@ -103,7 +103,7 @@ export default function Analysis() {
 
   if (loading) {
     return (
-      <div className="p-8 max-w-7xl mx-auto h-[60vh] flex flex-col items-center justify-center space-y-4">
+      <div className="p-8 w-full h-[60vh] flex flex-col items-center justify-center space-y-4">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
         <p className="text-slate-500 font-medium">Loading Customer Insights...</p>
       </div>
@@ -111,7 +111,7 @@ export default function Analysis() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 animate-fadeIn">
+    <div className="p-8 w-full space-y-8 animate-fadeIn">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Customer Health Insights</h1>
         <p className="text-sm text-slate-500 mt-1">A business-friendly breakdown of customer engagement and retention trends.</p>

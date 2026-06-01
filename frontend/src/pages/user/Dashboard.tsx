@@ -513,7 +513,7 @@ export default function Home() {
       </nav>
 
       {/* 2. MAIN WINDOW CONTENT */}
-      <main className="flex-1 flex flex-col w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-8">
+      <main className="flex-1 flex flex-col w-full px-4 sm:px-8 py-8">
         
         {/* TOP BAR / HEADER */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8 shrink-0">
