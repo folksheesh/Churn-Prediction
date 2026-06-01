@@ -104,7 +104,7 @@ export default function Landing() {
               to="/user-dashboard"
               className="group bg-slate-900 hover:bg-slate-800 text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-md flex items-center gap-3 w-full sm:w-auto justify-center text-[15px]"
             >
-              Start Free Trial <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              Let's Get Started <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link 
               to="/login"
