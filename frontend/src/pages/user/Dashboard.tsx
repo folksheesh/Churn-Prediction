@@ -1489,7 +1489,7 @@ export default function Home() {
                   Close
                 </button>
                 <button className="flex-1 h-11 bg-[#5955f2] hover:bg-[#4642db] text-white rounded-xl text-sm font-semibold transition-colors shadow-sm shadow-[#5955f2]/20">
-                  Contact Customer
+                  Mitigate
                 </button>
               </div>
 
