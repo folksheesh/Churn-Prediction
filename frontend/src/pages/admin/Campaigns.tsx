@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Tag, Headphones, Star, Package, Users, Search, Loader2 } from 'lucide-react';
+import { Tag, Headphones, Star, Package, Users, Search, Loader2, Sparkles, ArrowRight } from 'lucide-react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
@@ -61,23 +61,32 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
                 key={campaign.id}
                 onClick={() => setActiveTab(campaign.id)}
                 className={cn(
-                  "p-5 rounded-2xl border text-left transition-all duration-200 flex flex-col gap-3",
+                  "p-6 rounded-3xl border text-left transition-all duration-300 flex flex-col group relative overflow-hidden",
                   isActive 
-                    ? `shadow-md bg-white border-brand-300 ring-1 ring-brand-500/20 scale-[1.02]` 
-                    : "bg-white border-zinc-200/60 hover:border-zinc-300 hover:bg-zinc-50/50 hover:shadow-sm"
+                    ? `shadow-xl bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-800 scale-[1.03] -translate-y-1` 
+                    : "bg-white border-zinc-200/80 hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-lg hover:-translate-y-1"
                 )}
               >
+                {isActive && (
+                  <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none transform translate-x-4 -translate-y-4">
+                     <Sparkles size={64} className="text-white animate-pulse" />
+                  </div>
+                )}
                 <div className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border",
-                  campaign.bg, campaign.color, campaign.border
+                  "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3",
+                  isActive ? "bg-white/10 border-white/10 text-white backdrop-blur-md" : cn(campaign.bg, campaign.color, campaign.border)
                 )}>
-                  <Icon size={18} />
+                  <Icon size={22} />
                 </div>
-                <div>
+                <div className="mt-4 relative z-10">
                   <h3 className={cn(
-                    "font-bold text-[13px] leading-tight",
-                    isActive ? "text-brand-900" : "text-zinc-700"
+                    "font-bold text-[15px] leading-tight transition-colors duration-300",
+                    isActive ? "text-white" : "text-zinc-800 group-hover:text-brand-700"
                   )}>{campaign.id}</h3>
+                  <div className={cn(
+                    "h-1 rounded-full transition-all duration-500 mt-4",
+                    isActive ? "bg-white/30 w-12" : "bg-zinc-200 w-6 group-hover:w-10 group-hover:bg-brand-300"
+                  )} />
                 </div>
               </button>
             );
@@ -85,26 +94,28 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
         </div>
 
         {/* Data Section */}
-        <div className="saas-card flex-1 flex flex-col overflow-hidden min-h-[500px]">
-          <div className="p-5 border-b border-zinc-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-zinc-50/30">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100">
-                <Users size={16} />
+        <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-200/80 flex-1 flex flex-col overflow-hidden min-h-[500px]">
+          <div className="px-8 py-6 border-b border-zinc-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-50 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none opacity-50"></div>
+            
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="p-3 bg-gradient-to-br from-indigo-50 to-brand-50 text-brand-600 rounded-2xl border border-brand-100 shadow-inner">
+                <Users size={20} />
               </div>
               <div>
-                <h2 className="saas-heading text-base">Enrolled Customers</h2>
-                <p className="text-xs text-zinc-500 mt-0.5">Customers currently active in the <span className="font-semibold text-zinc-700">{activeTab}</span></p>
+                <h2 className="text-lg font-black text-zinc-900 tracking-tight">Enrolled Customers</h2>
+                <p className="text-[13px] text-zinc-500 mt-1 font-medium">Customers currently active in the <span className="font-bold text-brand-600">{activeTab}</span></p>
               </div>
             </div>
             
-            <div className="relative w-full md:w-64 shrink-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <div className="relative w-full md:w-80 shrink-0 relative z-10">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
               <input
                 type="text"
-                placeholder="Search customers..."
+                placeholder="Search by name or ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-white border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-brand-300 focus:ring-1 focus:ring-brand-500/20 transition-all shadow-sm"
+                className="w-full pl-11 pr-4 py-3 bg-zinc-50/50 hover:bg-zinc-50 border border-zinc-200 rounded-2xl text-[13px] font-medium text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10 transition-all shadow-sm"
               />
             </div>
           </div>
@@ -135,14 +146,14 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
 
                     return (
                       <tr key={customer.id || i} className="hover:bg-zinc-50/50 transition-colors group">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-brand-50 text-brand-700 flex items-center justify-center font-bold text-[11px] shrink-0 border border-brand-100">
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-100 to-indigo-100 text-brand-700 flex items-center justify-center font-black text-xs shrink-0 border border-brand-200 shadow-sm">
                               {initials}
                             </div>
                             <div>
-                              <div className="font-semibold text-zinc-900 text-[13px]">{customer.name}</div>
-                              <div className="text-[11px] font-mono text-zinc-500 mt-0.5">{customer.id} • {customer.plan_tier || 'Basic'}</div>
+                              <div className="font-bold text-zinc-900 text-[14px]">{customer.name}</div>
+                              <div className="text-[12px] font-mono text-zinc-500 mt-0.5 tracking-tight">{customer.id} <span className="text-zinc-300 px-1">•</span> <span className="text-zinc-600 font-semibold">{customer.plan_tier || 'Basic'}</span></div>
                             </div>
                           </div>
                         </td>
@@ -162,12 +173,12 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
                         <td className="px-6 py-4">
                           <span className="text-[12px] text-zinc-600 font-medium">{assignedDate}</span>
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-6 py-5 text-right">
                           <Link 
                             to="/customers"
-                            className="inline-flex items-center justify-center px-3 py-1.5 text-[11px] font-semibold bg-white border border-zinc-200 text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-zinc-900 transition-all shadow-sm active:scale-95"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[12px] font-bold bg-white border border-zinc-200 text-zinc-700 rounded-xl hover:bg-zinc-900 hover:text-white hover:border-zinc-900 transition-all shadow-sm active:scale-95 group/btn"
                           >
-                            View in CRM
+                            View in CRM <ArrowRight size={14} className="text-zinc-400 group-hover/btn:text-white group-hover/btn:translate-x-0.5 transition-all" />
                           </Link>
                         </td>
                       </tr>
