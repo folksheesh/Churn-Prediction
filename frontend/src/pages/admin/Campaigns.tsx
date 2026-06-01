@@ -61,7 +61,7 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
                 key={campaign.id}
                 onClick={() => setActiveTab(campaign.id)}
                 className={cn(
-                  "p-6 rounded-3xl border text-left transition-all duration-300 flex flex-col group relative overflow-hidden",
+                  "p-6 rounded-3xl border text-left transition-all duration-300 flex flex-col group relative overflow-hidden h-full",
                   isActive 
                     ? `shadow-xl bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-800 scale-[1.03] -translate-y-1` 
                     : "bg-white border-zinc-200/80 hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-lg hover:-translate-y-1"
@@ -78,15 +78,17 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
                 )}>
                   <Icon size={22} />
                 </div>
-                <div className="mt-4 relative z-10">
+                <div className="mt-4 relative z-10 flex flex-col flex-1">
                   <h3 className={cn(
-                    "font-bold text-[15px] leading-tight transition-colors duration-300",
+                    "font-bold text-[14px] sm:text-[15px] leading-snug transition-colors duration-300",
                     isActive ? "text-white" : "text-zinc-800 group-hover:text-brand-700"
                   )}>{campaign.id}</h3>
                   <div className={cn(
-                    "h-1 rounded-full transition-all duration-500 mt-4",
+                    "h-1 rounded-full transition-all duration-500 mt-auto pt-4",
                     isActive ? "bg-white/30 w-12" : "bg-zinc-200 w-6 group-hover:w-10 group-hover:bg-brand-300"
-                  )} />
+                  )}>
+                    <div className={cn("h-full w-full rounded-full", isActive ? "bg-white/30" : "bg-zinc-200 group-hover:bg-brand-300")} />
+                  </div>
                 </div>
               </button>
             );
