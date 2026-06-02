@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
 import { useNavigate, Link } from "react-router-dom";
 import VisualAnalyticsTab from "./VisualAnalyticsTab";
-
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   Users,
