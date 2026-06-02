@@ -408,46 +408,46 @@ export default function Customers() {
         {activeTab === 'user_feedback' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gradient-to-br from-white to-zinc-50 border border-zinc-200/80 rounded-3xl p-8 shadow-xl shadow-zinc-200/30 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+              <div className="bg-gradient-to-br from-white to-zinc-50 border border-zinc-200/80 rounded-2xl p-6 shadow-xl shadow-zinc-200/30 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
                 <div className="absolute -top-4 -right-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
-                  <MessageSquare size={120} />
+                  <MessageSquare size={80} />
                 </div>
-                <div className="flex items-center gap-3 text-zinc-500 mb-6 relative z-10">
-                  <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center">
-                    <MessageSquare size={18} className="text-zinc-700" />
+                <div className="flex items-center gap-3 text-zinc-500 mb-4 relative z-10">
+                  <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center">
+                    <MessageSquare size={14} className="text-zinc-700" />
                   </div>
-                  <h3 className="font-bold text-sm tracking-wide">Total Feedbacks Analyzed</h3>
+                  <h3 className="font-bold text-xs tracking-wide">Total Feedbacks Analyzed</h3>
                 </div>
-                <div className="text-5xl font-black text-zinc-900 tracking-tight relative z-10">{nlpInsights.total}</div>
-                <p className="text-xs font-medium text-zinc-500 mt-3 relative z-10">Drawn from actual customer dataset</p>
+                <div className="text-3xl font-black text-zinc-900 tracking-tight relative z-10">{nlpInsights.total}</div>
+                <p className="text-[11px] font-medium text-zinc-500 mt-2 relative z-10">Drawn from actual customer dataset</p>
               </div>
               
-              <div className="bg-gradient-to-br from-rose-50 to-white border border-rose-100 rounded-3xl p-8 shadow-xl shadow-rose-100/50 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+              <div className="bg-gradient-to-br from-rose-50 to-white border border-rose-100 rounded-2xl p-6 shadow-xl shadow-rose-100/50 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
                 <div className="absolute -top-4 -right-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
-                  <TrendingDown size={120} className="text-rose-600" />
+                  <TrendingDown size={80} className="text-rose-600" />
                 </div>
-                <div className="flex items-center gap-3 text-rose-600 mb-6 relative z-10">
-                  <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
-                    <TrendingDown size={18} className="text-rose-600" />
+                <div className="flex items-center gap-3 text-rose-600 mb-4 relative z-10">
+                  <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center">
+                    <TrendingDown size={14} className="text-rose-600" />
                   </div>
-                  <h3 className="font-bold text-sm tracking-wide">Negative Sentiment</h3>
+                  <h3 className="font-bold text-xs tracking-wide">Negative Sentiment</h3>
                 </div>
-                <div className="text-5xl font-black text-rose-700 tracking-tight relative z-10">{nlpInsights.negative}</div>
-                <p className="text-xs font-bold text-rose-600/70 mt-3 relative z-10">Requires immediate attention</p>
+                <div className="text-3xl font-black text-rose-700 tracking-tight relative z-10">{nlpInsights.negative}</div>
+                <p className="text-[11px] font-bold text-rose-600/70 mt-2 relative z-10">Requires immediate attention</p>
               </div>
 
-              <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-3xl p-8 shadow-xl shadow-emerald-100/50 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+              <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl p-6 shadow-xl shadow-emerald-100/50 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
                 <div className="absolute -top-4 -right-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
-                  <TrendingUp size={120} className="text-emerald-600" />
+                  <TrendingUp size={80} className="text-emerald-600" />
                 </div>
-                <div className="flex items-center gap-3 text-emerald-600 mb-6 relative z-10">
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <TrendingUp size={18} className="text-emerald-600" />
+                <div className="flex items-center gap-3 text-emerald-600 mb-4 relative z-10">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <TrendingUp size={14} className="text-emerald-600" />
                   </div>
-                  <h3 className="font-bold text-sm tracking-wide">Positive Sentiment</h3>
+                  <h3 className="font-bold text-xs tracking-wide">Positive Sentiment</h3>
                 </div>
-                <div className="text-5xl font-black text-emerald-700 tracking-tight relative z-10">{nlpInsights.positive}</div>
-                <p className="text-xs font-bold text-emerald-600/70 mt-3 relative z-10">Healthy customer signals</p>
+                <div className="text-3xl font-black text-emerald-700 tracking-tight relative z-10">{nlpInsights.positive}</div>
+                <p className="text-[11px] font-bold text-emerald-600/70 mt-2 relative z-10">Healthy customer signals</p>
               </div>
             </div>
 
@@ -465,12 +465,17 @@ export default function Customers() {
               </div>
               <div className="space-y-4">
                 {nlpInsights.feedbacks.length > 0 ? nlpInsights.feedbacks.slice(0, 100).map((item, idx) => (
-                  <div key={idx} className={cn("p-6 bg-white border rounded-3xl shadow-sm hover:shadow-lg transition-all duration-300 flex gap-6 group hover:-translate-y-0.5", 
-                    item.sentiment === 'Negative' ? "border-rose-100 hover:border-rose-300" :
-                    item.sentiment === 'Positive' ? "border-emerald-100 hover:border-emerald-300" :
-                    "border-zinc-200/80 hover:border-zinc-300"
+                  <div key={idx} className={cn("p-5 bg-white border rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 flex gap-5 group hover:-translate-y-0.5 relative overflow-hidden", 
+                    item.sentiment === 'Negative' ? "border-rose-100" :
+                    item.sentiment === 'Positive' ? "border-emerald-100" :
+                    "border-zinc-200/80"
                   )}>
-                    <div className={cn("shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center font-black text-sm border shadow-inner", 
+                    <div className={cn("absolute left-0 top-0 bottom-0 w-1", 
+                      item.sentiment === 'Negative' ? "bg-rose-400" :
+                      item.sentiment === 'Positive' ? "bg-emerald-400" :
+                      "bg-zinc-300"
+                    )}></div>
+                    <div className={cn("shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs border shadow-sm", 
                       item.sentiment === 'Negative' ? "bg-rose-50 text-rose-700 border-rose-100" :
                       item.sentiment === 'Positive' ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
                       "bg-zinc-50 text-zinc-700 border-zinc-200"
@@ -478,21 +483,21 @@ export default function Customers() {
                       {item.customer.name?.substring(0,2).toUpperCase() || 'NA'}
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <div className="font-bold text-zinc-900 text-lg">{item.customer.name}</div>
-                          <div className="text-[11px] font-medium text-zinc-500 mt-1">{item.customer.id} • <span className="bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">{item.customer.plan_tier}</span></div>
+                      <div className="flex items-start justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-zinc-900 text-sm">{item.customer.name}</span>
+                          <span className="text-[10px] font-medium text-zinc-400">{item.customer.id} • {item.customer.plan_tier}</span>
                         </div>
-                        <span className={cn("px-3 py-1.5 text-[11px] font-black uppercase tracking-wider rounded-xl shadow-sm border",
-                          item.sentiment === 'Negative' ? "bg-gradient-to-r from-rose-100 to-rose-50 text-rose-700 border-rose-200" :
-                          item.sentiment === 'Positive' ? "bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 border-emerald-200" :
-                          "bg-zinc-100 text-zinc-700 border-zinc-200"
+                        <span className={cn("px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full shadow-sm border",
+                          item.sentiment === 'Negative' ? "bg-rose-50 text-rose-700 border-rose-100" :
+                          item.sentiment === 'Positive' ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                          "bg-zinc-50 text-zinc-700 border-zinc-200"
                         )}>
                           {item.sentiment}
                         </span>
                       </div>
-                      <p className="text-[15px] text-zinc-700 leading-relaxed bg-zinc-50/80 p-5 rounded-2xl border border-zinc-100 italic mt-4 shadow-inner">
-                        "{item.text}"
+                      <p className="text-[13px] text-zinc-700 font-medium leading-relaxed mt-2.5">
+                        {item.text}
                       </p>
                       {item.sentiment === 'Negative' && item.customer.churn_risk === 'High' && (
                         <div className="mt-3 flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-md border border-amber-100 inline-flex">
