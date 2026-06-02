@@ -54,7 +54,7 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
         </header>
       )}
 
-      <div className={cn("w-full space-y-6 animate-fadeIn", hideHeader ? "pt-0 pb-8" : "p-8")}>
+      <div className={cn("w-full space-y-6 animate-fadeIn", hideHeader ? "pt-0 p-8" : "p-8")}>
         
         {/* Campaign Tabs */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -69,30 +69,30 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
                 className={cn(
                   "p-6 rounded-3xl border text-left transition-all duration-300 flex flex-col group relative overflow-hidden h-full",
                   isActive 
-                    ? `shadow-xl bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-800 scale-[1.03] -translate-y-1` 
+                    ? `shadow-xl bg-white border-brand-300 ring-4 ring-brand-500/10 scale-[1.03] -translate-y-1` 
                     : "bg-white border-zinc-200/80 hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-lg hover:-translate-y-1"
                 )}
               >
                 {isActive && (
-                  <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none transform translate-x-4 -translate-y-4">
-                     <Sparkles size={64} className="text-white animate-pulse" />
+                  <div className="absolute top-0 right-0 p-4 opacity-50 pointer-events-none transform translate-x-4 -translate-y-4">
+                     <Sparkles size={64} className="text-brand-200 animate-pulse" />
                   </div>
                 )}
                 <div className={cn(
-                  "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3",
-                  isActive ? "bg-white/10 border-white/10 text-white backdrop-blur-md" : cn(campaign.bg, campaign.color, campaign.border)
+                  "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 relative z-10",
+                  isActive ? cn(campaign.bg, campaign.color, "border-brand-200 shadow-brand-100/50") : cn(campaign.bg, campaign.color, campaign.border)
                 )}>
                   <Icon size={22} />
                 </div>
                 <div className="mt-4 relative z-10 flex flex-col flex-1">
                   <h3 className={cn(
                     "font-bold text-[14px] sm:text-[15px] leading-snug transition-colors duration-300",
-                    isActive ? "text-white" : "text-zinc-800 group-hover:text-brand-700"
+                    isActive ? "text-brand-900" : "text-zinc-800 group-hover:text-brand-700"
                   )}>{campaign.id}</h3>
                   <div className="mt-auto pt-5">
                     <div className={cn(
                       "h-1.5 rounded-full transition-all duration-500",
-                      isActive ? "bg-white/40 w-12" : "bg-zinc-200 w-8 group-hover:w-12 group-hover:bg-brand-400"
+                      isActive ? "bg-brand-500 w-12" : "bg-zinc-200 w-8 group-hover:w-12 group-hover:bg-brand-400"
                     )} />
                   </div>
                 </div>
