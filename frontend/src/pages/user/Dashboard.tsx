@@ -735,13 +735,22 @@ export default function Home() {
                 <AlertCircle className="w-5 h-5 text-rose-500" /> Mitigation Action Center
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {summary?.highRiskCustomers?.length > 0 ? summary.highRiskCustomers.map((c: any) => {
-                  const isHigh = c.churnProbability >= 75;
-                  
-                  const btnState = sendingOffer === c.customerId ? "loading" : sendingOffer === c.customerId + "_success" ? "success" : "idle";
-                  
-                  return (
-                    <div key={c.customerId} className="relative group bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <AnimatePresence mode="popLayout">
+                  {summary?.highRiskCustomers?.length > 0 ? summary.highRiskCustomers.map((c: any) => {
+                    const isHigh = c.churnProbability >= 75;
+                    
+                    const btnState = sendingOffer === c.customerId ? "loading" : sendingOffer === c.customerId + "_success" ? "success" : "idle";
+                    
+                    return (
+                      <motion.div 
+                        layout
+                        initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, x: -30, filter: "blur(4px)" }}
+                        transition={{ duration: 0.4, type: "spring", bounce: 0.2 }}
+                        key={c.customerId} 
+                        className="relative group bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300"
+                      >
                       {/* Premium Card Header */}
                       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-amber-500" />
                       <div className="p-5">
@@ -803,16 +812,20 @@ export default function Home() {
                             </>
                           )}
                         </div>
-                      </div>
-                    </div>
-                  );
-                }) : (
-                  <div className="col-span-3 py-16 flex flex-col items-center justify-center bg-white border border-slate-100 rounded-2xl border-dashed">
-                    <CheckCircle className="w-10 h-10 text-emerald-400 mb-3" />
-                    <h3 className="text-sm font-bold text-slate-900">All Clear!</h3>
-                    <p className="text-xs text-slate-500 mt-1">No high-risk customers requiring immediate mitigation.</p>
-                  </div>
-                )}
+                      </motion.div>
+                    );
+                  }) : (
+                    <motion.div 
+                      initial={{ opacity: 0 }} 
+                      animate={{ opacity: 1 }}
+                      className="col-span-3 py-16 flex flex-col items-center justify-center bg-white border border-slate-100 rounded-2xl border-dashed"
+                    >
+                      <CheckCircle className="w-10 h-10 text-emerald-400 mb-3" />
+                      <h3 className="text-sm font-bold text-slate-900">All Clear!</h3>
+                      <p className="text-xs text-slate-500 mt-1">No high-risk customers requiring immediate mitigation.</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
