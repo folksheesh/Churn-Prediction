@@ -84,6 +84,20 @@ def get_current_admin(token: str = Depends(oauth2_scheme), db: Session = Depends
         raise credentials_exception
     return admin
 
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login", auto_error=False)
+
+def get_optional_admin(token: str = Depends(oauth2_scheme_optional), db: Session = Depends(get_db)):
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+    except JWTError:
+        return None
+    return db.query(AdminUser).filter(AdminUser.email == email).first()
+
 def require_role(*allowed_roles):
     """Dependency factory for role-based access control."""
     def checker(current_admin: AdminUser = Depends(get_current_admin)):

@@ -15,7 +15,7 @@ from backend.core.models import (
     MitigationLog, ActivityLog, Customer, AdminUser,
     ROLE_CS_MANAGER, ROLE_CS_AGENT
 )
-from backend.api.routers.auth import get_current_admin
+from backend.api.routers.auth import get_current_admin, get_optional_admin
 
 router = APIRouter()
 
@@ -101,7 +101,7 @@ class CampaignRecommendation(BaseModel):
 @router.post("/execute", response_model=CampaignAssignResponse)
 def assign_campaign(
     req: CampaignAssignRequest,
-    current_admin: AdminUser = Depends(get_current_admin),
+    current_admin: Optional[AdminUser] = Depends(get_optional_admin),
     db: Session = Depends(get_db),
 ):
     # Validate campaign name
@@ -125,10 +125,11 @@ def assign_campaign(
     customer.mitigation_status = "Assigned"
 
     # Create mitigation log record
+    executed_by = current_admin.email if current_admin else "System (User Dashboard)"
     mitigation_log = MitigationLog(
         customer_id=req.customer_id,
         action_type=req.campaign_name,
-        executed_by=current_admin.email,
+        executed_by=executed_by,
         status="Assigned",
         notes=req.notes,
     )
@@ -137,7 +138,7 @@ def assign_campaign(
     # Create audit trail activity log
     activity_log = ActivityLog(
         action=f"Campaign Assigned: {campaign_info['label']}",
-        user=current_admin.email,
+        user=executed_by,
         details=f"{campaign_info['label']} assigned to {customer.name or req.customer_id}",
         result="Assigned",
     )

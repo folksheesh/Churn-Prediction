@@ -6,10 +6,6 @@ import { motion } from 'framer-motion';
 
 export default function Landing() {
   const { isAuthenticated } = useAuth();
-  
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
 
   const fadeIn = {
     initial: { opacity: 0, y: 20 },

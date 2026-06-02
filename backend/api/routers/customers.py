@@ -256,9 +256,30 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
                 }
             )
         df = non_empty_rows.reset_index(drop=True)
-        # Auto-generate id column if missing
+        
+        # Check Daily Upload Limit (Limit to 10,000 customers per day)
+        midnight = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        customers_added_today = db.query(Customer).filter(Customer.created_at >= midnight).count()
+        DAILY_LIMIT = 10000
+        if customers_added_today + len(df) > DAILY_LIMIT:
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "message": "Daily upload limit exceeded.",
+                    "errors": [
+                        f"You can only upload up to {DAILY_LIMIT} customers per day.",
+                        f"You have already uploaded {customers_added_today} today. This file contains {len(df)} customers, exceeding your remaining quota of {max(0, DAILY_LIMIT - customers_added_today)}."
+                    ]
+                }
+            )
+
+        # Auto-generate id column if missing using deterministic hash
         if 'id' not in df.columns:
-            df['id'] = [f"CUST-{str(uuid.uuid4())[:8].upper()}" for _ in range(len(df))]
+            import hashlib
+            def generate_id(row):
+                row_str = "".join(str(val) for val in row.values)
+                return f"CUST-{hashlib.md5(row_str.encode()).hexdigest()[:8].upper()}"
+            df['id'] = df.apply(generate_id, axis=1)
         
         # Auto-generate name column if missing
         if 'name' not in df.columns:
@@ -486,6 +507,7 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
         result_df = run_batch_prediction(df)
         
         customers_to_add = []
+        processed_in_batch = {}  # Keep track of customers processed in this file
         for _, row in result_df.iterrows():
             row_dict = row.dropna().to_dict()
             
@@ -500,17 +522,26 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
             
             # Check if customer exists (duplicate detection)
             cust_id = str(row_dict.get('id'))
-            existing = db.query(Customer).filter(Customer.id == cust_id).first()
+            
+            # First check our in-memory batch dictionary
+            if cust_id in processed_in_batch:
+                existing = processed_in_batch[cust_id]
+            else:
+                existing = db.query(Customer).filter(Customer.id == cust_id).first()
+                
             if existing:
                 # Update existing customer
                 for k, v in row_dict.items():
                     if hasattr(existing, k):
                         setattr(existing, k, v)
+                processed_in_batch[cust_id] = existing
             else:
                 # Filter out dict keys not in Customer model
                 valid_keys = {c.name for c in Customer.__table__.columns}
                 filtered_dict = {k: v for k, v in row_dict.items() if k in valid_keys}
-                customers_to_add.append(Customer(**filtered_dict))
+                new_customer = Customer(**filtered_dict)
+                customers_to_add.append(new_customer)
+                processed_in_batch[cust_id] = new_customer
                 
         if customers_to_add:
             db.add_all(customers_to_add)
