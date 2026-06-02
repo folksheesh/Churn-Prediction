@@ -3,8 +3,10 @@ import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, Shield
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import ProfileModal from './ProfileModal';
 
 export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void }) {
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
   
@@ -123,7 +125,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
       
       {/* Footer User Profile */}
       <div className="p-4 border-t border-slate-200/60 mt-auto">
-        <div className="flex items-center justify-between p-2 -mx-2 rounded-xl hover:bg-slate-100/80 transition-colors group">
+        <div className="flex items-center justify-between p-2 -mx-2 rounded-xl hover:bg-slate-100/80 transition-colors group cursor-pointer" onClick={() => setShowProfileModal(true)}>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-slate-200 border border-slate-300/50 text-slate-700 flex items-center justify-center font-bold text-xs uppercase shadow-sm">
               {user?.name?.substring(0, 2) || 'AD'}
@@ -139,11 +141,21 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
               </span>
             </div>
           </div>
-          <button onClick={() => { logout(); navigate('/'); }} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Logout">
+          <button 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              logout(); 
+              navigate('/'); 
+            }} 
+            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" 
+            title="Logout"
+          >
             <LogOut size={16} />
           </button>
         </div>
       </div>
+      
+      {showProfileModal && <ProfileModal onClose={() => setShowProfileModal(false)} />}
     </aside>
   );
 }
