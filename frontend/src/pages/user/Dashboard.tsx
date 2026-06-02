@@ -374,10 +374,9 @@ export default function Home() {
     const campaign = selectedCampaigns[customerId] || "Discount Campaign";
     setSendingOffer(customerId);
     try {
-      await api.put(`/customers/${customerId}`, {
-        retention_campaign: campaign,
-        mitigation_status: 'Mitigated',
-        campaign_assigned_date: new Date().toISOString()
+      await api.post(`/mitigation/execute`, {
+        customer_id: customerId,
+        campaign_name: campaign
       });
       // Update local state to reflect mitigation immediately
       setCustomerData((prev: any) => {
@@ -385,13 +384,13 @@ export default function Home() {
         return {
           ...prev,
           ...(prev.customers ? { customers: prev.customers.map((c: any) => 
-            c.customerId === customerId ? { ...c, retention_campaign: campaign, mitigation_status: 'Mitigated' } : c
+            c.customerId === customerId || c.id === customerId ? { ...c, retention_campaign: campaign, mitigation_status: 'Mitigated', campaign_assigned_date: new Date().toISOString() } : c
           )} : {}),
           ...(prev.highRiskCustomers ? { highRiskCustomers: prev.highRiskCustomers.map((c: any) => 
-            c.customerId === customerId ? { ...c, retention_campaign: campaign, mitigation_status: 'Mitigated' } : c
+            c.customerId === customerId || c.id === customerId ? { ...c, retention_campaign: campaign, mitigation_status: 'Mitigated', campaign_assigned_date: new Date().toISOString() } : c
           )} : {}),
           ...(prev.lowRiskCustomers ? { lowRiskCustomers: prev.lowRiskCustomers.map((c: any) => 
-            c.customerId === customerId ? { ...c, retention_campaign: campaign, mitigation_status: 'Mitigated' } : c
+            c.customerId === customerId || c.id === customerId ? { ...c, retention_campaign: campaign, mitigation_status: 'Mitigated', campaign_assigned_date: new Date().toISOString() } : c
           )} : {})
         };
       });
@@ -401,11 +400,9 @@ export default function Home() {
       }, 3000);
     } catch (err) {
       console.error("Failed to send offer:", err);
-      // Fallback
-      setSendingOffer(customerId + "_success");
-      setTimeout(() => {
-        setSendingOffer(null);
-      }, 2000);
+      // Even if fallback, we should just show error instead of pretending it worked
+      setSendingOffer(null);
+      alert("Failed to apply mitigation. Please check the console for details.");
     }
   };
 
