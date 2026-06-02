@@ -2,27 +2,29 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
+from typing import Optional, Union, List
+
 class CustomerBase(BaseModel):
     name: Optional[str] = None
-    age: Optional[int] = None
+    age: Optional[Union[int, str]] = None
     gender: Optional[str] = None
     region_category: Optional[str] = None
-    days_since_joined: Optional[int] = None
+    days_since_joined: Optional[Union[int, str]] = None
     plan_tier: Optional[str] = None
     status: Optional[str] = "Active"
     
-    days_since_active: Optional[int] = None
-    api_calls_90d: Optional[int] = None
-    logins_90d: Optional[int] = None
-    active_days_90d: Optional[int] = None
-    avg_session_duration: Optional[float] = None
-    days_since_last_login: Optional[int] = None
-    avg_frequency_login_days: Optional[float] = None
+    days_since_active: Optional[Union[int, str]] = None
+    api_calls_90d: Optional[Union[int, str]] = None
+    logins_90d: Optional[Union[int, str]] = None
+    active_days_90d: Optional[Union[int, str]] = None
+    avg_session_duration: Optional[Union[float, str]] = None
+    days_since_last_login: Optional[Union[int, str]] = None
+    avg_frequency_login_days: Optional[Union[float, str]] = None
     
-    avg_transaction_value: Optional[float] = None
-    points_in_wallet: Optional[float] = None
+    avg_transaction_value: Optional[Union[float, str]] = None
+    points_in_wallet: Optional[Union[float, str]] = None
     
-    tickets_opened_90d: Optional[int] = None
+    tickets_opened_90d: Optional[Union[int, str]] = None
     feedback: Optional[str] = None
     
     churn_risk: Optional[str] = None
