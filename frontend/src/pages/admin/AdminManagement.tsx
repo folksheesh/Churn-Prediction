@@ -134,10 +134,18 @@ export default function AdminManagement() {
 
   const formatLastLogin = (dateStr: string | null) => {
     if (!dateStr) return 'Never logged in';
-    const d = new Date(dateStr);
+    // Clean up any double 'Z' or '+00:00Z' that might come from backend tweaks
+    let cleanDate = dateStr.replace('Z', '').replace('+00:00', '');
+    // Append 'Z' to force UTC parsing, since backend stores as UTC naive
+    const d = new Date(cleanDate + 'Z');
+    
+    // Fallback if invalid
+    if (isNaN(d.getTime())) return 'Invalid date';
+
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMins = Math.floor(diffMs / 60000);
+    
     if (diffMins < 1) return 'Online now';
     if (diffMins < 60) return `${diffMins}m ago`;
     const diffHrs = Math.floor(diffMins / 60);
