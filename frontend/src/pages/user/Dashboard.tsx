@@ -231,13 +231,13 @@ export default function Home() {
             const isHighRisk = c.riskLevel === 'High Risk' || c.churnProbability >= 70;
             if (!isHighRisk) return false;
             
-            // If mitigated, only keep them in Action Center for 1 hour to allow new users to rotate in
+            // If mitigated, only keep them in Action Center for 3 seconds to show 'Done' state before replacing
             if (c.mitigation_status === "Mitigated" || c.retention_campaign) {
               if (c.campaign_assigned_date) {
                 const assignedTime = new Date(c.campaign_assigned_date).getTime();
                 const now = new Date().getTime();
-                const diffMinutes = (now - assignedTime) / (1000 * 60);
-                return diffMinutes < 60; // Show for 60 minutes after mitigation
+                const diffSeconds = (now - assignedTime) / 1000;
+                return diffSeconds < 3; // Show for 3 seconds after mitigation
               }
               return false; // If mitigated but no date, remove them
             }
@@ -1523,7 +1523,10 @@ export default function Home() {
           onClose={() => setRetentionModalCustomer(null)}
           onSuccess={() => {
             setRetentionModalCustomer(null);
-            fetchCustomers();
+            fetchCustomers(); // Initial fetch to show "Mitigated" state
+            setTimeout(() => {
+              fetchCustomers(); // Refetch after 3.5s to clear the mitigated customer and load a new one
+            }, 3500);
           }}
         />
       )}
