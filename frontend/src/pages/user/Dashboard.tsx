@@ -231,15 +231,10 @@ export default function Home() {
             const isHighRisk = c.riskLevel === 'High Risk' || c.churnProbability >= 70;
             if (!isHighRisk) return false;
             
-            // If mitigated, only keep them in Action Center for 3 seconds to show 'Done' state before replacing
-            if (c.mitigation_status === "Mitigated" || c.retention_campaign) {
-              if (c.campaign_assigned_date) {
-                const assignedTime = new Date(c.campaign_assigned_date).getTime();
-                const now = new Date().getTime();
-                const diffSeconds = (now - assignedTime) / 1000;
-                return diffSeconds < 3; // Show for 3 seconds after mitigation
-              }
-              return false; // If mitigated but no date, remove them
+            // If mitigated, remove them immediately from the queue. 
+            // The 3-second 'Done' animation is handled via local state BEFORE this fetch is called.
+            if (c.mitigation_status === "Mitigated" || c.retention_campaign || c.mitigation_status === "Assigned") {
+              return false;
             }
             return true;
           })
@@ -1521,10 +1516,16 @@ export default function Home() {
         <RetentionActionCenter
           customer={retentionModalCustomer}
           onClose={() => setRetentionModalCustomer(null)}
-          onSuccess={() => {
+          onSuccess={(campaign) => {
+            const cid = retentionModalCustomer.id;
             setRetentionModalCustomer(null);
-            fetchCustomers(); // Initial fetch to show "Mitigated" state
+            
+            // Mark as success in local state IMMEDIATELY to trigger the 'Done' animation
+            setSendingOffer(cid + "_success");
+            setSelectedCampaigns(prev => ({ ...prev, [cid]: campaign || "Mitigation Campaign" }));
+            
             setTimeout(() => {
+              setSendingOffer(null);
               fetchCustomers(); // Refetch after 3.5s to clear the mitigated customer and load a new one
             }, 3500);
           }}

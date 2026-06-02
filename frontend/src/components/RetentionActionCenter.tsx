@@ -55,7 +55,7 @@ const CAMPAIGNS: Campaign[] = [
 interface RetentionActionCenterProps {
   customer: any;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (campaign?: string) => void;
 }
 
 export default function RetentionActionCenter({ customer, onClose, onSuccess }: RetentionActionCenterProps) {
@@ -100,7 +100,8 @@ export default function RetentionActionCenter({ customer, onClose, onSuccess }: 
       setShowToast(true);
       setTimeout(() => {
         setShowToast(false);
-        onSuccess();
+        const label = CAMPAIGNS.find(c => c.key === selected)?.label || selected;
+        onSuccess(label);
         onClose();
       }, 2000);
     } catch (err) {
