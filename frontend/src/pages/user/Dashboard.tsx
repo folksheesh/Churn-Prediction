@@ -152,6 +152,7 @@ export default function Home() {
           supportTickets: c.tickets_opened_90d || 0,
           mitigation_status: c.mitigation_status,
           retention_campaign: c.retention_campaign,
+          campaign_assigned_date: c.campaign_assigned_date,
           id: c.id,
           churn_risk: c.churn_risk,
           churn_probability: c.churn_probability,
@@ -226,7 +227,22 @@ export default function Home() {
         riskStats,
         lowRiskCustomers: mappedCustomers.filter((c: any) => c.riskLevel === 'Low Risk').slice(0, 4),
         highRiskCustomers: mappedCustomers
-          .filter((c: any) => c.riskLevel === 'High Risk' || c.churnProbability >= 70)
+          .filter((c: any) => {
+            const isHighRisk = c.riskLevel === 'High Risk' || c.churnProbability >= 70;
+            if (!isHighRisk) return false;
+            
+            // If mitigated, only keep them in Action Center for 1 hour to allow new users to rotate in
+            if (c.mitigation_status === "Mitigated" || c.retention_campaign) {
+              if (c.campaign_assigned_date) {
+                const assignedTime = new Date(c.campaign_assigned_date).getTime();
+                const now = new Date().getTime();
+                const diffMinutes = (now - assignedTime) / (1000 * 60);
+                return diffMinutes < 60; // Show for 60 minutes after mitigation
+              }
+              return false; // If mitigated but no date, remove them
+            }
+            return true;
+          })
           .sort((a: any, b: any) => b.churnProbability - a.churnProbability)
           .slice(0, 3),
         activities: [
