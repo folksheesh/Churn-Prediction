@@ -53,7 +53,6 @@ def record_upload_attempt(db: Session, user_email: str, filename: str, status: s
     db.commit()
 
 @router.get("/", response_model=CustomerListResponse)
-@cache(expire=60)
 def get_customers(
     skip: int = 0, 
     limit: int = 50, 
