@@ -33,6 +33,7 @@ export default function AdminManagement() {
   
   // Edit & UI State
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   // Password validation — accepts ANY non-alphanumeric, non-whitespace character
@@ -92,6 +93,7 @@ export default function AdminManagement() {
 
   const handleEditClick = (admin: any) => {
     setEditingId(admin.id);
+    setIsModalOpen(true);
     setName(admin.name);
     setEmail(admin.email);
     setRole(admin.role || 'Admin');
@@ -102,6 +104,7 @@ export default function AdminManagement() {
 
   const handleCancelEdit = () => {
     setEditingId(null);
+    setIsModalOpen(false);
     setName('');
     setEmail('');
     setPassword('');
@@ -138,11 +141,17 @@ export default function AdminManagement() {
 
   return (
     <>
-      <header className="h-16 flex items-center px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
+      <header className="h-16 flex items-center justify-between px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
         <h1 className="text-lg font-semibold tracking-tight text-zinc-900">Manage Admins</h1>
+        <button 
+          onClick={() => { handleCancelEdit(); setIsModalOpen(true); }}
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+        >
+          <Plus size={16} /> Add Admin
+        </button>
       </header>
 
-      <div className="p-4 sm:p-8 w-full flex flex-col lg:flex-row gap-6 items-start">
+      <div className="p-4 sm:p-8 w-full flex flex-col gap-6 items-start">
         
         {/* Admin List */}
         <div className="flex-1 bg-white border border-zinc-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
@@ -223,114 +232,125 @@ export default function AdminManagement() {
           )}
         </div>
 
-        {/* Add Admin Form */}
-        <div className="w-full lg:w-[400px] bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden shrink-0">
-          <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {editingId ? <Edit2 size={18} className="text-zinc-500" /> : <Plus size={18} className="text-zinc-500" />}
-              <h2 className="text-sm font-semibold text-zinc-900">{editingId ? 'Edit Admin' : 'Add New Admin'}</h2>
-            </div>
-            {editingId && (
-              <button onClick={handleCancelEdit} className="text-zinc-400 hover:text-zinc-600 transition-colors">
-                <X size={16} />
-              </button>
-            )}
-          </div>
-          
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {error && <div className="p-3 bg-rose-50 text-rose-700 text-xs rounded border border-rose-200">{error}</div>}
-            {success && <div className="p-3 bg-emerald-50 text-emerald-700 text-xs rounded border border-emerald-200">{success}</div>}
-            
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-700">Full Name</label>
-              <input 
-                type="text" 
-                required
-                value={name}
-                onChange={e => setName(e.target.value)}
-                className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900/10" 
-                placeholder="John Doe"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-700">Email Address</label>
-              <input 
-                type="email" 
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900/10" 
-                placeholder="john@churnsense.com"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-700">Role</label>
-              <select 
-                value={role}
-                onChange={e => setRole(e.target.value)}
-                className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900/10 bg-white"
-              >
-                {ROLES.map(r => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-700">Password {editingId && <span className="text-zinc-400 font-normal">(leave blank to keep current)</span>}</label>
-              <div className="relative">
-                <input 
-                  type={showPassword ? "text" : "password"}
-                  required={!editingId}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900/10 pr-10" 
-                  placeholder={editingId ? "••••••••" : "••••••••"}
-                />
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowPassword(prev => !prev);
-                  }}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 transition-colors z-10 cursor-pointer"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+        {/* Add/Edit Admin Modal */}
+        {(isModalOpen || editingId) && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-[400px] bg-white border border-zinc-200 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+                <div className="flex items-center gap-2">
+                  {editingId ? <Edit2 size={18} className="text-zinc-600" /> : <Plus size={18} className="text-zinc-600" />}
+                  <h2 className="text-sm font-bold text-zinc-900">{editingId ? 'Edit Admin' : 'Add New Admin'}</h2>
+                </div>
+                <button onClick={handleCancelEdit} className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors">
+                  <X size={16} />
                 </button>
               </div>
-            </div>
+              
+              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                {error && <div className="p-3 bg-rose-50 text-rose-700 text-xs rounded border border-rose-200">{error}</div>}
+                {success && <div className="p-3 bg-emerald-50 text-emerald-700 text-xs rounded border border-emerald-200">{success}</div>}
+                
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-700">Full Name</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10 transition-shadow" 
+                    placeholder="John Doe"
+                  />
+                </div>
 
-            {/* Password Validation Requirements */}
-            <div className="text-[11px] space-y-1 mt-2 p-3 bg-zinc-50 rounded border border-zinc-100">
-              <p className="font-semibold text-zinc-700 mb-2">Password Requirements:</p>
-              <div className={`flex items-center gap-1.5 ${valLength ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                {valLength ? <CheckCircle size={12} /> : <XCircle size={12} />} Minimum 8 characters
-              </div>
-              <div className={`flex items-center gap-1.5 ${valUpper ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                {valUpper ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Uppercase letter
-              </div>
-              <div className={`flex items-center gap-1.5 ${valLower ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                {valLower ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Lowercase letter
-              </div>
-              <div className={`flex items-center gap-1.5 ${valNum ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                {valNum ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Number
-              </div>
-              <div className={`flex items-center gap-1.5 ${valSpec ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                {valSpec ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Special character (e.g. @$!%*?&#/\-_+.())
-              </div>
-            </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-700">Email Address</label>
+                  <input 
+                    type="email" 
+                    required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10 transition-shadow" 
+                    placeholder="john@churnsense.com"
+                  />
+                </div>
 
-            <button 
-              type="submit" 
-              disabled={!isFormValid}
-              className="w-full mt-4 bg-zinc-900 hover:bg-zinc-800 text-white font-medium py-2 rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {editingId ? 'Save Changes' : 'Add Admin'}
-            </button>
-          </form>
-        </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-700">Role</label>
+                  <select 
+                    value={role}
+                    onChange={e => setRole(e.target.value)}
+                    className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10 bg-white transition-shadow"
+                  >
+                    {ROLES.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-700">Password {editingId && <span className="text-zinc-400 font-normal">(leave blank to keep)</span>}</label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"}
+                      required={!editingId}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10 pr-10 transition-shadow" 
+                      placeholder={editingId ? "••••••••" : "••••••••"}
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowPassword(prev => !prev);
+                      }}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 transition-colors z-10 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Password Validation Requirements */}
+                <div className="text-[11px] space-y-1 mt-2 p-3 bg-zinc-50 rounded-lg border border-zinc-100">
+                  <p className="font-semibold text-zinc-700 mb-2">Password Requirements:</p>
+                  <div className={`flex items-center gap-1.5 ${valLength ? 'text-emerald-600' : 'text-zinc-500'}`}>
+                    {valLength ? <CheckCircle size={12} /> : <XCircle size={12} />} Minimum 8 characters
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${valUpper ? 'text-emerald-600' : 'text-zinc-500'}`}>
+                    {valUpper ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Uppercase letter
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${valLower ? 'text-emerald-600' : 'text-zinc-500'}`}>
+                    {valLower ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Lowercase letter
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${valNum ? 'text-emerald-600' : 'text-zinc-500'}`}>
+                    {valNum ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Number
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${valSpec ? 'text-emerald-600' : 'text-zinc-500'}`}>
+                    {valSpec ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Special character
+                  </div>
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button 
+                    type="button" 
+                    onClick={handleCancelEdit}
+                    className="flex-1 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-medium py-2 rounded-lg text-sm transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={!isFormValid}
+                    className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-white font-medium py-2 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {editingId ? 'Save Changes' : 'Add Admin'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
       </div>
     </>
