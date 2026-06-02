@@ -72,6 +72,7 @@ def get_customers(
     if campaign:
         query = query.filter(Customer.retention_campaign == campaign)
         
+    query = query.order_by(Customer.created_at.desc())
     total = query.count()
     items = query.offset(skip).limit(limit).all()
     
