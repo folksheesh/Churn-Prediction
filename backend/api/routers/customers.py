@@ -180,6 +180,30 @@ def get_csv_template():
     response.headers["Content-Disposition"] = "attachment; filename=customers_template.csv"
     return response
 
+@router.get("/xlsx/template")
+def get_xlsx_template():
+    # Define required headers for the model
+    headers = [
+        "id", "name", "age", "gender", "region_category", 
+        "days_since_joined", "plan_tier", "status", "days_since_active", 
+        "api_calls_90d", "logins_90d", "active_days_90d", 
+        "avg_session_duration", "days_since_last_login", 
+        "avg_frequency_login_days", "avg_transaction_value", 
+        "points_in_wallet", "tickets_opened_90d", "feedback"
+    ]
+    
+    df = pd.DataFrame(columns=headers)
+    df.loc[0] = ["CUST-001", "John Doe", 35, "Male", "North America", 120, "Pro", "Active", 2, 5000, 20, 15, 30.5, 5, 2.1, 150.0, 500, 1, "Great service"]
+    
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False)
+    
+    output.seek(0)
+    response = StreamingResponse(iter([output.getvalue()]), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response.headers["Content-Disposition"] = "attachment; filename=customers_template.xlsx"
+    return response
+
 @router.post("/import")
 async def import_customers_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
     user_email = "anonymous"  # Will be replaced with auth user when token is provided

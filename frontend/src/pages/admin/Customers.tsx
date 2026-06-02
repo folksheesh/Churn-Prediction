@@ -124,11 +124,11 @@ export default function Customers() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const res = await api.get('/customers/csv/template', { responseType: 'blob' });
+      const res = await api.get('/customers/xlsx/template', { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'customers_template.csv');
+      link.setAttribute('download', 'customers_template.xlsx');
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -559,7 +559,7 @@ export default function Customers() {
                         {uploadStatus.errors.map((err, idx) => (
                           <div key={idx} className="flex items-start gap-3 bg-rose-50/60 border border-rose-100 rounded-md px-4 py-3">
                             <XCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                            <span className="text-xs font-medium text-rose-700">{err}</span>
+                            <span className="text-xs font-medium text-rose-700 break-words break-all">{err}</span>
                           </div>
                         ))}
                       </div>
