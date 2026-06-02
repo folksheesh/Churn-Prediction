@@ -211,20 +211,20 @@ export default function Customers() {
         
         {/* Segmented Control Tabs / Back Button */}
         {activeTab !== 'import_xlsx' ? (
-          <div className="flex mb-6 w-full max-w-sm">
-            <div className="flex bg-zinc-100/80 p-1 rounded-lg border border-zinc-200/50 w-full">
+          <div className="flex mb-6 w-full max-w-[400px]">
+            <div className="flex bg-zinc-100/80 p-1.5 rounded-2xl border border-zinc-200/60 w-full relative">
               <button 
-                className={cn("flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex justify-center items-center gap-1.5", activeTab === 'churn_data' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700")}
+                className={cn("flex-1 py-2 text-xs font-bold rounded-xl transition-all duration-300 flex justify-center items-center gap-2 z-10", activeTab === 'churn_data' ? "bg-white text-brand-600 shadow-md shadow-zinc-200/50" : "text-zinc-500 hover:text-zinc-800")}
                 onClick={() => setActiveTab('churn_data')}
               >
-                <BarChart2 size={14} />
+                <BarChart2 size={16} />
                 Risk Workspace
               </button>
               <button 
-                className={cn("flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex justify-center items-center gap-1.5", activeTab === 'user_feedback' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700")}
+                className={cn("flex-1 py-2 text-xs font-bold rounded-xl transition-all duration-300 flex justify-center items-center gap-2 z-10", activeTab === 'user_feedback' ? "bg-white text-brand-600 shadow-md shadow-zinc-200/50" : "text-zinc-500 hover:text-zinc-800")}
                 onClick={() => setActiveTab('user_feedback')}
               >
-                <MessageSquare size={14} />
+                <MessageSquare size={16} />
                 User Feedback
               </button>
             </div>
@@ -272,7 +272,7 @@ export default function Customers() {
               </div>
             </div>
 
-            <div className="bg-white border border-zinc-200/80 rounded-md shadow-[0_2px_8px_rgb(0,0,0,0.04)] flex flex-col overflow-hidden">
+            <div className="bg-white/80 backdrop-blur-xl border border-zinc-200/80 rounded-3xl shadow-xl shadow-zinc-200/40 flex flex-col overflow-hidden">
               {loading ? (
             <div className="h-64 flex items-center justify-center">
                <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin"></div>
@@ -280,7 +280,7 @@ export default function Customers() {
           ) : (
             <div className="w-full overflow-x-auto">
               <table className="w-full text-left whitespace-nowrap">
-                <thead className="text-[10px] font-semibold text-zinc-500 bg-zinc-50/50 uppercase tracking-wider border-b border-zinc-100">
+                <thead className="text-[10px] font-black text-zinc-500 bg-zinc-50/80 uppercase tracking-widest border-b border-zinc-100">
                   <tr>
                     <th className="px-5 py-2.5">Customer</th>
                     <th className="px-5 py-2.5">Plan Tier</th>
@@ -293,69 +293,79 @@ export default function Customers() {
                 </thead>
                 <tbody className="divide-y divide-zinc-100/80">
                   {paginatedCustomers.map((c) => (
-                    <tr key={c.id} className={cn("hover:bg-zinc-50/50 transition-colors group", c.churn_risk === 'High' ? "bg-rose-50/10" : "")}>
-                      <td className="px-5 py-2.5">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-md bg-zinc-100/80 text-zinc-600 flex items-center justify-center font-bold text-[10px] border border-zinc-200/60 shadow-sm">
+                    <tr key={c.id} className={cn("hover:bg-white transition-all duration-300 group", c.churn_risk === 'High' ? "bg-rose-50/20" : "")}>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs border shadow-sm transition-colors", c.churn_risk === 'High' ? "bg-gradient-to-br from-rose-100 to-rose-50 text-rose-700 border-rose-200" : "bg-gradient-to-br from-zinc-50 to-white text-zinc-700 border-zinc-200")}>
                             {c.name?.substring(0,2).toUpperCase() || 'NA'}
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-semibold text-zinc-900 text-[13px] leading-tight">{c.name}</span>
-                            <span className="text-[10px] text-zinc-500 font-mono mt-0.5">{c.id}</span>
+                            <span className="font-bold text-zinc-900 text-sm leading-tight group-hover:text-brand-600 transition-colors">{c.name}</span>
+                            <span className="text-[11px] font-medium text-zinc-500 mt-0.5">{c.id}</span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-2.5">
-                        <span className="text-[11px] font-medium text-zinc-700 bg-zinc-100/80 px-2 py-0.5 rounded-sm border border-zinc-200/50">{c.plan_tier || 'Unknown'}</span>
+                      <td className="px-5 py-4">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">{c.plan_tier || 'Unknown'}</span>
                       </td>
-                      <td className="px-5 py-2.5">
+                      <td className="px-5 py-4">
                         {c.feedback ? (
                            <div className="flex flex-col">
-                             <span className="text-[11px] text-zinc-600 truncate max-w-[180px]">{c.feedback}</span>
+                             <span className="text-xs font-medium text-zinc-600 truncate max-w-[200px]">{c.feedback}</span>
                            </div>
                         ) : (
                           <span className="text-[11px] text-zinc-400 italic">No feedback provided</span>
                         )}
                       </td>
-                      <td className="px-5 py-2.5">
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1.5">
-                            <div className={cn("w-1.5 h-1.5 rounded-full", 
-                              c.churn_risk === 'High' ? 'bg-rose-500' : c.churn_risk === 'Medium' ? 'bg-amber-500' : 'bg-emerald-500'
-                            )}></div>
-                            <span className={cn("font-semibold text-[11px]", 
-                              c.churn_risk === 'High' ? 'text-rose-600' : c.churn_risk === 'Medium' ? 'text-amber-600' : 'text-emerald-600'
-                            )}>{c.churn_risk}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                             <div className="w-12 h-1 bg-zinc-100 rounded-full overflow-hidden">
-                                <div className={cn("h-full rounded-full", 
-                                  c.churn_risk === 'High' ? 'bg-rose-500' : c.churn_risk === 'Medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                      <td className="px-5 py-4">
+                        <div className="flex flex-col gap-1.5">
+                           <div className={cn("flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider w-fit border", 
+                              c.churn_risk === 'High' ? 'bg-rose-50 text-rose-700 border-rose-200' : c.churn_risk === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                           )}>
+                             <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", 
+                               c.churn_risk === 'High' ? 'bg-rose-500' : c.churn_risk === 'Medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                             )}></div>
+                             {c.churn_risk}
+                           </div>
+                          <div className="flex items-center gap-2">
+                             <div className="w-16 h-1.5 bg-zinc-100 rounded-full overflow-hidden shadow-inner">
+                                <div className={cn("h-full rounded-full transition-all duration-1000 ease-out", 
+                                  c.churn_risk === 'High' ? 'bg-gradient-to-r from-rose-400 to-rose-600' : c.churn_risk === 'Medium' ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 'bg-gradient-to-r from-emerald-400 to-emerald-500'
                                 )} style={{ width: `${Math.round((c.churn_probability || 0)*100)}%` }}></div>
                              </div>
-                             <span className="text-[10px] font-mono text-zinc-400">{Math.round((c.churn_probability || 0)*100)}%</span>
+                             <span className="text-[10px] font-bold text-zinc-400">{Math.round((c.churn_probability || 0)*100)}%</span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-2.5">
+                      <td className="px-5 py-4">
                         {c.retention_campaign ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-sm border border-indigo-200/50">
-                            <Tag size={10} />
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-700 bg-brand-50 px-2.5 py-1 rounded-md border border-brand-200 shadow-sm">
+                            <Tag size={12} className="text-brand-500" />
                             {c.retention_campaign}
                           </span>
                         ) : (
                           <span className="text-[11px] text-zinc-400 italic">Not Assigned</span>
                         )}
                       </td>
-                      <td className="px-5 py-2.5 text-zinc-500 text-xs">
+                      <td className="px-5 py-4 text-zinc-500 text-[13px] font-medium">
                         {c.days_since_active ? `${c.days_since_active} days ago` : 'Unknown'}
                       </td>
                       <td className="px-5 py-2.5 text-right">
                         <button 
                           onClick={() => setSelectedCustomer(c)}
-                          className={cn("inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold shadow-sm transition-all active:scale-[0.97]", c.churn_risk === 'High' ? "bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 hover:shadow" : "bg-white text-zinc-600 hover:bg-zinc-50 border border-zinc-200")}
+                          className={cn("inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 active:scale-95 overflow-hidden relative group/btn", 
+                            c.churn_risk === 'High' ? "bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20 hover:shadow-lg hover:shadow-rose-500/40 border border-rose-400" : "bg-white text-zinc-700 hover:bg-zinc-50 border border-zinc-200 hover:border-zinc-300 shadow-sm"
+                          )}
                         >
-                          {c.churn_risk === 'High' ? <><AlertTriangle size={12} className="animate-pulse"/> Mitigate</> : "View Profile"}
+                          {c.churn_risk === 'High' ? (
+                            <>
+                              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300 ease-out rounded-lg"></div>
+                              <AlertTriangle size={14} className="animate-pulse relative z-10"/> 
+                              <span className="relative z-10">Mitigate</span>
+                            </>
+                          ) : (
+                            "View Profile"
+                          )}
                         </button>
                       </td>
                     </tr>
@@ -398,67 +408,90 @@ export default function Customers() {
         {activeTab === 'user_feedback' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center gap-3 text-zinc-500 mb-4">
-                  <MessageSquare size={18} />
-                  <h3 className="font-medium text-sm">Total Feedbacks Analyzed</h3>
+              <div className="bg-gradient-to-br from-white to-zinc-50 border border-zinc-200/80 rounded-3xl p-8 shadow-xl shadow-zinc-200/30 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+                <div className="absolute -top-4 -right-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                  <MessageSquare size={120} />
                 </div>
-                <div className="text-4xl font-bold text-zinc-900">{nlpInsights.total}</div>
-                <p className="text-xs text-zinc-500 mt-2">Drawn from actual customer dataset</p>
+                <div className="flex items-center gap-3 text-zinc-500 mb-6 relative z-10">
+                  <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center">
+                    <MessageSquare size={18} className="text-zinc-700" />
+                  </div>
+                  <h3 className="font-bold text-sm tracking-wide">Total Feedbacks Analyzed</h3>
+                </div>
+                <div className="text-5xl font-black text-zinc-900 tracking-tight relative z-10">{nlpInsights.total}</div>
+                <p className="text-xs font-medium text-zinc-500 mt-3 relative z-10">Drawn from actual customer dataset</p>
               </div>
               
-              <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center gap-3 text-rose-600 mb-4">
-                  <TrendingDown size={18} />
-                  <h3 className="font-medium text-sm">Negative Sentiment</h3>
+              <div className="bg-gradient-to-br from-rose-50 to-white border border-rose-100 rounded-3xl p-8 shadow-xl shadow-rose-100/50 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+                <div className="absolute -top-4 -right-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                  <TrendingDown size={120} className="text-rose-600" />
                 </div>
-                <div className="text-4xl font-bold text-rose-700">{nlpInsights.negative}</div>
-                <p className="text-xs text-rose-600/70 mt-2">Requires immediate attention</p>
+                <div className="flex items-center gap-3 text-rose-600 mb-6 relative z-10">
+                  <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
+                    <TrendingDown size={18} className="text-rose-600" />
+                  </div>
+                  <h3 className="font-bold text-sm tracking-wide">Negative Sentiment</h3>
+                </div>
+                <div className="text-5xl font-black text-rose-700 tracking-tight relative z-10">{nlpInsights.negative}</div>
+                <p className="text-xs font-bold text-rose-600/70 mt-3 relative z-10">Requires immediate attention</p>
               </div>
 
-              <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center gap-3 text-emerald-600 mb-4">
-                  <TrendingUp size={18} />
-                  <h3 className="font-medium text-sm">Positive Sentiment</h3>
+              <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-3xl p-8 shadow-xl shadow-emerald-100/50 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+                <div className="absolute -top-4 -right-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                  <TrendingUp size={120} className="text-emerald-600" />
                 </div>
-                <div className="text-4xl font-bold text-emerald-700">{nlpInsights.positive}</div>
-                <p className="text-xs text-emerald-600/70 mt-2">Healthy customer signals</p>
+                <div className="flex items-center gap-3 text-emerald-600 mb-6 relative z-10">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <TrendingUp size={18} className="text-emerald-600" />
+                  </div>
+                  <h3 className="font-bold text-sm tracking-wide">Positive Sentiment</h3>
+                </div>
+                <div className="text-5xl font-black text-emerald-700 tracking-tight relative z-10">{nlpInsights.positive}</div>
+                <p className="text-xs font-bold text-emerald-600/70 mt-3 relative z-10">Healthy customer signals</p>
               </div>
             </div>
 
-            <div className="saas-card overflow-hidden">
-              <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
+            <div className="mt-8 space-y-4">
+              <div className="px-2 flex justify-between items-end mb-6">
                 <div>
                   <h3 className="saas-heading">User Feedback & Sentiment Analysis</h3>
                   <p className="saas-subtext mt-0.5">Direct feedback from users analyzed by ML sentiment model</p>
                 </div>
                 {nlpInsights.feedbacks.length > 100 && (
-                  <span className="saas-badge bg-amber-50 text-amber-700 border-amber-200">
+                  <span className="bg-brand-50 text-brand-700 border border-brand-200 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
                     Showing top 100 of {nlpInsights.feedbacks.length}
                   </span>
                 )}
               </div>
-              <div className="divide-y divide-zinc-100">
+              <div className="space-y-4">
                 {nlpInsights.feedbacks.length > 0 ? nlpInsights.feedbacks.slice(0, 100).map((item, idx) => (
-                  <div key={idx} className="p-6 hover:bg-zinc-50/50 transition-colors flex gap-6">
-                    <div className="shrink-0 w-12 h-12 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center font-bold text-zinc-600 text-sm">
+                  <div key={idx} className={cn("p-6 bg-white border rounded-3xl shadow-sm hover:shadow-lg transition-all duration-300 flex gap-6 group hover:-translate-y-0.5", 
+                    item.sentiment === 'Negative' ? "border-rose-100 hover:border-rose-300" :
+                    item.sentiment === 'Positive' ? "border-emerald-100 hover:border-emerald-300" :
+                    "border-zinc-200/80 hover:border-zinc-300"
+                  )}>
+                    <div className={cn("shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center font-black text-sm border shadow-inner", 
+                      item.sentiment === 'Negative' ? "bg-rose-50 text-rose-700 border-rose-100" :
+                      item.sentiment === 'Positive' ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                      "bg-zinc-50 text-zinc-700 border-zinc-200"
+                    )}>
                       {item.customer.name?.substring(0,2).toUpperCase() || 'NA'}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <div className="font-medium text-zinc-900">{item.customer.name}</div>
-                          <div className="text-xs text-zinc-500">{item.customer.id} • {item.customer.plan_tier}</div>
+                          <div className="font-bold text-zinc-900 text-lg">{item.customer.name}</div>
+                          <div className="text-[11px] font-medium text-zinc-500 mt-1">{item.customer.id} • <span className="bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">{item.customer.plan_tier}</span></div>
                         </div>
-                        <span className={cn("px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full",
-                          item.sentiment === 'Negative' ? "bg-rose-100 text-rose-700" :
-                          item.sentiment === 'Positive' ? "bg-emerald-100 text-emerald-700" :
-                          "bg-zinc-100 text-zinc-700"
+                        <span className={cn("px-3 py-1.5 text-[11px] font-black uppercase tracking-wider rounded-xl shadow-sm border",
+                          item.sentiment === 'Negative' ? "bg-gradient-to-r from-rose-100 to-rose-50 text-rose-700 border-rose-200" :
+                          item.sentiment === 'Positive' ? "bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 border-emerald-200" :
+                          "bg-zinc-100 text-zinc-700 border-zinc-200"
                         )}>
                           {item.sentiment}
                         </span>
                       </div>
-                      <p className="text-sm text-zinc-700 leading-relaxed bg-zinc-50 p-4 rounded-lg border border-zinc-100 italic">
+                      <p className="text-[15px] text-zinc-700 leading-relaxed bg-zinc-50/80 p-5 rounded-2xl border border-zinc-100 italic mt-4 shadow-inner">
                         "{item.text}"
                       </p>
                       {item.sentiment === 'Negative' && item.customer.churn_risk === 'High' && (
