@@ -61,7 +61,13 @@ import {
 
 export default function Home() {
   const { logout, isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis" | "campaigns">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis" | "campaigns">(() => {
+    return (localStorage.getItem("dashboard_active_tab") as any) || "dashboard";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("dashboard_active_tab", activeTab);
+  }, [activeTab]);
   const [summary, setSummary] = useState<any>(null);
   const [customerData, setCustomerData] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");

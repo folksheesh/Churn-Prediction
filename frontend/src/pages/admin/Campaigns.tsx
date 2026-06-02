@@ -12,7 +12,13 @@ const CAMPAIGNS = [
 ];
 
 export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean } = {}) {
-  const [activeTab, setActiveTab] = useState(CAMPAIGNS[0].id);
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem("admin_campaigns_tab") || CAMPAIGNS[0].id;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("admin_campaigns_tab", activeTab);
+  }, [activeTab]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,11 +89,11 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
                     "font-bold text-[14px] sm:text-[15px] leading-snug transition-colors duration-300",
                     isActive ? "text-white" : "text-zinc-800 group-hover:text-brand-700"
                   )}>{campaign.id}</h3>
-                  <div className={cn(
-                    "h-1 rounded-full transition-all duration-500 mt-auto pt-4",
-                    isActive ? "bg-white/30 w-12" : "bg-zinc-200 w-6 group-hover:w-10 group-hover:bg-brand-300"
-                  )}>
-                    <div className={cn("h-full w-full rounded-full", isActive ? "bg-white/30" : "bg-zinc-200 group-hover:bg-brand-300")} />
+                  <div className="mt-auto pt-5">
+                    <div className={cn(
+                      "h-1.5 rounded-full transition-all duration-500",
+                      isActive ? "bg-white/40 w-12" : "bg-zinc-200 w-8 group-hover:w-12 group-hover:bg-brand-400"
+                    )} />
                   </div>
                 </div>
               </button>
@@ -130,12 +136,12 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
               </div>
             ) : filteredCustomers.length > 0 ? (
               <table className="w-full text-sm text-left">
-                <thead className="text-[11px] text-zinc-400 bg-zinc-50/80 uppercase tracking-wider border-b border-zinc-100 sticky top-0 z-10">
+                <thead className="text-[11px] text-zinc-500 bg-zinc-50/80 uppercase tracking-wider border-b border-zinc-100 sticky top-0 z-10">
                   <tr>
-                    <th className="px-6 py-3 font-semibold">Customer Name</th>
-                    <th className="px-6 py-3 font-semibold">Risk Level</th>
-                    <th className="px-6 py-3 font-semibold">Assigned Date</th>
-                    <th className="px-6 py-3 font-semibold text-right">Action</th>
+                    <th className="px-8 py-4 font-bold">Customer Name</th>
+                    <th className="px-8 py-4 font-bold">Risk Level</th>
+                    <th className="px-8 py-4 font-bold">Assigned Date</th>
+                    <th className="px-8 py-4 font-bold text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
@@ -147,8 +153,8 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
                       : 'Recently';
 
                     return (
-                      <tr key={customer.id || i} className="hover:bg-zinc-50/50 transition-colors group">
-                        <td className="px-6 py-5">
+                      <tr key={customer.id || i} className="hover:bg-zinc-50/80 transition-colors group">
+                        <td className="px-8 py-5">
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-100 to-indigo-100 text-brand-700 flex items-center justify-center font-black text-xs shrink-0 border border-brand-200 shadow-sm">
                               {initials}
@@ -159,7 +165,7 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-8 py-5">
                           <div className="flex items-center gap-2">
                             <span className={cn(
                               "text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wide",
@@ -172,10 +178,10 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="text-[12px] text-zinc-600 font-medium">{assignedDate}</span>
+                        <td className="px-8 py-5">
+                          <span className="text-[13px] text-zinc-600 font-medium">{assignedDate}</span>
                         </td>
-                        <td className="px-6 py-5 text-right">
+                        <td className="px-8 py-5 text-right">
                           <Link 
                             to="/customers"
                             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[12px] font-bold bg-white border border-zinc-200 text-zinc-700 rounded-xl hover:bg-zinc-900 hover:text-white hover:border-zinc-900 transition-all shadow-sm active:scale-95 group/btn"

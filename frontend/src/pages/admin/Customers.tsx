@@ -15,7 +15,13 @@ export default function Customers() {
   const [isImporting, setIsImporting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{success: boolean, message: string, errors?: string[], summary?: any, results?: any[]} | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
-  const [activeTab, setActiveTab] = useState<'churn_data' | 'user_feedback' | 'import_xlsx'>('churn_data');
+  const [activeTab, setActiveTab] = useState<'churn_data' | 'user_feedback' | 'import_xlsx'>(() => {
+    return (localStorage.getItem("admin_customers_tab") as any) || 'churn_data';
+  });
+
+  useEffect(() => {
+    localStorage.setItem("admin_customers_tab", activeTab);
+  }, [activeTab]);
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadHistory, setUploadHistory] = useState<any[]>([]);
   const itemsPerPage = 50;
