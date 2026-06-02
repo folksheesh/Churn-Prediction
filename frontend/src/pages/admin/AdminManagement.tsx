@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { ShieldCheck, Plus, Trash2, CheckCircle, XCircle, Edit2, Eye, EyeOff, X, Clock, User } from 'lucide-react';
+import { ShieldCheck, Plus, Trash2, CheckCircle, XCircle, Edit2, Eye, EyeOff, X, Clock, User, Phone, Briefcase, Mail } from 'lucide-react';
 
 const ROLES = ['Super Admin', 'Admin', 'CS Manager', 'CS Agent'];
+const DEPARTMENTS = ['Executive', 'Customer Support', 'IT Operations', 'Marketing', 'Sales'];
 
 const roleBadgeColors: Record<string, string> = {
   'Super Admin': 'bg-violet-100 text-violet-700 border-violet-200',
@@ -19,7 +20,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function AdminManagement() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [admins, setAdmins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -28,6 +29,8 @@ export default function AdminManagement() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('Admin');
+  const [phone, setPhone] = useState('');
+  const [department, setDepartment] = useState('Customer Support');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
@@ -36,7 +39,7 @@ export default function AdminManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Password validation — accepts ANY non-alphanumeric, non-whitespace character
+  // Password validation
   const valLength = password.length >= 8;
   const valUpper = /[A-Z]/.test(password);
   const valLower = /[a-z]/.test(password);
@@ -44,7 +47,6 @@ export default function AdminManagement() {
   const valSpec = /[^A-Za-z0-9\s]/.test(password);
   const isPasswordValid = valLength && valUpper && valLower && valNum && valSpec;
   
-  // Password is required for creating, but optional for editing
   const isFormValid = email && name && (editingId ? (!password || isPasswordValid) : isPasswordValid);
 
   const fetchAdmins = async () => {
@@ -73,21 +75,23 @@ export default function AdminManagement() {
     }
 
     try {
-      const payload: any = { email, name, role };
+      const payload: any = { email, name, role, phone, department };
       if (password) payload.password = password;
 
       if (editingId) {
         await api.put(`/auth/admins/${editingId}`, payload);
-        setSuccess('Admin successfully updated!');
+        setSuccess('Employee record successfully updated!');
       } else {
         await api.post('/auth/admins', payload);
-        setSuccess('Admin successfully added!');
+        setSuccess('Employee successfully added to the system!');
       }
       
-      handleCancelEdit();
-      fetchAdmins();
+      setTimeout(() => {
+        handleCancelEdit();
+        fetchAdmins();
+      }, 1500);
     } catch (err: any) {
-      setError(err.response?.data?.detail || (editingId ? 'Failed to update admin' : 'Failed to add admin'));
+      setError(err.response?.data?.detail || (editingId ? 'Failed to update employee' : 'Failed to add employee'));
     }
   };
 
@@ -97,6 +101,8 @@ export default function AdminManagement() {
     setName(admin.name);
     setEmail(admin.email);
     setRole(admin.role || 'Admin');
+    setPhone(admin.phone || '');
+    setDepartment(admin.department || 'Customer Support');
     setPassword('');
     setError('');
     setSuccess('');
@@ -108,29 +114,31 @@ export default function AdminManagement() {
     setName('');
     setEmail('');
     setPassword('');
+    setPhone('');
+    setDepartment('Customer Support');
     setRole('Admin');
     setError('');
     setSuccess('');
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this admin?")) return;
+    if (!window.confirm("Are you sure you want to revoke this employee's access?")) return;
     
     try {
       await api.delete(`/auth/admins/${id}`);
       fetchAdmins();
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to delete admin");
+      alert(err.response?.data?.detail || "Failed to delete employee");
     }
   };
 
   const formatLastLogin = (dateStr: string | null) => {
-    if (!dateStr) return 'Never';
+    if (!dateStr) return 'Never logged in';
     const d = new Date(dateStr);
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 1) return 'Just now';
+    if (diffMins < 1) return 'Online now';
     if (diffMins < 60) return `${diffMins}m ago`;
     const diffHrs = Math.floor(diffMins / 60);
     if (diffHrs < 24) return `${diffHrs}h ago`;
@@ -141,93 +149,120 @@ export default function AdminManagement() {
 
   return (
     <>
-      <header className="h-16 flex items-center justify-between px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
-        <h1 className="text-lg font-semibold tracking-tight text-zinc-900">Manage Admins</h1>
+      <header className="h-20 flex items-center justify-between px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-zinc-900">Employee Directory</h1>
+          <p className="text-sm text-zinc-500 mt-1">Manage system access and roles for company personnel.</p>
+        </div>
         <button 
           onClick={() => { handleCancelEdit(); setIsModalOpen(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+          className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-all shadow-sm hover:shadow-md"
         >
-          <Plus size={16} /> Add Admin
+          <Plus size={16} /> Add Employee
         </button>
       </header>
 
-      <div className="p-4 sm:p-8 w-full flex flex-col gap-6 items-start">
-        
+      <div className="p-4 sm:p-8 w-full">
         {/* Admin List */}
-        <div className="flex-1 bg-white border border-zinc-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
-          <div className="px-6 py-4 border-b border-zinc-100 flex items-center gap-2">
-            <ShieldCheck size={18} className="text-zinc-500" />
-            <h2 className="text-sm font-semibold text-zinc-900">Active Admins</h2>
-            <span className="ml-auto text-[11px] font-medium text-zinc-400">{admins.length} total</span>
+        <div className="w-full bg-white border border-zinc-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
+          <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-white border border-zinc-200 flex items-center justify-center shadow-sm">
+                <ShieldCheck size={16} className="text-brand-600" />
+              </div>
+              <h2 className="text-sm font-bold text-zinc-900">Active Personnel</h2>
+            </div>
+            <span className="text-xs font-semibold text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full">{admins.length} Members</span>
           </div>
           
           {loading ? (
-             <div className="h-40 flex items-center justify-center">
-               <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin"></div>
+             <div className="h-64 flex flex-col items-center justify-center gap-3">
+               <div className="w-6 h-6 border-2 border-zinc-200 border-t-brand-600 rounded-full animate-spin"></div>
+               <p className="text-sm text-zinc-500 font-medium">Loading directory...</p>
              </div>
           ) : (
             <div className="w-full overflow-x-auto">
               <table className="w-full text-sm text-left whitespace-nowrap">
-              <thead className="text-[11px] text-zinc-500 bg-zinc-50 uppercase tracking-wider border-b border-zinc-100">
-                <tr>
-                  <th className="px-6 py-3 font-medium">Name</th>
-                  <th className="px-6 py-3 font-medium">Email</th>
-                  <th className="px-6 py-3 font-medium">Role</th>
-                  <th className="px-6 py-3 font-medium">Status</th>
-                  <th className="px-6 py-3 font-medium">Last Login</th>
-                  <th className="px-6 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {admins.map((admin) => (
-                  <tr key={admin.id} className="hover:bg-zinc-50 transition-colors">
-                    <td className="px-6 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[10px] font-bold text-zinc-600">
-                          {admin.name?.substring(0, 2).toUpperCase() || 'AD'}
-                        </div>
-                        <span className="font-medium text-zinc-900">{admin.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3 text-zinc-600">{admin.email}</td>
-                    <td className="px-6 py-3">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${roleBadgeColors[admin.role] || 'bg-zinc-100 text-zinc-600 border-zinc-200'}`}>
-                        {admin.role || 'Admin'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${statusColors[admin.status] || 'bg-zinc-100 text-zinc-500'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${admin.status === 'Active' ? 'bg-emerald-500' : admin.status === 'Suspended' ? 'bg-rose-500' : 'bg-zinc-400'}`}></span>
-                        {admin.status || 'Active'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3">
-                      <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
-                        <Clock size={12} className="text-zinc-400" />
-                        {formatLastLogin(admin.last_login)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => handleEditClick(admin)}
-                          className="text-zinc-400 hover:text-zinc-600 transition-colors"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(admin.id)}
-                          className="text-rose-400 hover:text-rose-600 disabled:opacity-50 transition-colors" 
-                          disabled={admin.email === 'admin@churnsense.com'}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+                <thead className="text-[11px] text-zinc-500 bg-white uppercase tracking-wider border-b border-zinc-100">
+                  <tr>
+                    <th className="px-6 py-4 font-semibold">Employee</th>
+                    <th className="px-6 py-4 font-semibold">Contact & Dept</th>
+                    <th className="px-6 py-4 font-semibold">System Role</th>
+                    <th className="px-6 py-4 font-semibold">Activity</th>
+                    <th className="px-6 py-4 font-semibold text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {admins.map((admin) => (
+                    <tr key={admin.id} className="hover:bg-zinc-50/80 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-zinc-100 to-zinc-200 border border-zinc-200 flex items-center justify-center text-sm font-bold text-zinc-600 shadow-sm relative">
+                            {admin.name?.substring(0, 2).toUpperCase() || 'AD'}
+                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${admin.status === 'Active' ? 'bg-emerald-500' : 'bg-zinc-400'}`}></div>
+                          </div>
+                          <div>
+                            <div className="font-bold text-zinc-900 flex items-center gap-2">
+                              {admin.name}
+                              {user?.email === admin.email && (
+                                <span className="text-[9px] bg-brand-100 text-brand-700 px-1.5 py-0.5 rounded-md font-bold uppercase">You</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-zinc-500 mt-0.5">{admin.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-1.5 text-xs text-zinc-700 font-medium">
+                            <Briefcase size={12} className="text-zinc-400" />
+                            {admin.department || 'Not Assigned'}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                            <Phone size={12} className="text-zinc-400" />
+                            {admin.phone || 'No Phone'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold border ${roleBadgeColors[admin.role] || 'bg-zinc-100 text-zinc-600 border-zinc-200'}`}>
+                          {admin.role || 'Admin'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <span className={`inline-flex items-center gap-1.5 w-fit px-2 py-0.5 rounded-md text-[10px] font-bold ${statusColors[admin.status] || 'bg-zinc-100 text-zinc-500'}`}>
+                            {admin.status || 'Active'}
+                          </span>
+                          <div className="flex items-center gap-1 text-[11px] text-zinc-500 font-medium">
+                            <Clock size={10} />
+                            {formatLastLogin(admin.last_login)}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleEditClick(admin)}
+                            className="p-2 text-zinc-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all"
+                            title="Edit Employee"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(admin.id)}
+                            className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent transition-all" 
+                            disabled={admin.email === 'admin@churnsense.com' || user?.email === admin.email}
+                            title="Revoke Access"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -235,123 +270,172 @@ export default function AdminManagement() {
         {/* Add/Edit Admin Modal */}
         {(isModalOpen || editingId) && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-[400px] bg-white border border-zinc-200 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-              <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
-                <div className="flex items-center gap-2">
-                  {editingId ? <Edit2 size={18} className="text-zinc-600" /> : <Plus size={18} className="text-zinc-600" />}
-                  <h2 className="text-sm font-bold text-zinc-900">{editingId ? 'Edit Admin' : 'Add New Admin'}</h2>
+            <div className="w-full max-w-[550px] bg-white border border-zinc-200 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+              <div className="px-8 py-5 border-b border-zinc-100 flex items-center justify-between bg-white">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-600">
+                    {editingId ? <Edit2 size={18} /> : <Plus size={18} />}
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-zinc-900">{editingId ? 'Edit Employee Record' : 'Add New Employee'}</h2>
+                    <p className="text-xs text-zinc-500 font-medium">Provide details and assign system role.</p>
+                  </div>
                 </div>
-                <button onClick={handleCancelEdit} className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors">
-                  <X size={16} />
+                <button onClick={handleCancelEdit} className="p-2 rounded-xl text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors">
+                  <X size={20} />
                 </button>
               </div>
               
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                {error && <div className="p-3 bg-rose-50 text-rose-700 text-xs rounded border border-rose-200">{error}</div>}
-                {success && <div className="p-3 bg-emerald-50 text-emerald-700 text-xs rounded border border-emerald-200">{success}</div>}
+              <form onSubmit={handleSubmit} className="p-8">
+                {error && <div className="mb-6 p-4 bg-rose-50 text-rose-700 text-xs rounded-xl border border-rose-200 font-medium flex items-start gap-2"><XCircle size={14} className="mt-0.5 shrink-0" /> {error}</div>}
+                {success && <div className="mb-6 p-4 bg-emerald-50 text-emerald-700 text-xs rounded-xl border border-emerald-200 font-medium flex items-center gap-2"><CheckCircle size={14} /> {success}</div>}
                 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-zinc-700">Full Name</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10 transition-shadow" 
-                    placeholder="John Doe"
-                  />
-                </div>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Full Name</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400"><User size={14}/></div>
+                        <input 
+                          type="text" 
+                          required
+                          value={name}
+                          onChange={e => setName(e.target.value)}
+                          className="w-full text-sm pl-9 pr-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" 
+                          placeholder="John Doe"
+                        />
+                      </div>
+                    </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-zinc-700">Email Address</label>
-                  <input 
-                    type="email" 
-                    required
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10 transition-shadow" 
-                    placeholder="john@churnsense.com"
-                  />
-                </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Email Address</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400"><Mail size={14}/></div>
+                        <input 
+                          type="email" 
+                          required
+                          value={email}
+                          onChange={e => setEmail(e.target.value)}
+                          className="w-full text-sm pl-9 pr-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" 
+                          placeholder="john@churnsense.com"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-zinc-700">Role</label>
-                  <select 
-                    value={role}
-                    onChange={e => setRole(e.target.value)}
-                    className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10 bg-white transition-shadow"
-                  >
-                    {ROLES.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Phone Number</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400"><Phone size={14}/></div>
+                        <input 
+                          type="text" 
+                          value={phone}
+                          onChange={e => setPhone(e.target.value)}
+                          className="w-full text-sm pl-9 pr-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" 
+                          placeholder="+1 (555) 000-0000"
+                        />
+                      </div>
+                    </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-zinc-700">Password {editingId && <span className="text-zinc-400 font-normal">(leave blank to keep)</span>}</label>
-                  <div className="relative">
-                    <input 
-                      type={showPassword ? "text" : "password"}
-                      required={!editingId}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      className="w-full text-sm px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10 pr-10 transition-shadow" 
-                      placeholder={editingId ? "••••••••" : "••••••••"}
-                    />
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setShowPassword(prev => !prev);
-                      }}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 transition-colors z-10 cursor-pointer"
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Department</label>
+                      <select 
+                        value={department}
+                        onChange={e => setDepartment(e.target.value)}
+                        className="w-full text-sm px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                      >
+                        {DEPARTMENTS.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-zinc-100 pt-5 mt-5">
+                    <h3 className="text-sm font-bold text-zinc-900 mb-4">Security & Access</h3>
+                    <div className="grid grid-cols-2 gap-5">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">System Role</label>
+                        <select 
+                          value={role}
+                          onChange={e => setRole(e.target.value)}
+                          className="w-full text-sm px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                        >
+                          {ROLES.map(r => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Password {editingId && <span className="font-medium lowercase text-zinc-400">(leave blank to keep)</span>}</label>
+                        <div className="relative">
+                          <input 
+                            type={showPassword ? "text" : "password"}
+                            required={!editingId}
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            className="w-full text-sm px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all pr-10" 
+                            placeholder={editingId ? "••••••••" : "••••••••"}
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setShowPassword(prev => !prev);
+                            }}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 transition-colors z-10 cursor-pointer"
+                          >
+                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Password Validation Requirements */}
+                  {(password.length > 0 || !editingId) && (
+                    <div className="text-[11px] flex flex-wrap gap-x-4 gap-y-2 mt-3 p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                      <div className={`flex items-center gap-1.5 ${valLength ? 'text-emerald-600 font-semibold' : 'text-zinc-500'}`}>
+                        {valLength ? <CheckCircle size={12} /> : <XCircle size={12} />} Min 8 chars
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${valUpper ? 'text-emerald-600 font-semibold' : 'text-zinc-500'}`}>
+                        {valUpper ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Uppercase
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${valLower ? 'text-emerald-600 font-semibold' : 'text-zinc-500'}`}>
+                        {valLower ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Lowercase
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${valNum ? 'text-emerald-600 font-semibold' : 'text-zinc-500'}`}>
+                        {valNum ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Number
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${valSpec ? 'text-emerald-600 font-semibold' : 'text-zinc-500'}`}>
+                        {valSpec ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Special char
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-4 flex justify-end gap-3 border-t border-zinc-100">
+                    <button 
+                      type="button" 
+                      onClick={handleCancelEdit}
+                      className="px-6 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-bold rounded-xl text-sm transition-colors"
                     >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      disabled={!isFormValid}
+                      className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                    >
+                      {editingId ? 'Save Changes' : 'Confirm & Add Employee'}
                     </button>
                   </div>
-                </div>
-
-                {/* Password Validation Requirements */}
-                <div className="text-[11px] space-y-1 mt-2 p-3 bg-zinc-50 rounded-lg border border-zinc-100">
-                  <p className="font-semibold text-zinc-700 mb-2">Password Requirements:</p>
-                  <div className={`flex items-center gap-1.5 ${valLength ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                    {valLength ? <CheckCircle size={12} /> : <XCircle size={12} />} Minimum 8 characters
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${valUpper ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                    {valUpper ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Uppercase letter
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${valLower ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                    {valLower ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Lowercase letter
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${valNum ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                    {valNum ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Number
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${valSpec ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                    {valSpec ? <CheckCircle size={12} /> : <XCircle size={12} />} 1 Special character
-                  </div>
-                </div>
-
-                <div className="pt-2 flex gap-3">
-                  <button 
-                    type="button" 
-                    onClick={handleCancelEdit}
-                    className="flex-1 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-medium py-2 rounded-lg text-sm transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={!isFormValid}
-                    className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-white font-medium py-2 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {editingId ? 'Save Changes' : 'Add Admin'}
-                  </button>
                 </div>
               </form>
             </div>
           </div>
         )}
-
       </div>
     </>
   );

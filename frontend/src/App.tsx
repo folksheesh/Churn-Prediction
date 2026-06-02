@@ -17,6 +17,7 @@ import Landing from '@/pages/Landing';
 import UserDashboard from '@/pages/user/Dashboard';
 
 import CsManagement from '@/pages/admin/CsManagement';
+import Profile from '@/pages/admin/Profile';
 
 export default function App() {
   return (
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="/manage-admins" element={<AdminManagement />} />
               <Route path="/cs-management" element={<CsManagement />} />
               <Route path="/analysis" element={<Analysis />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
           </Route>
           
