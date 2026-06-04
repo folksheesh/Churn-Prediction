@@ -38,6 +38,7 @@ export default function AdminManagement() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [adminToDelete, setAdminToDelete] = useState<any | null>(null);
 
   // Password validation
   const valLength = password.length >= 8;
@@ -121,16 +122,7 @@ export default function AdminManagement() {
     setSuccess('');
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to revoke this employee's access?")) return;
-    
-    try {
-      await api.delete(`/auth/admins/${id}`);
-      fetchAdmins();
-    } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to delete employee");
-    }
-  };
+
 
   const formatLastLogin = (dateStr: string | null) => {
     if (!dateStr) return 'Never logged in';
@@ -258,7 +250,7 @@ export default function AdminManagement() {
                             <Edit2 size={16} />
                           </button>
                           <button 
-                            onClick={() => handleDelete(admin.id)}
+                            onClick={() => setAdminToDelete(admin)}
                             className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent transition-all" 
                             disabled={admin.email === 'admin@churnsense.com' || user?.email === admin.email}
                             title="Revoke Access"
@@ -441,6 +433,51 @@ export default function AdminManagement() {
                   </div>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {adminToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-[440px] bg-white border border-zinc-200 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-600">
+                    <Trash2 size={18} />
+                  </div>
+                  <h3 className="text-base font-bold text-zinc-900">Revoke Access</h3>
+                </div>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Are you sure you want to revoke access for <span className="font-bold text-zinc-900">{adminToDelete.name}</span> ({adminToDelete.email})? This employee will immediately lose all system privileges.
+                </p>
+                
+                <div className="mt-6 flex justify-end gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => setAdminToDelete(null)}
+                    className="px-5 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={async () => {
+                      const id = adminToDelete.id;
+                      setAdminToDelete(null);
+                      try {
+                        await api.delete(`/auth/admins/${id}`);
+                        fetchAdmins();
+                      } catch (err: any) {
+                        alert(err.response?.data?.detail || "Failed to delete employee");
+                      }
+                    }}
+                    className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm hover:shadow-md cursor-pointer"
+                  >
+                    Revoke Access
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

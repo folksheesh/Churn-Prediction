@@ -483,7 +483,12 @@ export default function Home() {
         <div className="flex items-center gap-3 sm:gap-4">
           {isAuthenticated ? (
             <button 
-              onClick={() => { logout(); navigate('/'); }}
+              onClick={() => { 
+                navigate('/'); 
+                setTimeout(() => {
+                  logout();
+                }, 0);
+              }}
               className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 border border-transparent hover:border-rose-100"
             >
               <LogOut className="w-4 h-4 shrink-0" />
@@ -512,7 +517,15 @@ export default function Home() {
               <button onClick={() => setActiveTab("campaigns")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "campaigns" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Campaigns</button>
               <div className="h-px bg-slate-200/60 my-1"></div>
               {isAuthenticated ? (
-                <button onClick={() => { logout(); navigate('/'); }} className="text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center justify-between">
+                <button 
+                  onClick={() => { 
+                    navigate('/'); 
+                    setTimeout(() => {
+                      logout();
+                    }, 0);
+                  }} 
+                  className="text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center justify-between"
+                >
                   <span>Logout</span>
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
@@ -791,25 +804,9 @@ export default function Home() {
                               </span>
                             </div>
                           ) : (
-                            <>
-                              <button 
-                                onClick={() => setRetentionModalCustomer({
-                                  ...c,
-                                  id: c.customerId,
-                                })}
-                                className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex justify-center items-center gap-2"
-                              >
-                                <Sparkles size={14} className="text-amber-400" /> Apply Mitigation
-                              </button>
-                              <div className="grid grid-cols-2 gap-2 mt-2">
-                                <button className="py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-[11px] font-bold transition-all flex justify-center items-center gap-1.5">
-                                  <Mail size={12} /> Email Support
-                                </button>
-                                <button className="py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-[11px] font-bold transition-all flex justify-center items-center gap-1.5">
-                                  <Phone size={12} /> Call User
-                                </button>
-                              </div>
-                            </>
+                            <div className="w-full py-2.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl text-xs font-bold text-center">
+                              Pending Mitigation
+                            </div>
                           )}
                         </div>
                       </div>
@@ -889,44 +886,50 @@ export default function Home() {
                       key={i}
                       className="bg-white border border-slate-100 shadow-sm rounded-xl p-6 transition-all duration-200 hover:shadow-md border border-slate-200/60"
                     >
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        
-                        {/* Left Identity row */}
-                        <div className="flex items-center gap-4 min-w-0">
-                          <span className="w-11 h-11 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-outfit font-black text-sm shrink-0 shadow-sm border border-brand-200">
-                            {c.initials}
-                          </span>
-                          <div className="min-w-0">
-                            <h4 className="font-outfit font-black text-base text-slate-900 truncate">
-                              {c.name}
-                            </h4>
-                            <p className="text-xs text-slate-400 mt-0.5 truncate">
-                              {c.customerId} • {c.region}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Mid statistics */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-1.5 text-xs text-slate-500 w-full md:w-auto">
-                          <div>
-                            <span className="block text-[10px] text-slate-400 uppercase font-bold">Tenure</span>
-                            <span className="font-semibold text-slate-800">{c.tenure} months</span>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] text-slate-400 uppercase font-bold">Active Value</span>
-                            <span className="font-bold text-slate-800">${c.monthlyValue}/mo</span>
-                          </div>
-                          <div className="col-span-2 md:col-span-1">
-                            <span className="block text-[10px] text-slate-400 uppercase font-bold">Risk Priority</span>
-                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold mt-1 border ${
-                              isHigh
-                                ? "bg-rose-50 text-rose-700 border-rose-100"
-                                : isMed
-                                ? "bg-amber-50 text-amber-700 border-amber-100"
-                                : "bg-emerald-50 text-emerald-700 border-emerald-100"
-                            }`}>
-                              {c.riskLevel} ({c.churnProbability}%)
+                      <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full">
+                          
+                          {/* Left Identity row */}
+                          <div className="flex items-center gap-4 min-w-0 flex-1">
+                            <span className="w-11 h-11 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-outfit font-black text-sm shrink-0 shadow-sm border border-brand-200">
+                              {c.initials}
                             </span>
+                            <div className="min-w-0">
+                              <h4 className="font-outfit font-black text-base text-slate-900 truncate">
+                                {c.name}
+                              </h4>
+                              <p className="text-xs text-slate-400 mt-0.5 truncate">
+                                {c.customerId} • {c.region}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Mid statistics */}
+                          <div className="grid grid-cols-3 gap-x-2 md:gap-x-4 gap-y-2 text-xs text-slate-500 w-full md:w-[450px] shrink-0">
+                          <div className="flex flex-col gap-1">
+                            <span className="block text-[10px] text-slate-400 uppercase font-bold truncate">Tenure</span>
+                            <div className="flex items-center h-6">
+                              <span className="font-semibold text-slate-800">{c.tenure} months</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="block text-[10px] text-slate-400 uppercase font-bold truncate">Active Value</span>
+                            <div className="flex items-center h-6">
+                              <span className="font-bold text-slate-800">${c.monthlyValue}/mo</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="block text-[10px] text-slate-400 uppercase font-bold truncate">Risk Priority</span>
+                            <div className="flex items-center h-6">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                                isHigh
+                                  ? "bg-rose-50 text-rose-700 border-rose-100"
+                                  : isMed
+                                  ? "bg-amber-50 text-amber-700 border-amber-100"
+                                  : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                              }`}>
+                                {c.riskLevel} ({c.churnProbability}%)
+                              </span>
+                            </div>
                           </div>
                         </div>
 
@@ -1318,7 +1321,13 @@ export default function Home() {
         {/* VIEW F: CAMPAIGNS TAB */}
         {activeTab === "campaigns" && (
           <div className="bg-white border border-slate-100 shadow-sm rounded-xl overflow-hidden h-[800px] flex">
-            <Campaigns hideHeader={true} />
+            <Campaigns 
+              hideHeader={true} 
+              onViewInCrm={(customerId) => {
+                setActiveTab("customers");
+                setSearchQuery(customerId);
+              }}
+            />
           </div>
         )}
 
@@ -1342,10 +1351,10 @@ export default function Home() {
                     </p>
                     <div className="flex items-center gap-2 mt-3">
                       <span className="px-3 py-1 border border-slate-500 rounded text-xs font-bold text-slate-600">
-                        {selectedCustomer.age} Yrs
+                        {selectedCustomer.age} Years
                       </span>
                       <span className="px-3 py-1 border border-slate-500 rounded text-xs font-bold text-slate-600">
-                        {selectedCustomer.gender}
+                        {selectedCustomer.gender === 'F' ? 'Female' : selectedCustomer.gender === 'M' ? 'Male' : selectedCustomer.gender === 'O' ? 'Other' : selectedCustomer.gender}
                       </span>
                     </div>
                   </div>
@@ -1502,21 +1511,12 @@ export default function Home() {
               </div>
 
               {/* Footer */}
-              <div className="p-6 border-t border-slate-100 flex items-center gap-3">
+              <div className="p-6 border-t border-slate-100 flex items-center justify-center">
                 <button 
                   onClick={closeCustomerModal}
-                  className="px-6 h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-sm font-semibold transition-colors"
+                  className="w-full h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-sm font-semibold transition-colors"
                 >
                   Close
-                </button>
-                <button 
-                  onClick={() => {
-                    closeCustomerModal();
-                    setRetentionModalCustomer(selectedCustomer);
-                  }}
-                  className="flex-1 h-11 bg-[#5955f2] hover:bg-[#4642db] text-white rounded-xl text-sm font-semibold transition-colors shadow-sm shadow-[#5955f2]/20"
-                >
-                  Mitigate
                 </button>
               </div>
 

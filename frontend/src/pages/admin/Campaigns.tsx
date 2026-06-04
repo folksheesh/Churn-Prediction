@@ -11,7 +11,13 @@ const CAMPAIGNS = [
   { id: 'Product Recommendation Campaign', icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
 ];
 
-export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean } = {}) {
+export default function Campaigns({ 
+  hideHeader = false,
+  onViewInCrm
+}: { 
+  hideHeader?: boolean;
+  onViewInCrm?: (customerId: string) => void;
+} = {}) {
   const [activeTab, setActiveTab] = useState(() => {
     return localStorage.getItem("admin_campaigns_tab") || CAMPAIGNS[0].id;
   });
@@ -182,12 +188,21 @@ export default function Campaigns({ hideHeader = false }: { hideHeader?: boolean
                           <span className="text-[13px] text-zinc-600 font-medium">{assignedDate}</span>
                         </td>
                         <td className="px-8 py-5 text-right">
-                          <Link 
-                            to="/customers"
-                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[12px] font-bold bg-white border border-zinc-200 text-zinc-700 rounded-xl hover:bg-zinc-900 hover:text-white hover:border-zinc-900 transition-all shadow-sm active:scale-95 group/btn"
-                          >
-                            View in CRM <ArrowRight size={14} className="text-zinc-400 group-hover/btn:text-white group-hover/btn:translate-x-0.5 transition-all" />
-                          </Link>
+                          {onViewInCrm ? (
+                            <button
+                              onClick={() => onViewInCrm(customer.id)}
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[12px] font-bold bg-white border border-zinc-200 text-zinc-700 rounded-xl hover:bg-zinc-900 hover:text-white hover:border-zinc-900 transition-all shadow-sm active:scale-95 group/btn cursor-pointer"
+                            >
+                              View in CRM <ArrowRight size={14} className="text-zinc-400 group-hover/btn:text-white group-hover/btn:translate-x-0.5 transition-all" />
+                            </button>
+                          ) : (
+                            <Link 
+                              to="/customers"
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[12px] font-bold bg-white border border-zinc-200 text-zinc-700 rounded-xl hover:bg-zinc-900 hover:text-white hover:border-zinc-900 transition-all shadow-sm active:scale-95 group/btn"
+                            >
+                              View in CRM <ArrowRight size={14} className="text-zinc-400 group-hover/btn:text-white group-hover/btn:translate-x-0.5 transition-all" />
+                            </Link>
+                          )}
                         </td>
                       </tr>
                     );

@@ -146,8 +146,10 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
             onClick={(e) => { 
               e.preventDefault();
               e.stopPropagation(); 
-              logout(); 
               navigate('/'); 
+              setTimeout(() => {
+                logout();
+              }, 0);
             }} 
             className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" 
             title="Logout"

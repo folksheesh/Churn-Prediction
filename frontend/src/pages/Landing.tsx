@@ -44,11 +44,8 @@ export default function Landing() {
           <span className="text-xl font-bold tracking-tight text-slate-900 font-outfit">ChurnSense</span>
         </div>
         <div className="flex items-center gap-5">
-          <Link to="/login" className="text-sm font-semibold text-slate-600 hover:text-brand-600 transition-colors">
+          <Link to="/login" className="flex items-center gap-2 px-5 py-2 bg-brand-600 hover:bg-brand-700 rounded-lg text-sm font-semibold text-white transition-all shadow-sm">
             Admin Login
-          </Link>
-          <Link to="/user-dashboard" className="hidden sm:flex items-center gap-2 px-5 py-2 bg-brand-600 hover:bg-brand-700 rounded-lg text-sm font-semibold text-white transition-all shadow-sm">
-            Get Started
           </Link>
         </div>
       </motion.header>
@@ -101,12 +98,6 @@ export default function Landing() {
               className="group bg-slate-900 hover:bg-slate-800 text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-md flex items-center gap-3 w-full sm:w-auto justify-center text-[15px]"
             >
               Let's Get Started <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link 
-              to="/login"
-              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold px-8 py-3.5 rounded-xl transition-all flex items-center gap-3 w-full sm:w-auto justify-center text-[15px] shadow-sm"
-            >
-              View Dashboard
             </Link>
           </motion.div>
 
