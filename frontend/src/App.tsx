@@ -12,6 +12,7 @@ import Campaigns from '@/pages/admin/Campaigns';
 
 import Analysis from '@/pages/admin/Analysis';
 import Login from '@/pages/auth/Login';
+import ForgotPassword from '@/pages/auth/ForgotPassword';
 import AdminManagement from '@/pages/admin/AdminManagement';
 import Landing from '@/pages/Landing';
 import UserDashboard from '@/pages/user/Dashboard';
@@ -27,7 +28,7 @@ export default function App() {
           {/* Public Auth Routes */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
-
+            <Route path="/forgot-password" element={<ForgotPassword />} />
           </Route>
 
           {/* Public Landing Page */}

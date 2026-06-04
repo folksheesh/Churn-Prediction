@@ -137,7 +137,7 @@ export default function Login() {
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-sm font-bold text-zinc-700">Password</label>
-                  <a href="#" className="text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors">Forgot password?</a>
+                  <Link to="/forgot-password" className="text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors">Forgot password?</Link>
                 </div>
                 <div className="relative">
                   <input
@@ -173,9 +173,7 @@ export default function Login() {
               </button>
             </div>
             
-            <p className="text-center text-sm font-medium text-zinc-500 mt-8">
-              Don't have an account? <a href="#" className="text-brand-600 font-bold hover:text-brand-700 hover:underline">Contact Sales</a>
-            </p>
+
           </form>
         </div>
       </div>

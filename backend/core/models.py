@@ -102,3 +102,14 @@ class UploadAttempt(Base):
     status = Column(String, default="failed")  # success, failed
     error_message = Column(Text, nullable=True)
     attempted_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class PasswordResetOTP(Base):
+    __tablename__ = "password_reset_otps"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, nullable=False, index=True)
+    otp_code = Column(String, nullable=False)
+    is_verified = Column(Boolean, default=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
