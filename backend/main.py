@@ -23,8 +23,13 @@ async def startup():
 def _migrate_database():
     """Add new columns to existing tables if they don't exist (SQLite compatible)."""
     import sqlite3
+    import os
     from backend.core.database import DB_PATH
     
+    db_url = os.getenv("DATABASE_URL")
+    if db_url and not db_url.startswith("sqlite"):
+        return # Postgres will use create_all() to build the schema properly
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     

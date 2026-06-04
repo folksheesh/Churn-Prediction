@@ -468,6 +468,12 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     db.add(log)
     db.commit()
     
+    if not email_sent:
+        raise HTTPException(
+            status_code=500, 
+            detail="Failed to send OTP email. Please check your SMTP configuration (App Password, Port) in Render."
+        )
+    
     return {"message": "OTP has been sent to your email address.", "email": data.email}
 
 
