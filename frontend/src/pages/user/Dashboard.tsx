@@ -804,9 +804,12 @@ export default function Home() {
                               </span>
                             </div>
                           ) : (
-                            <div className="w-full py-2.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl text-xs font-bold text-center">
-                              Pending Mitigation
-                            </div>
+                            <button
+                              onClick={() => setRetentionModalCustomer(c)}
+                              className="w-full py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white border border-rose-100 rounded-xl text-xs font-bold text-center transition-colors"
+                            >
+                              Mitigate Risk
+                            </button>
                           )}
                         </div>
                       </div>
@@ -1511,12 +1514,21 @@ export default function Home() {
               </div>
 
               {/* Footer */}
-              <div className="p-6 border-t border-slate-100 flex items-center justify-center">
+              <div className="p-6 border-t border-slate-100 flex gap-3">
                 <button 
                   onClick={closeCustomerModal}
-                  className="w-full h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-sm font-semibold transition-colors"
+                  className="flex-1 h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-sm font-semibold transition-colors"
                 >
-                  Close
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => {
+                    closeCustomerModal();
+                    setRetentionModalCustomer(selectedCustomer);
+                  }}
+                  className="flex-1 h-11 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm flex items-center justify-center gap-2"
+                >
+                  Assign Campaign
                 </button>
               </div>
 
