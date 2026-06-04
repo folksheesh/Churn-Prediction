@@ -355,7 +355,66 @@ def get_cs_team(current_admin: AdminUser = Depends(get_current_admin), db: Sessi
 
 import random
 import string
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from backend.core.models import PasswordResetOTP
+import os
+
+SMTP_HOST = os.getenv("SMTP_HOST")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASS = os.getenv("SMTP_PASS")
+
+def send_otp_email(to_email: str, otp_code: str, admin_name: str):
+    """Send OTP code via SMTP email with a professional HTML template."""
+    if not all([SMTP_HOST, SMTP_USER, SMTP_PASS]):
+        print(f"\n[SMTP not configured] OTP for {to_email}: {otp_code}\n")
+        return False
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"🔐 ChurnSense - Your Password Reset Code: {otp_code}"
+    msg["From"] = f"ChurnSense <{SMTP_USER}>"
+    msg["To"] = to_email
+
+    html_body = f"""
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 0;">
+      <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); padding: 32px 32px 24px; border-radius: 16px 16px 0 0; text-align: center;">
+        <h1 style="color: #ffffff; font-size: 24px; font-weight: 800; margin: 0 0 8px;">ChurnSense</h1>
+        <p style="color: #a5b4fc; font-size: 13px; margin: 0;">Password Reset Request</p>
+      </div>
+      <div style="background: #ffffff; padding: 32px; border: 1px solid #e5e7eb; border-top: none;">
+        <p style="color: #374151; font-size: 15px; margin: 0 0 8px;">Hi <strong>{admin_name}</strong>,</p>
+        <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+          We received a request to reset your password. Use the verification code below to proceed:
+        </p>
+        <div style="background: #f8fafc; border: 2px dashed #c7d2fe; border-radius: 12px; padding: 24px; text-align: center; margin: 0 0 24px;">
+          <p style="color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; margin: 0 0 8px;">Verification Code</p>
+          <p style="color: #1e1b4b; font-size: 36px; font-weight: 900; letter-spacing: 8px; margin: 0;">{otp_code}</p>
+        </div>
+        <p style="color: #9ca3af; font-size: 12px; line-height: 1.5; margin: 0 0 16px;">
+          ⏱ This code expires in <strong>10 minutes</strong>.<br>
+          If you didn't request this, you can safely ignore this email.
+        </p>
+      </div>
+      <div style="background: #f9fafb; padding: 16px 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 16px 16px; text-align: center;">
+        <p style="color: #9ca3af; font-size: 11px; margin: 0;">&copy; 2026 ChurnSense Inc. All rights reserved.</p>
+      </div>
+    </div>
+    """
+
+    msg.attach(MIMEText(html_body, "html"))
+
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASS)
+            server.sendmail(SMTP_USER, to_email, msg.as_string())
+        print(f"[SMTP] OTP email sent successfully to {to_email}")
+        return True
+    except Exception as e:
+        print(f"[SMTP ERROR] Failed to send email to {to_email}: {e}")
+        return False
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
@@ -371,7 +430,7 @@ class ResetPasswordRequest(BaseModel):
 
 @router.post("/forgot-password")
 def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    """Generate a 6-digit OTP and simulate sending it via email."""
+    """Generate a 6-digit OTP and send it via email."""
     # Check if the email exists
     admin = db.query(AdminUser).filter(AdminUser.email == data.email).first()
     if not admin:
@@ -391,22 +450,18 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     )
     db.add(otp_record)
     
-    # Log the activity (OTP is logged here since we have no SMTP)
+    # Send OTP via email
+    email_sent = send_otp_email(data.email, otp_code, admin.name)
+    
+    # Log the activity
     log = ActivityLog(
         action="Password Reset Requested",
         user=data.email,
-        details=f"OTP generated for {data.email}: {otp_code}",
-        result="success"
+        details=f"OTP generated for {data.email}" + (" (email sent)" if email_sent else " (email failed, check console)"),
+        result="success" if email_sent else "email_failed"
     )
     db.add(log)
     db.commit()
-    
-    # Print to console for development/testing
-    print(f"\n{'='*50}")
-    print(f"  PASSWORD RESET OTP for {data.email}")
-    print(f"  OTP Code: {otp_code}")
-    print(f"  Expires in 10 minutes")
-    print(f"{'='*50}\n")
     
     return {"message": "OTP has been sent to your email address.", "email": data.email}
 

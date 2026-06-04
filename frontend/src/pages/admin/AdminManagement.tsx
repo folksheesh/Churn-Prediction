@@ -39,6 +39,7 @@ export default function AdminManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [adminToDelete, setAdminToDelete] = useState<any | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Password validation
   const valLength = password.length >= 8;
@@ -75,24 +76,23 @@ export default function AdminManagement() {
       return;
     }
 
+    setSubmitting(true);
     try {
       const payload: any = { email, name, role, phone, department };
       if (password) payload.password = password;
 
       if (editingId) {
         await api.put(`/auth/admins/${editingId}`, payload);
-        setSuccess('Employee record successfully updated!');
       } else {
         await api.post('/auth/admins', payload);
-        setSuccess('Employee successfully added to the system!');
       }
       
-      setTimeout(() => {
-        handleCancelEdit();
-        fetchAdmins();
-      }, 1500);
+      // Success: close modal immediately and refresh list
+      handleCancelEdit();
+      fetchAdmins();
     } catch (err: any) {
       setError(err.response?.data?.detail || (editingId ? 'Failed to update employee' : 'Failed to add employee'));
+      setSubmitting(false);
     }
   };
 
@@ -120,6 +120,7 @@ export default function AdminManagement() {
     setRole('Admin');
     setError('');
     setSuccess('');
+    setSubmitting(false);
   };
 
 
@@ -425,10 +426,11 @@ export default function AdminManagement() {
                     </button>
                     <button 
                       type="submit" 
-                      disabled={!isFormValid}
-                      className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                      disabled={!isFormValid || submitting}
+                      className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2"
                     >
-                      {editingId ? 'Save Changes' : 'Confirm & Add Employee'}
+                      {submitting && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                      {submitting ? 'Processing...' : editingId ? 'Save Changes' : 'Confirm & Add Employee'}
                     </button>
                   </div>
                 </div>
