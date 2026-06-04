@@ -330,9 +330,13 @@ export default function AdminManagement() {
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400"><Phone size={14}/></div>
                         <input 
-                          type="text" 
+                          type="tel" 
                           value={phone}
-                          onChange={e => setPhone(e.target.value)}
+                          onChange={e => {
+                            // Only allow numbers and common phone symbols (+, -, (, ), space)
+                            const val = e.target.value.replace(/[^0-9+\-()\s]/g, '');
+                            setPhone(val);
+                          }}
                           className="w-full text-sm pl-9 pr-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" 
                           placeholder="+1 (555) 000-0000"
                         />
