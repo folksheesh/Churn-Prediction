@@ -6,26 +6,12 @@ from sqlalchemy.orm import sessionmaker
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
 DB_PATH = os.path.join(ROOT, "churn.db")
 
-# Fallback to sqlite if DATABASE_URL is not set
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DB_PATH}")
+# Always use SQLite
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
-# Render postgres URLs sometimes start with postgres:// instead of postgresql://
-if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
-    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-# SQLite needs connect_args={"check_same_thread": False}. Postgres does not.
-if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(
-        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-    )
-else:
-    engine = create_engine(
-        SQLALCHEMY_DATABASE_URL,
-        pool_size=5,
-        max_overflow=10,
-        pool_pre_ping=True,       # Auto-reconnect stale connections
-        pool_recycle=300,          # Recycle connections every 5 minutes
-    )
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
