@@ -20,6 +20,9 @@ async def startup():
     # Ensure new columns exist on existing tables (SQLite migration)
     _migrate_database()
     
+    # Auto-seed the default admin user if the database is empty (e.g. fresh Postgres)
+    _ensure_default_admin()
+    
     # Keep-alive self-ping to prevent Render free tier cold starts
     import asyncio, os, httpx
     
@@ -97,6 +100,30 @@ def _migrate_database():
     
     conn.commit()
     conn.close()
+
+def _ensure_default_admin():
+    from backend.core.database import SessionLocal
+    from backend.core.models import AdminUser
+    from backend.core.security import get_password_hash
+    
+    db = SessionLocal()
+    try:
+        admin = db.query(AdminUser).filter(AdminUser.email == "admin@churnsense.com").first()
+        if not admin:
+            print("Auto-creating default Super Admin...")
+            default_admin = AdminUser(
+                email="admin@churnsense.com",
+                name="Super Admin",
+                hashed_password=get_password_hash("Admin#123"),
+                role="Super Admin",
+                status="Active"
+            )
+            db.add(default_admin)
+            db.commit()
+    except Exception as e:
+        print(f"Error seeding default admin: {e}")
+    finally:
+        db.close()
 
 # Enable CORS for frontend integration
 app.add_middleware(
