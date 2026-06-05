@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { User, Lock, Mail, CheckCircle, XCircle, Eye, EyeOff, Shield } from 'lucide-react';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [password, setPassword] = useState('');
@@ -38,7 +38,11 @@ export default function Profile() {
       const payload: any = { name, email };
       if (password) payload.password = password;
 
-      await api.put(`/auth/admins/${user.id}`, payload);
+      const res = await api.put(`/auth/admins/${user.id}`, payload);
+      
+      // Update user in localStorage and context state so the UI reflects changes
+      updateUser(res.data);
+      
       setSuccess('Profile updated successfully! Reloading to apply changes...');
       setPassword('');
       
