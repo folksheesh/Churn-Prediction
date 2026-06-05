@@ -15,4 +15,6 @@ services:
         value: "1"
       - key: SECRET_KEY
         generateValue: true   # Render auto-generates a secure random string
+      - key: RENDER_EXTERNAL_URL
+        value: "https://churn-prediction-jahv.onrender.com"
     healthCheckPath: /health

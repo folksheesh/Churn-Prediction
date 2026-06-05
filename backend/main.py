@@ -19,6 +19,26 @@ async def startup():
     
     # Ensure new columns exist on existing tables (SQLite migration)
     _migrate_database()
+    
+    # Keep-alive self-ping to prevent Render free tier cold starts
+    import asyncio, os, httpx
+    
+    async def _keep_alive():
+        """Ping our own /health endpoint every 10 minutes to stay warm."""
+        render_url = os.getenv("RENDER_EXTERNAL_URL")
+        if not render_url:
+            return  # Only run on Render (not local dev)
+        health_url = f"{render_url}/health"
+        async with httpx.AsyncClient() as client:
+            while True:
+                await asyncio.sleep(600)  # 10 minutes
+                try:
+                    await client.get(health_url, timeout=10)
+                    print("[KEEP-ALIVE] Pinged /health OK")
+                except Exception as e:
+                    print(f"[KEEP-ALIVE] Ping failed: {e}")
+    
+    asyncio.create_task(_keep_alive())
 
 def _migrate_database():
     """Add new columns to existing tables if they don't exist (SQLite compatible)."""

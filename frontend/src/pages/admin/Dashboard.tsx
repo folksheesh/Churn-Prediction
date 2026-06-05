@@ -13,19 +13,40 @@ export default function Dashboard() {
   const [campaignStats, setCampaignStats] = useState<any>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
 
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      const [overviewRes, alertsRes, activityRes, statsRes] = await Promise.all([
-        api.get('/analytics/overview'),
-        api.get('/analytics/critical-alerts?limit=6'),
-        api.get('/analytics/activity-logs?limit=5'),
-        api.get('/mitigation/stats').catch(() => ({ data: null })),
-      ]);
+  const CACHE_KEY = 'churnsense_admin_dashboard';
 
-      setMetrics(overviewRes.data);
-      setAlerts(alertsRes.data);
-      setActivities(activityRes.data || []);
-      if (statsRes.data) setCampaignStats(statsRes.data);
+  const fetchDashboardData = useCallback(async () => {
+    // 1. Show cached data instantly (stale-while-revalidate)
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        // Use cache if less than 5 minutes old
+        if (Date.now() - timestamp < 300_000) {
+          setMetrics(data.overview);
+          setAlerts(data.alerts);
+          setActivities(data.activities || []);
+          if (data.campaign_stats) setCampaignStats(data.campaign_stats);
+          setLoading(false);
+        }
+      }
+    } catch { /* ignore parse errors */ }
+
+    // 2. Fetch fresh data from the combined bundle endpoint (1 request instead of 4)
+    try {
+      const res = await api.get('/analytics/dashboard-bundle');
+      const bundle = res.data;
+
+      setMetrics(bundle.overview);
+      setAlerts(bundle.alerts);
+      setActivities(bundle.activities || []);
+      if (bundle.campaign_stats) setCampaignStats(bundle.campaign_stats);
+
+      // Save to cache
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        data: bundle,
+        timestamp: Date.now(),
+      }));
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
     } finally {

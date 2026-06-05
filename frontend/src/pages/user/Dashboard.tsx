@@ -96,8 +96,22 @@ export default function Home() {
 
   // Send Offer state removed (duplicate)
 
+  const USER_CACHE_KEY = 'churnsense_user_dashboard';
+
   // Fetch Customers and compute summary
   const fetchCustomers = async () => {
+    // 1. Show cached data instantly (stale-while-revalidate)
+    try {
+      const cached = localStorage.getItem(USER_CACHE_KEY);
+      if (cached) {
+        const { customers: cachedCustomers, summary: cachedSummary, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < 300_000 && !summary) { // Use cache if < 5 min old and no data yet
+          setCustomerData(cachedCustomers);
+          setSummary(cachedSummary);
+        }
+      }
+    } catch { /* ignore */ }
+
     try {
       // Fetch table data (limited for performance)
       const res = await api.get(`/customers`, {
@@ -105,7 +119,7 @@ export default function Home() {
       });
       const data = res.data.items || [];
       
-      // Fetch true global analytics
+      // Fetch true global analytics in parallel (2 requests instead of sequential)
       const [overviewRes, riskRes] = await Promise.all([
         api.get(`/analytics/overview`),
         api.get(`/analytics/risk-distribution`)
@@ -245,6 +259,18 @@ export default function Home() {
           { time: '09:30 AM', text: 'Daily pipeline refresh completed.' }
         ]
       });
+
+      // 2. Save to localStorage for stale-while-revalidate on next visit
+      try {
+        localStorage.setItem(USER_CACHE_KEY, JSON.stringify({
+          customers: { customers: mappedCustomers, regions },
+          summary: {
+            totalCustomers, churnRate: avgChurnRate, atRiskCount,
+            lowRiskCount, mediumRiskCount, highRiskCount,
+          },
+          timestamp: Date.now(),
+        }));
+      } catch { /* storage full, ignore */ }
 
     } catch (err) {
       console.error("Error fetching data", err);

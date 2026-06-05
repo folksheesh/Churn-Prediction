@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from backend.core.database import get_db
 from backend.core.models import Customer
@@ -8,8 +8,8 @@ from fastapi_cache.decorator import cache
 router = APIRouter()
 
 @router.get("/overview")
-async def get_overview(response: Response, region: str = "All Regions", db: Session = Depends(get_db)):
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+@cache(expire=120)
+async def get_overview(region: str = "All Regions", db: Session = Depends(get_db)):
     query = db.query(Customer)
     if region != "All Regions":
         query = query.filter(Customer.region_category == region)
@@ -22,16 +22,18 @@ async def get_overview(response: Response, region: str = "All Regions", db: Sess
     retained = total - churned
     churn_rate = (churned / total * 100)
     
-    # Calculate At-Risk MRR (High risk customers * avg transaction)
-    high_risk_customers = query.filter(Customer.churn_risk == "High", Customer.status == "Active").all()
-    at_risk_mrr = sum((c.avg_transaction_value or 0) for c in high_risk_customers)
+    # Calculate At-Risk MRR using SUM in SQL instead of loading all objects
+    from sqlalchemy import func as sqlfunc
+    at_risk_mrr_result = query.filter(
+        Customer.churn_risk == "High", Customer.status == "Active"
+    ).with_entities(sqlfunc.coalesce(sqlfunc.sum(Customer.avg_transaction_value), 0)).scalar()
     
     return {
         "total_customers": total,
         "retained": retained,
         "churned": churned,
         "churn_rate": round(churn_rate, 2),
-        "at_risk_mrr": round(at_risk_mrr, 2)
+        "at_risk_mrr": round(float(at_risk_mrr_result), 2)
     }
 
 @router.get("/regions")
@@ -42,8 +44,8 @@ async def get_regions(db: Session = Depends(get_db)):
     return ["All Regions"] + region_list
 
 @router.get("/risk-distribution")
-async def get_risk_distribution(response: Response, region: str = "All Regions", db: Session = Depends(get_db)):
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+@cache(expire=120)
+async def get_risk_distribution(region: str = "All Regions", db: Session = Depends(get_db)):
     query = db.query(Customer).filter(Customer.status == "Active")
     if region != "All Regions":
         query = query.filter(Customer.region_category == region)
@@ -594,8 +596,8 @@ async def get_activity_logs(limit: int = 10, db: Session = Depends(get_db)):
     } for log in logs]
 
 @router.get("/critical-alerts")
-async def get_critical_alerts(response: Response, limit: int = 5, db: Session = Depends(get_db)):
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+@cache(expire=120)
+async def get_critical_alerts(limit: int = 5, db: Session = Depends(get_db)):
     customers = db.query(Customer).filter(
         Customer.status == "Active",
         Customer.churn_risk == "High"
@@ -611,6 +613,85 @@ async def get_critical_alerts(response: Response, limit: int = 5, db: Session = 
         ),
         "mitigation_status": c.mitigation_status
     } for c in customers]
+
+
+@router.get("/dashboard-bundle")
+@cache(expire=120)
+async def get_dashboard_bundle(db: Session = Depends(get_db)):
+    """Combined endpoint that returns all dashboard data in a single request.
+    Eliminates 4 separate API round-trips for the admin dashboard."""
+    from sqlalchemy import func as sqlfunc
+    from backend.core.models import MitigationLog
+    
+    # --- Overview ---
+    total = db.query(Customer).count()
+    churned = db.query(Customer).filter(Customer.status == "Inactive").count()
+    retained = total - churned
+    churn_rate = (churned / total * 100) if total > 0 else 0
+    at_risk_mrr = db.query(
+        sqlfunc.coalesce(sqlfunc.sum(Customer.avg_transaction_value), 0)
+    ).filter(Customer.churn_risk == "High", Customer.status == "Active").scalar()
+    
+    overview = {
+        "total_customers": total,
+        "retained": retained,
+        "churned": churned,
+        "churn_rate": round(churn_rate, 2),
+        "at_risk_mrr": round(float(at_risk_mrr), 2)
+    }
+    
+    # --- Risk Distribution ---
+    active_q = db.query(Customer).filter(Customer.status == "Active")
+    risk = {
+        "low_risk": active_q.filter(Customer.churn_risk == "Low").count(),
+        "medium_risk": active_q.filter(Customer.churn_risk == "Medium").count(),
+        "high_risk": active_q.filter(Customer.churn_risk == "High").count(),
+    }
+    
+    # --- Critical Alerts ---
+    alert_customers = db.query(Customer).filter(
+        Customer.status == "Active",
+        Customer.churn_risk == "High"
+    ).order_by(Customer.churn_probability.desc()).limit(6).all()
+    
+    alerts = [{
+        "id": c.id,
+        "name": c.name,
+        "score": round((c.churn_probability or 0) * 100, 1),
+        "plan": c.plan_tier,
+        "signal": f"Inactive for {c.days_since_active}d" if c.days_since_active and c.days_since_active > 14 else (
+            f"Tickets: {c.tickets_opened_90d}" if c.tickets_opened_90d and c.tickets_opened_90d > 2 else "Low activity"
+        ),
+        "mitigation_status": c.mitigation_status
+    } for c in alert_customers]
+    
+    # --- Activity Logs ---
+    logs = db.query(ActivityLog).order_by(ActivityLog.timestamp.desc()).limit(5).all()
+    activities = [{
+        "id": log.id,
+        "action": log.action,
+        "user": log.user,
+        "details": log.details,
+        "timestamp": log.timestamp.isoformat() if log.timestamp else None
+    } for log in logs]
+    
+    # --- Campaign Stats ---
+    total_campaigns = db.query(MitigationLog).count()
+    campaign_stats = {
+        "total_campaigns": total_campaigns,
+        "discount_campaigns": db.query(MitigationLog).filter(MitigationLog.action_type == "discount_campaign").count(),
+        "support_followups": db.query(MitigationLog).filter(MitigationLog.action_type == "customer_support_followup").count(),
+        "loyalty_enrollments": db.query(MitigationLog).filter(MitigationLog.action_type == "loyalty_program_enrollment").count(),
+        "product_recommendations": db.query(MitigationLog).filter(MitigationLog.action_type == "product_recommendation").count(),
+    }
+    
+    return {
+        "overview": overview,
+        "risk_distribution": risk,
+        "alerts": alerts,
+        "activities": activities,
+        "campaign_stats": campaign_stats,
+    }
 
 @router.get("/nlp-insights")
 @cache(expire=300)

@@ -27,4 +27,9 @@ textblob
 # ── Caching ──
 fastapi-cache2
 jinja2
+
+# ── Database (PostgreSQL) ──
 psycopg2-binary
+
+# ── HTTP Client (keep-alive ping) ──
+httpx
