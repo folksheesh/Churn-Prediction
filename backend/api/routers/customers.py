@@ -281,10 +281,10 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
             )
         df = non_empty_rows.reset_index(drop=True)
         
-        # Check Daily Upload Limit (Limit to 10,000 customers per day)
+        # Check Daily Upload Limit
         midnight = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         customers_added_today = db.query(Customer).filter(Customer.created_at >= midnight).count()
-        DAILY_LIMIT = 10000
+        DAILY_LIMIT = 100000
         if customers_added_today + len(df) > DAILY_LIMIT:
             raise HTTPException(
                 status_code=429,
