@@ -915,6 +915,7 @@ export default function Customers() {
                   <div className="flex-1">
                     <h1 className="text-lg font-bold text-zinc-900 leading-tight">{selectedCustomer.name}</h1>
                     <div className="text-xs font-medium text-zinc-500 mt-0.5">{selectedCustomer.id} • {selectedCustomer.plan_tier} Plan</div>
+                    <div className="text-[11px] font-medium text-zinc-400 mt-0.5">{selectedCustomer.email || 'No email'} • {selectedCustomer.phone_number || 'No phone'}</div>
                     <div className="mt-3 flex gap-2">
                       <span className="saas-badge bg-white text-zinc-600">{selectedCustomer.age} Yrs</span>
                       <span className="saas-badge bg-white text-zinc-600">{selectedCustomer.gender}</span>

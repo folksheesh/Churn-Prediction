@@ -317,11 +317,11 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
             "plan_tier", "days_since_active", "api_calls_90d", "logins_90d",
             "active_days_90d", "avg_session_duration", "days_since_last_login",
             "avg_frequency_login_days", "avg_transaction_value",
-            "points_in_wallet", "tickets_opened_90d"
+            "points_in_wallet", "tickets_opened_90d", "email", "phone_number"
         ]
         # Minimum columns that MUST be present (at least age + some activity metrics)
         MINIMUM_REQUIRED = [
-            "age", "days_since_active", "logins_90d", "api_calls_90d"
+            "email", "phone_number", "age", "days_since_active", "logins_90d", "api_calls_90d"
         ]
 
         uploaded_columns = [c.strip() for c in df.columns.tolist()]
@@ -345,9 +345,9 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
                 }
             )
 
-        # If some minimum required columns are missing
         if missing_minimum:
             COLUMN_LABELS = {
+                "email": "Email", "phone_number": "Phone Number",
                 "age": "Age", "gender": "Gender", "region_category": "Region Category",
                 "days_since_joined": "Customer Tenure (Days)", "plan_tier": "Plan Tier",
                 "days_since_active": "Days Since Last Activity", "api_calls_90d": "API Calls (90d)",
