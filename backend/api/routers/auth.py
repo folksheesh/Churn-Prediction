@@ -362,7 +362,7 @@ from backend.core.models import PasswordResetOTP
 import os
 
 SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))  # 465=SSL (recommended for cloud), 587=STARTTLS
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
 
@@ -407,19 +407,29 @@ def send_otp_email(to_email: str, otp_code: str, admin_name: str):
 
     try:
         if SMTP_PORT == 465:
-            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=10) as server:
+            # SSL connection (more reliable on cloud providers / Render)
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15) as server:
                 server.login(SMTP_USER, SMTP_PASS)
                 server.sendmail(SMTP_USER, to_email, msg.as_string())
         else:
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
+            # STARTTLS connection (port 587)
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+                server.ehlo()
                 server.starttls()
+                server.ehlo()
                 server.login(SMTP_USER, SMTP_PASS)
                 server.sendmail(SMTP_USER, to_email, msg.as_string())
         print(f"[SMTP] OTP email sent successfully to {to_email}")
         return True
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"[SMTP AUTH ERROR] {to_email}: {e}")
+        raise RuntimeError(f"SMTP Authentication failed. Check App Password. Detail: {e}")
+    except smtplib.SMTPConnectError as e:
+        print(f"[SMTP CONNECT ERROR] {to_email}: {e}")
+        raise RuntimeError(f"Cannot connect to {SMTP_HOST}:{SMTP_PORT}. Port may be blocked. Detail: {e}")
     except Exception as e:
-        print(f"[SMTP ERROR] Failed to send email to {to_email}: {e}")
-        return False
+        print(f"[SMTP ERROR] Failed to send email to {to_email}: {type(e).__name__}: {e}")
+        raise RuntimeError(f"{type(e).__name__}: {e}")
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
@@ -456,13 +466,22 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     db.add(otp_record)
     
     # Send OTP via email
-    email_sent = send_otp_email(data.email, otp_code, admin.name)
+    smtp_error = None
+    try:
+        send_otp_email(data.email, otp_code, admin.name)
+        email_sent = True
+    except RuntimeError as e:
+        email_sent = False
+        smtp_error = str(e)
+    except Exception as e:
+        email_sent = False
+        smtp_error = f"{type(e).__name__}: {e}"
     
     # Log the activity
     log = ActivityLog(
         action="Password Reset Requested",
         user=data.email,
-        details=f"OTP generated for {data.email}" + (" (email sent)" if email_sent else " (email failed, check console)"),
+        details=f"OTP generated for {data.email}" + (" (email sent)" if email_sent else f" (email failed: {smtp_error})"),
         result="success" if email_sent else "email_failed"
     )
     db.add(log)
@@ -471,7 +490,7 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     if not email_sent:
         raise HTTPException(
             status_code=500, 
-            detail="Failed to send OTP email. Please check your SMTP configuration (App Password, Port) in Render."
+            detail=f"Gagal kirim OTP. Error: {smtp_error}"
         )
     
     return {"message": "OTP has been sent to your email address.", "email": data.email}
