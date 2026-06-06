@@ -355,27 +355,18 @@ def get_cs_team(current_admin: AdminUser = Depends(get_current_admin), db: Sessi
 
 import random
 import string
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import httpx
 from backend.core.models import PasswordResetOTP
 import os
 
-SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASS = os.getenv("SMTP_PASS")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+RESEND_FROM    = os.getenv("RESEND_FROM", "ChurnSense <onboarding@resend.dev>")
 
 def send_otp_email(to_email: str, otp_code: str, admin_name: str):
-    """Send OTP code via SMTP email with a professional HTML template."""
-    if not all([SMTP_HOST, SMTP_USER, SMTP_PASS]):
-        print(f"\n[SMTP not configured] OTP for {to_email}: {otp_code}\n")
-        return False
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"🔐 ChurnSense - Your Password Reset Code: {otp_code}"
-    msg["From"] = f"ChurnSense <{SMTP_USER}>"
-    msg["To"] = to_email
+    """Send OTP code via Resend API (HTTPS - works on all cloud providers)."""
+    if not RESEND_API_KEY:
+        print(f"\n[Resend not configured] OTP for {to_email}: {otp_code}\n")
+        raise RuntimeError("RESEND_API_KEY is not set. Please add it in Render Environment Variables.")
 
     html_body = f"""
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 0;">
@@ -403,38 +394,34 @@ def send_otp_email(to_email: str, otp_code: str, admin_name: str):
     </div>
     """
 
-    msg.attach(MIMEText(html_body, "html"))
-
     try:
-        import socket
-        # ── DNS + connectivity debug ──────────────────────────────────────────
-        try:
-            resolved_ip = socket.gethostbyname(SMTP_HOST)
-            print(f"[SMTP DEBUG] DNS resolved {SMTP_HOST} → {resolved_ip}")
-        except Exception as dns_err:
-            print(f"[SMTP DEBUG] DNS ERROR for {SMTP_HOST}: {dns_err}")
-        try:
-            sock = socket.create_connection((SMTP_HOST, int(SMTP_PORT)), timeout=10)
-            sock.close()
-            print(f"[SMTP DEBUG] TCP port {SMTP_PORT} is REACHABLE")
-        except Exception as tcp_err:
-            print(f"[SMTP DEBUG] TCP port {SMTP_PORT} UNREACHABLE: {tcp_err}")
-        # ─────────────────────────────────────────────────────────────────────
-        server = smtplib.SMTP(SMTP_HOST, int(SMTP_PORT))
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.send_message(msg)
-        server.quit()
-        print(f"[SMTP] OTP email sent successfully to {to_email}")
-        return True
-    except smtplib.SMTPAuthenticationError as e:
-        print(f"[SMTP AUTH ERROR] {to_email}: {e}")
-        raise RuntimeError(f"SMTP Authentication failed. Check App Password. Detail: {e}")
-    except smtplib.SMTPConnectError as e:
-        print(f"[SMTP CONNECT ERROR] {to_email}: {e}")
-        raise RuntimeError(f"Cannot connect to {SMTP_HOST}:{SMTP_PORT}. Port may be blocked. Detail: {e}")
+        response = httpx.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": RESEND_FROM,
+                "to": [to_email],
+                "subject": f"🔐 ChurnSense - Your Password Reset Code: {otp_code}",
+                "html": html_body,
+            },
+            timeout=15,
+        )
+        print(f"[Resend] status={response.status_code} body={response.text}")
+        if response.status_code in (200, 201):
+            print(f"[Resend] OTP email sent successfully to {to_email}")
+            return True
+        else:
+            raise RuntimeError(f"Resend API error {response.status_code}: {response.text}")
+    except httpx.RequestError as e:
+        print(f"[Resend ERROR] Network error: {e}")
+        raise RuntimeError(f"Network error calling Resend API: {e}")
+    except RuntimeError:
+        raise
     except Exception as e:
-        print(f"[SMTP ERROR] Failed to send email to {to_email}: {type(e).__name__}: {e}")
+        print(f"[Resend ERROR] {type(e).__name__}: {e}")
         raise RuntimeError(f"{type(e).__name__}: {e}")
 
 class ForgotPasswordRequest(BaseModel):

@@ -17,14 +17,10 @@ services:
         generateValue: true   # Render auto-generates a secure random string
       - key: RENDER_EXTERNAL_URL
         value: "https://churn-prediction-jahv.onrender.com"
-      # ── SMTP / Email (Gmail App Password) ──────────────────────────────────
-      - key: SMTP_HOST
-        value: smtp.gmail.com
-      - key: SMTP_PORT
-        value: "587"
-      - key: SMTP_USER
-        value: churnsense@gmail.com
-      - key: SMTP_PASS
+      # ── Resend Email API ────────────────────────────────────────────────────
+      - key: RESEND_API_KEY
         sync: false   # Set this secret manually in the Render dashboard
+      - key: RESEND_FROM
+        value: "ChurnSense <onboarding@resend.dev>"
     healthCheckPath: /health
 
