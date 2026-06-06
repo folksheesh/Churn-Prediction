@@ -12,25 +12,28 @@ export default function Dashboard() {
   const [activities, setActivities] = useState<any[]>([]);
   const [campaignStats, setCampaignStats] = useState<any>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+  const [mitigatedIds, setMitigatedIds] = useState<Set<string>>(new Set());
 
   const CACHE_KEY = 'churnsense_admin_dashboard';
 
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = useCallback(async (bypassCache = false) => {
     // 1. Show cached data instantly (stale-while-revalidate)
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        // Use cache if less than 5 minutes old
-        if (Date.now() - timestamp < 300_000) {
-          setMetrics(data.overview);
-          setAlerts(data.alerts);
-          setActivities(data.activities || []);
-          if (data.campaign_stats) setCampaignStats(data.campaign_stats);
-          setLoading(false);
+    if (!bypassCache) {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          // Use cache if less than 5 minutes old
+          if (Date.now() - timestamp < 300_000) {
+            setMetrics(data.overview);
+            setAlerts(data.alerts);
+            setActivities(data.activities || []);
+            if (data.campaign_stats) setCampaignStats(data.campaign_stats);
+            setLoading(false);
+          }
         }
-      }
-    } catch { /* ignore parse errors */ }
+      } catch { /* ignore parse errors */ }
+    }
 
     // 2. Fetch fresh data from the combined bundle endpoint (1 request instead of 4)
     try {
@@ -193,7 +196,7 @@ export default function Dashboard() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                           {row.mitigation_status === 'Assigned' ? (
+                           {(row.mitigation_status === 'Assigned' || mitigatedIds.has(row.id)) ? (
                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                <Sparkles size={12} /> Assigned
                              </span>
@@ -204,18 +207,24 @@ export default function Dashboard() {
                            )}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button 
-                            onClick={() => setSelectedCustomer({
-                              ...row,
-                              plan_tier: row.plan || 'Basic',
-                              age: row.age || '-',
-                              churn_probability: row.score ? row.score / 100 : 0,
-                              churn_risk: 'High'
-                            })}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-[0.97] bg-rose-50 text-rose-700 hover:bg-rose-100 hover:shadow border border-rose-200"
-                          >
-                            <AlertTriangle size={14} className="animate-pulse"/> Mitigate
-                          </button>
+                          {(row.mitigation_status === 'Assigned' || mitigatedIds.has(row.id)) ? (
+                            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-zinc-50 text-zinc-400 border border-zinc-200">
+                              <Sparkles size={14} /> Mitigated
+                            </span>
+                          ) : (
+                            <button 
+                              onClick={() => setSelectedCustomer({
+                                ...row,
+                                plan_tier: row.plan || 'Basic',
+                                age: row.age || '-',
+                                churn_probability: row.score ? row.score / 100 : 0,
+                                churn_risk: 'High'
+                              })}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-[0.97] bg-rose-50 text-rose-700 hover:bg-rose-100 hover:shadow border border-rose-200"
+                            >
+                              <AlertTriangle size={14} className="animate-pulse"/> Mitigate
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -317,8 +326,14 @@ export default function Dashboard() {
           customer={selectedCustomer}
           onClose={() => setSelectedCustomer(null)}
           onSuccess={() => {
+            // Optimistically mark this customer as mitigated immediately
+            if (selectedCustomer?.id) {
+              setMitigatedIds(prev => new Set(prev).add(selectedCustomer.id));
+            }
             setSelectedCustomer(null);
-            fetchDashboardData();
+            // Clear cache so the next fetch gets fresh data from server
+            localStorage.removeItem(CACHE_KEY);
+            fetchDashboardData(true);
           }}
         />
       )}
