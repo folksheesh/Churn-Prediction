@@ -42,11 +42,6 @@ def seed_db():
     print("Inserting into database...")
     customers_to_add = []
     
-    # Standardize names for the seed data since original CSV lacks names
-    import random
-    first_names = ["James", "Mary", "Robert", "Patricia", "John", "Jennifer", "Michael", "Linda", "David", "Elizabeth", "William", "Barbara", "Richard", "Susan", "Joseph", "Jessica", "Thomas", "Sarah", "Charles", "Karen"]
-    last_names = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"]
-    companies = ["Acme Corp", "Globex", "Soylent", "Initech", "Umbrella", "Massive Dynamic", "Stark Ind", "Wayne Ent", "Cyberdyne", "Oscorp"]
 
     def safe_float(val):
         try:
@@ -64,16 +59,9 @@ def seed_db():
         prob = row.get("probability", 0.0)
         risk = "High" if prob > 0.7 else "Medium" if prob > 0.4 else "Low"
         
-        # Generate a fake name/company
-        is_company = random.choice([True, False])
-        if is_company:
-            name = f"{random.choice(companies)} {random.randint(1, 100)}"
-        else:
-            name = f"{random.choice(first_names)} {random.choice(last_names)}"
-            
         c = Customer(
             id=f"CUST-{uuid.uuid4().hex[:8].upper()}",
-            name=name,
+            name=row.get("name", "Unknown Customer"),
             email=row.get("email"),
             phone_number=row.get("phone_number"),
             age=safe_int(row.get("age")),
