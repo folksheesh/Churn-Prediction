@@ -21,6 +21,6 @@ services:
       - key: RESEND_API_KEY
         sync: false   # Set this secret manually in the Render dashboard
       - key: RESEND_FROM
-        value: "ChurnSense <onboarding@resend.dev>"
+        value: "ChurnSense <noreply@churnsense.sbs>"
     healthCheckPath: /health
 

@@ -359,10 +359,8 @@ import httpx
 from backend.core.models import PasswordResetOTP
 import os
 
-RESEND_API_KEY   = os.getenv("RESEND_API_KEY")
-RESEND_FROM      = os.getenv("RESEND_FROM", "ChurnSense <onboarding@resend.dev>")
-# Free tier: override recipient to team inbox (resend.dev only allows sending to verified email)
-RESEND_TO_OVERRIDE = os.getenv("RESEND_TO_OVERRIDE", "aizu2617@gmail.com")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+RESEND_FROM    = os.getenv("RESEND_FROM", "ChurnSense <noreply@churnsense.sbs>")
 
 def send_otp_email(to_email: str, otp_code: str, admin_name: str):
     """Send OTP code via Resend API (HTTPS - works on all cloud providers)."""
@@ -397,8 +395,6 @@ def send_otp_email(to_email: str, otp_code: str, admin_name: str):
     """
 
     try:
-        # In free tier mode, send to override inbox; subject shows who actually requested it
-        actual_recipient = RESEND_TO_OVERRIDE if RESEND_TO_OVERRIDE else to_email
         response = httpx.post(
             "https://api.resend.com/emails",
             headers={
@@ -407,15 +403,15 @@ def send_otp_email(to_email: str, otp_code: str, admin_name: str):
             },
             json={
                 "from": RESEND_FROM,
-                "to": [actual_recipient],
-                "subject": f"🔐 ChurnSense OTP untuk {to_email}: {otp_code}",
+                "to": [to_email],
+                "subject": f"🔐 ChurnSense - Your Password Reset Code: {otp_code}",
                 "html": html_body,
             },
             timeout=15,
         )
-        print(f"[Resend] status={response.status_code} recipient={actual_recipient} body={response.text}")
+        print(f"[Resend] status={response.status_code} body={response.text}")
         if response.status_code in (200, 201):
-            print(f"[Resend] OTP email sent successfully (for {to_email} → delivered to {actual_recipient})")
+            print(f"[Resend] OTP email sent successfully to {to_email}")
             return True
         else:
             raise RuntimeError(f"Resend API error {response.status_code}: {response.text}")
