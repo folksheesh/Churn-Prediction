@@ -406,6 +406,20 @@ def send_otp_email(to_email: str, otp_code: str, admin_name: str):
     msg.attach(MIMEText(html_body, "html"))
 
     try:
+        import socket
+        # ── DNS + connectivity debug ──────────────────────────────────────────
+        try:
+            resolved_ip = socket.gethostbyname(SMTP_HOST)
+            print(f"[SMTP DEBUG] DNS resolved {SMTP_HOST} → {resolved_ip}")
+        except Exception as dns_err:
+            print(f"[SMTP DEBUG] DNS ERROR for {SMTP_HOST}: {dns_err}")
+        try:
+            sock = socket.create_connection((SMTP_HOST, int(SMTP_PORT)), timeout=10)
+            sock.close()
+            print(f"[SMTP DEBUG] TCP port {SMTP_PORT} is REACHABLE")
+        except Exception as tcp_err:
+            print(f"[SMTP DEBUG] TCP port {SMTP_PORT} UNREACHABLE: {tcp_err}")
+        # ─────────────────────────────────────────────────────────────────────
         server = smtplib.SMTP_SSL(SMTP_HOST, int(SMTP_PORT))
         server.login(SMTP_USER, SMTP_PASS)
         server.send_message(msg)
