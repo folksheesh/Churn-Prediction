@@ -362,7 +362,7 @@ from backend.core.models import PasswordResetOTP
 import os
 
 SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))  # 465=SSL (recommended for cloud), 587=STARTTLS
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
 
@@ -420,7 +420,8 @@ def send_otp_email(to_email: str, otp_code: str, admin_name: str):
         except Exception as tcp_err:
             print(f"[SMTP DEBUG] TCP port {SMTP_PORT} UNREACHABLE: {tcp_err}")
         # ─────────────────────────────────────────────────────────────────────
-        server = smtplib.SMTP_SSL(SMTP_HOST, int(SMTP_PORT))
+        server = smtplib.SMTP(SMTP_HOST, int(SMTP_PORT))
+        server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
         server.send_message(msg)
         server.quit()
