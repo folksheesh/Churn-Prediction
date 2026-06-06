@@ -6,6 +6,8 @@ from typing import Optional, Union, List
 
 class CustomerBase(BaseModel):
     name: Optional[str] = None
+    email: Optional[str] = None
+    phone_number: Optional[str] = None
     age: Optional[Union[int, str]] = None
     gender: Optional[str] = None
     region_category: Optional[str] = None

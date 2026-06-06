@@ -20,7 +20,7 @@ def seed_db():
     
     db = SessionLocal()
         
-    csv_path = os.path.join(ROOT, "data", "processed", "cleaned_churn_data.csv")
+    csv_path = os.path.join(ROOT, "data", "raw", "churn_data_with_emails.csv")
     if not os.path.exists(csv_path):
         print(f"CSV not found at {csv_path}")
         return
@@ -48,6 +48,18 @@ def seed_db():
     last_names = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"]
     companies = ["Acme Corp", "Globex", "Soylent", "Initech", "Umbrella", "Massive Dynamic", "Stark Ind", "Wayne Ent", "Cyberdyne", "Oscorp"]
 
+    def safe_float(val):
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return None
+
+    def safe_int(val):
+        try:
+            return int(float(val))
+        except (ValueError, TypeError):
+            return None
+
     for idx, row in df_pred.iterrows():
         prob = row.get("probability", 0.0)
         risk = "High" if prob > 0.7 else "Medium" if prob > 0.4 else "Low"
@@ -62,25 +74,27 @@ def seed_db():
         c = Customer(
             id=f"CUST-{uuid.uuid4().hex[:8].upper()}",
             name=name,
-            age=row.get("age"),
+            email=row.get("email"),
+            phone_number=row.get("phone_number"),
+            age=safe_int(row.get("age")),
             gender=row.get("gender"),
             region_category=row.get("region_category"),
-            days_since_joined=row.get("days_since_joined"),
+            days_since_joined=safe_int(row.get("days_since_joined")),
             plan_tier=row.get("plan_tier"),
             status="Active" if row.get("churn", 0) == 0 else "Inactive",
             
-            days_since_active=row.get("days_since_active"),
-            api_calls_90d=row.get("api_calls_90d"),
-            logins_90d=row.get("logins_90d"),
-            active_days_90d=row.get("active_days_90d"),
-            avg_session_duration=row.get("avg_session_duration"),
-            days_since_last_login=row.get("days_since_last_login"),
-            avg_frequency_login_days=row.get("avg_frequency_login_days"),
+            days_since_active=safe_int(row.get("days_since_active")),
+            api_calls_90d=safe_int(row.get("api_calls_90d")),
+            logins_90d=safe_int(row.get("logins_90d")),
+            active_days_90d=safe_int(row.get("active_days_90d")),
+            avg_session_duration=safe_float(row.get("avg_session_duration")),
+            days_since_last_login=safe_int(row.get("days_since_last_login")),
+            avg_frequency_login_days=safe_float(row.get("avg_frequency_login_days")),
             
-            avg_transaction_value=row.get("avg_transaction_value"),
-            points_in_wallet=row.get("points_in_wallet"),
+            avg_transaction_value=safe_float(row.get("avg_transaction_value")),
+            points_in_wallet=safe_float(row.get("points_in_wallet")),
             
-            tickets_opened_90d=row.get("tickets_opened_90d", 0),
+            tickets_opened_90d=safe_int(row.get("tickets_opened_90d", 0)),
             feedback=row.get("feedback"),
             
             churn_risk=risk,

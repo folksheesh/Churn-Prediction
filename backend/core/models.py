@@ -14,6 +14,8 @@ class Customer(Base):
 
     id = Column(String, primary_key=True, index=True) # e.g. '#4092' or generated UUID
     name = Column(String, index=True)
+    email = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
     
     # Demographics & Account
     age = Column(Integer, nullable=True)

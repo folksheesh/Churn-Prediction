@@ -162,7 +162,7 @@ def delete_customer(customer_id: str, db: Session = Depends(get_db)):
 def get_csv_template():
     # Define required headers for the model
     headers = [
-        "id", "name", "age", "gender", "region_category", 
+        "id", "name", "email", "phone_number", "age", "gender", "region_category", 
         "days_since_joined", "plan_tier", "status", "days_since_active", 
         "api_calls_90d", "logins_90d", "active_days_90d", 
         "avg_session_duration", "days_since_last_login", 
@@ -172,7 +172,7 @@ def get_csv_template():
     
     # Create an empty DataFrame with these headers and one dummy row
     df = pd.DataFrame(columns=headers)
-    df.loc[0] = ["CUST-001", "John Doe", 35, "Male", "North America", 120, "Pro", "Active", 2, 5000, 20, 15, 30.5, 5, 2.1, 150.0, 500, 1, "Great service"]
+    df.loc[0] = ["CUST-001", "John Doe", "john.doe@example.com", "08123456789", 35, "Male", "North America", 120, "Pro", "Active", 2, 5000, 20, 15, 30.5, 5, 2.1, 150.0, 500, 1, "Great service"]
     
     stream = io.StringIO()
     df.to_csv(stream, index=False)
@@ -185,7 +185,7 @@ def get_csv_template():
 def get_xlsx_template():
     # Define required headers for the model
     headers = [
-        "id", "name", "age", "gender", "region_category", 
+        "id", "name", "email", "phone_number", "age", "gender", "region_category", 
         "days_since_joined", "plan_tier", "status", "days_since_active", 
         "api_calls_90d", "logins_90d", "active_days_90d", 
         "avg_session_duration", "days_since_last_login", 
@@ -194,7 +194,7 @@ def get_xlsx_template():
     ]
     
     df = pd.DataFrame(columns=headers)
-    df.loc[0] = ["CUST-001", "John Doe", 35, "Male", "North America", 120, "Pro", "Active", 2, 5000, 20, 15, 30.5, 5, 2.1, 150.0, 500, 1, "Great service"]
+    df.loc[0] = ["CUST-001", "John Doe", "john.doe@example.com", "08123456789", 35, "Male", "North America", 120, "Pro", "Active", 2, 5000, 20, 15, 30.5, 5, 2.1, 150.0, 500, 1, "Great service"]
     
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:

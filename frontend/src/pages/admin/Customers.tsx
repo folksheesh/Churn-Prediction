@@ -27,7 +27,7 @@ export default function Customers() {
   const itemsPerPage = 50;
 
   const [formData, setFormData] = useState({
-    id: '', name: '', age: '', gender: 'Male', plan_tier: 'Starter', 
+    id: '', name: '', email: '', phone_number: '', age: '', gender: 'Male', plan_tier: 'Starter', 
     api_calls_90d: 0, logins_90d: 0, days_since_active: 0,
     points_in_wallet: 0, avg_transaction_value: 0, avg_session_duration: 0
   });
@@ -301,7 +301,7 @@ export default function Customers() {
                           </div>
                           <div className="flex flex-col">
                             <span className="font-bold text-zinc-900 text-sm leading-tight group-hover:text-brand-600 transition-colors">{c.name}</span>
-                            <span className="text-[11px] font-medium text-zinc-500 mt-0.5">{c.id}</span>
+                            <span className="text-[11px] font-medium text-zinc-500 mt-0.5">{c.id}{c.email ? ` • ${c.email}` : ''}{c.phone_number ? ` • ${c.phone_number}` : ''}</span>
                           </div>
                         </div>
                       </td>
@@ -822,6 +822,14 @@ export default function Customers() {
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-zinc-700">Full Name</label>
                   <input required type="text" placeholder="Jane Doe" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">Email Address</label>
+                  <input type="email" placeholder="jane.doe@example.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-700">Phone Number</label>
+                  <input type="text" placeholder="08123456789" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
