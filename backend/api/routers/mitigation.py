@@ -16,6 +16,7 @@ from backend.core.models import (
     ROLE_CS_MANAGER, ROLE_CS_AGENT
 )
 from backend.api.routers.auth import get_current_admin, get_optional_admin
+from backend.api.services.email_service import send_campaign_email
 
 router = APIRouter()
 
@@ -146,6 +147,24 @@ def assign_campaign(
 
     db.commit()
     db.refresh(mitigation_log)
+
+    # ── Kirim email notifikasi ke customer ───────────────────────────────────
+    if customer.email:
+        try:
+            assigned_by_name = current_admin.name if current_admin else "ChurnSense Team"
+            send_campaign_email(
+                to_email=customer.email,
+                customer_name=customer.name or "Pelanggan",
+                campaign_key=req.campaign_name,
+                assigned_by_name=assigned_by_name,
+            )
+            print(f"[Mitigation] Campaign email sent to {customer.email} for customer {customer.id}")
+        except Exception as email_err:
+            # Email gagal tidak boleh menghentikan proses assign
+            print(f"[Mitigation] Warning: email failed for {customer.email}: {email_err}")
+    else:
+        print(f"[Mitigation] No email for customer {customer.id} — skipping notification")
+    # ─────────────────────────────────────────────────────────────────────────
 
     return CampaignAssignResponse(
         id=mitigation_log.id,

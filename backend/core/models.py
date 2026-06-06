@@ -41,6 +41,8 @@ class Customer(Base):
     # Support/Feedback
     tickets_opened_90d = Column(Integer, nullable=True)
     feedback = Column(String, nullable=True)
+    email = Column(String, nullable=True)          # Customer email for notifications
+    phone_number = Column(String, nullable=True)   # Customer phone number
     
     # Predictions
     churn_risk = Column(String, nullable=True) # High, Medium, Low
