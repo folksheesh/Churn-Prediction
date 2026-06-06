@@ -359,12 +359,17 @@ import httpx
 from backend.core.models import PasswordResetOTP
 import os
 
+
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 RESEND_FROM    = os.getenv("RESEND_FROM", "ChurnSense <noreply@churnsense.sbs>")
 
 def send_otp_email(to_email: str, otp_code: str, admin_name: str):
     """Send OTP code via Resend API (HTTPS - works on all cloud providers)."""
-    if not RESEND_API_KEY:
+    # Baca env var fresh di setiap panggilan
+    api_key  = os.getenv("RESEND_API_KEY")
+    from_addr = os.getenv("RESEND_FROM", "ChurnSense <noreply@churnsense.sbs>")
+
+    if not api_key:
         print(f"\n[Resend not configured] OTP for {to_email}: {otp_code}\n")
         raise RuntimeError("RESEND_API_KEY is not set. Please add it in Render Environment Variables.")
 
@@ -398,11 +403,11 @@ def send_otp_email(to_email: str, otp_code: str, admin_name: str):
         response = httpx.post(
             "https://api.resend.com/emails",
             headers={
-                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
             json={
-                "from": RESEND_FROM,
+                "from": from_addr,
                 "to": [to_email],
                 "subject": f"🔐 ChurnSense - Your Password Reset Code: {otp_code}",
                 "html": html_body,

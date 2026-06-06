@@ -5,17 +5,17 @@ Digunakan oleh auth (OTP) dan mitigation (campaign notification).
 import os
 import httpx
 
-RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-RESEND_FROM    = os.getenv("RESEND_FROM", "ChurnSense <noreply@churnsense.sbs>")
-
-
 def send_email(to_email: str, subject: str, html_body: str) -> bool:
     """
     Kirim email via Resend API.
     Returns True jika berhasil, False jika tidak ada API key.
     Raise RuntimeError jika ada error.
     """
-    if not RESEND_API_KEY:
+    # Baca env var di sini (lazy) supaya selalu dapat nilai terbaru
+    api_key = os.getenv("RESEND_API_KEY")
+    from_addr = os.getenv("RESEND_FROM", "ChurnSense <noreply@churnsense.sbs>")
+
+    if not api_key:
         print(f"[Email] RESEND_API_KEY not set — skipping email to {to_email}")
         return False
 
@@ -23,11 +23,11 @@ def send_email(to_email: str, subject: str, html_body: str) -> bool:
         response = httpx.post(
             "https://api.resend.com/emails",
             headers={
-                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
             json={
-                "from": RESEND_FROM,
+                "from": from_addr,
                 "to": [to_email],
                 "subject": subject,
                 "html": html_body,
