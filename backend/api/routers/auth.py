@@ -406,19 +406,10 @@ def send_otp_email(to_email: str, otp_code: str, admin_name: str):
     msg.attach(MIMEText(html_body, "html"))
 
     try:
-        if SMTP_PORT == 465:
-            # SSL connection (more reliable on cloud providers / Render)
-            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-                server.login(SMTP_USER, SMTP_PASS)
-                server.sendmail(SMTP_USER, to_email, msg.as_string())
-        else:
-            # STARTTLS connection (port 587)
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-                server.ehlo()
-                server.starttls()
-                server.ehlo()
-                server.login(SMTP_USER, SMTP_PASS)
-                server.sendmail(SMTP_USER, to_email, msg.as_string())
+        server = smtplib.SMTP_SSL(SMTP_HOST, int(SMTP_PORT))
+        server.login(SMTP_USER, SMTP_PASS)
+        server.send_message(msg)
+        server.quit()
         print(f"[SMTP] OTP email sent successfully to {to_email}")
         return True
     except smtplib.SMTPAuthenticationError as e:
