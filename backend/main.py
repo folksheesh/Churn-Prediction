@@ -5,6 +5,11 @@ from backend.api.routers import mitigation
 from backend.core.database import engine
 from backend.core import models
 
+# Load .env for local development (no-op in production / Render where vars are set natively)
+from dotenv import load_dotenv
+import os
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 

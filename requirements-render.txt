@@ -30,3 +30,6 @@ jinja2
 
 # ── HTTP Client (keep-alive ping) ──
 httpx
+
+# ── Environment Variables ──
+python-dotenv
