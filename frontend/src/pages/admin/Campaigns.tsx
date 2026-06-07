@@ -341,13 +341,19 @@ export default function Campaigns({
                 </table>
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center h-48 text-zinc-400">
-                <div className="w-12 h-12 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center mb-3">
-                  <Users size={20} className="text-zinc-300" />
+              <div className="flex flex-col items-center justify-center py-12 md:py-16 px-6 text-center">
+                <div className="w-14 h-14 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center mb-4">
+                  <Users size={24} className="text-zinc-300" />
                 </div>
-                <span className="text-sm font-medium text-zinc-500">No customers in this campaign.</span>
+                <span className="text-sm font-bold text-zinc-600">No customers enrolled yet</span>
+                <p className="text-[12px] text-zinc-400 mt-2 max-w-xs leading-relaxed">
+                  {searchQuery
+                    ? "No results match your search."
+                    : "To enroll customers, go to the Dashboard and click 'Send Offer' on high-risk customers. They'll appear here once assigned."
+                  }
+                </p>
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="mt-2 text-xs text-brand-600 font-medium">
+                  <button onClick={() => setSearchQuery('')} className="mt-3 text-xs text-brand-600 hover:text-brand-700 font-semibold">
                     Clear search
                   </button>
                 )}
