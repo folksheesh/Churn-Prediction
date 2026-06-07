@@ -63,7 +63,10 @@ export default function Campaigns({
       <div className={cn("w-full space-y-4 md:space-y-6 animate-fadeIn", hideHeader ? "pt-0 px-4 md:px-8 py-4 md:py-8" : "px-4 md:px-8 py-4 md:py-8")}>
         
         {/* Mobile: swipeable snap carousel */}
-        <div className="flex md:hidden gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div
+          className="flex md:hidden gap-3 snap-x snap-mandatory scroll-smooth overflow-x-scroll overscroll-x-contain touch-pan-x pb-2"
+          style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
           {CAMPAIGNS.map(campaign => {
             const Icon = campaign.icon;
             const isActive = activeTab === campaign.id;
@@ -71,8 +74,9 @@ export default function Campaigns({
               <button
                 key={campaign.id}
                 onClick={() => setActiveTab(campaign.id)}
+                style={{ minWidth: '72vw', maxWidth: '240px' }}
                 className={cn(
-                  "shrink-0 w-[72vw] max-w-[240px] snap-center p-5 rounded-2xl border text-left transition-all duration-300 flex flex-col relative overflow-hidden",
+                  "shrink-0 snap-center p-5 rounded-2xl border text-left transition-all duration-300 flex flex-col relative overflow-hidden",
                   isActive
                     ? "bg-white border-brand-300 shadow-lg ring-2 ring-brand-500/20"
                     : "bg-white border-zinc-200 shadow-sm opacity-60"
