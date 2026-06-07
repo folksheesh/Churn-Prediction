@@ -150,7 +150,7 @@ export default function AdminManagement() {
 
   return (
     <>
-      <header className="h-20 flex items-center justify-between px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
+      <header className="h-20 hidden md:flex items-center justify-between px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-zinc-900">Employee Directory</h1>
           <p className="text-sm text-zinc-500 mt-1">Manage system access and roles for company personnel.</p>

@@ -72,7 +72,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <header className="h-16 flex items-center justify-between px-8 border-b border-zinc-200/60 bg-white/80 backdrop-blur-md sticky top-0 z-20 shrink-0 shadow-sm">
+      <header className="h-16 hidden md:flex items-center justify-between px-8 border-b border-zinc-200/60 bg-white/80 backdrop-blur-md sticky top-0 z-20 shrink-0 shadow-sm">
         <div>
           <h1 className="text-lg font-bold tracking-tight text-zinc-900">Operational Overview</h1>
           <p className="text-[11px] font-medium text-zinc-500">Real-time churn intelligence & mitigation tracking</p>

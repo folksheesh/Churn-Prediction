@@ -58,7 +58,7 @@ export default function Profile() {
 
   return (
     <>
-      <header className="h-16 flex items-center px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
+      <header className="h-16 hidden md:flex items-center px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
         <h1 className="text-lg font-semibold tracking-tight text-zinc-900">My Profile</h1>
       </header>
       

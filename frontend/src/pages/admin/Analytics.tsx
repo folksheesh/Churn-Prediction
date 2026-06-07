@@ -62,7 +62,7 @@ export default function Analytics() {
 
   return (
     <div className="flex flex-col h-full bg-[#fcfcfc]">
-      <header className="h-14 flex items-center justify-between px-6 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
+      <header className="h-14 hidden md:flex items-center justify-between px-6 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
         <div>
           <h1 className="text-sm font-semibold tracking-tight text-zinc-900">Deep Analytics</h1>
         </div>

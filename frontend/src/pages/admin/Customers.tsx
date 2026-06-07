@@ -189,7 +189,7 @@ export default function Customers() {
 
   return (
     <>
-      <header className="h-14 flex items-center justify-between px-6 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
+      <header className="h-14 hidden md:flex items-center justify-between px-6 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
         <h1 className="text-sm font-semibold tracking-tight text-zinc-900">Customer Intelligence</h1>
         <div className="flex gap-2">
           <button 

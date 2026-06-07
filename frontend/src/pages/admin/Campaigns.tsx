@@ -54,7 +54,7 @@ export default function Campaigns({
   return (
     <div className={cn("flex-1 flex flex-col h-full", hideHeader ? "" : "bg-[#fcfcfd]")}>
       {!hideHeader && (
-        <header className="h-16 flex flex-col justify-center px-8 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
+        <header className="h-16 hidden md:flex flex-col justify-center px-8 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
           <h1 className="text-xl font-bold tracking-tight text-zinc-900">Active Campaigns</h1>
           <p className="text-xs text-zinc-500">Track and manage customers assigned to retention campaigns.</p>
         </header>
