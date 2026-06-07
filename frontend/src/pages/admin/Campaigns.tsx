@@ -60,33 +60,56 @@ export default function Campaigns({
         </header>
       )}
 
-      <div className={cn("w-full space-y-6 animate-fadeIn", hideHeader ? "pt-0 p-8" : "p-8")}>
+      <div className={cn("w-full space-y-4 md:space-y-6 animate-fadeIn", hideHeader ? "pt-0 px-4 md:px-8 py-4 md:py-8" : "px-4 md:px-8 py-4 md:py-8")}>
         
-        {/* Campaign Tabs */}
-        <div className="flex md:grid md:grid-cols-4 gap-4 overflow-x-auto pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory">
+        {/* Campaign Tabs - pill style on mobile, card grid on desktop */}
+        {/* Mobile pills */}
+        <div className="flex md:hidden gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
           {CAMPAIGNS.map(campaign => {
             const Icon = campaign.icon;
             const isActive = activeTab === campaign.id;
-            
             return (
               <button
                 key={campaign.id}
                 onClick={() => setActiveTab(campaign.id)}
                 className={cn(
-                  "p-6 rounded-3xl border text-left transition-all duration-300 flex flex-col group relative overflow-hidden shrink-0 w-56 md:w-auto snap-start",
-                  isActive 
-                    ? `shadow-xl bg-white border-brand-300 ring-4 ring-brand-500/10 scale-[1.03] -translate-y-1` 
+                  "shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap border transition-all duration-200",
+                  isActive
+                    ? `${campaign.bg} ${campaign.color} ${campaign.border} shadow-sm`
+                    : "bg-white border-zinc-200 text-zinc-600"
+                )}
+              >
+                <Icon size={14} />
+                {campaign.id}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Desktop cards */}
+        <div className="hidden md:grid md:grid-cols-4 gap-4">
+          {CAMPAIGNS.map(campaign => {
+            const Icon = campaign.icon;
+            const isActive = activeTab === campaign.id;
+            return (
+              <button
+                key={campaign.id}
+                onClick={() => setActiveTab(campaign.id)}
+                className={cn(
+                  "p-6 rounded-3xl border text-left transition-all duration-300 flex flex-col group relative overflow-hidden h-full",
+                  isActive
+                    ? `shadow-xl bg-white border-brand-300 ring-4 ring-brand-500/10 scale-[1.03] -translate-y-1`
                     : "bg-white border-zinc-200/80 hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-lg hover:-translate-y-1"
                 )}
               >
                 {isActive && (
                   <div className="absolute top-0 right-0 p-4 opacity-50 pointer-events-none transform translate-x-4 -translate-y-4">
-                     <Sparkles size={64} className="text-brand-200 animate-pulse" />
+                    <Sparkles size={64} className="text-brand-200 animate-pulse" />
                   </div>
                 )}
                 <div className={cn(
                   "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 relative z-10",
-                  isActive ? cn(campaign.bg, campaign.color, "border-brand-200 shadow-brand-100/50") : cn(campaign.bg, campaign.color, campaign.border)
+                  isActive ? cn(campaign.bg, campaign.color, "border-brand-200") : cn(campaign.bg, campaign.color, campaign.border)
                 )}>
                   <Icon size={22} />
                 </div>
