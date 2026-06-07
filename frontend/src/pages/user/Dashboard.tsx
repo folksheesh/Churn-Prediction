@@ -64,6 +64,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis" | "campaigns">(() => {
     return (localStorage.getItem("dashboard_active_tab") as any) || "dashboard";
   });
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   useEffect(() => {
     localStorage.setItem("dashboard_active_tab", activeTab);
@@ -529,38 +530,57 @@ export default function Home() {
             </Link>
           )}
 
-          {/* Mobile Menu Dropdown Wrapper */}
-          <div className="md:hidden relative group">
-            <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200">
+          {/* Mobile Menu Toggle - state-based (works on touch) */}
+          <div className="md:hidden relative">
+            <button
+              onClick={() => setMobileMenuOpen(prev => !prev)}
+              className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200"
+              aria-label="Toggle menu"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
-            {/* Simple CSS-based mobile menu */}
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 shadow-lg rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col p-2 gap-1 z-50">
-              <button onClick={() => setActiveTab("dashboard")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "dashboard" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Dashboard</button>
-              <button onClick={() => setActiveTab("customers")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "customers" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Customers</button>
-              <button onClick={() => setActiveTab("prediction")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "prediction" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Customer Insights</button>
-              <button onClick={() => setActiveTab("analysis")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "analysis" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Analysis</button>
-              <button onClick={() => setActiveTab("campaigns")} className={`text-left px-3 py-2 rounded-lg text-sm font-semibold ${activeTab === "campaigns" ? "bg-slate-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"}`}>Campaigns</button>
-              <div className="h-px bg-slate-200/60 my-1"></div>
-              {isAuthenticated ? (
-                <button 
-                  onClick={() => { 
-                    navigate('/'); 
-                    setTimeout(() => {
-                      logout();
-                    }, 0);
-                  }} 
-                  className="text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center justify-between"
-                >
-                  <span>Logout</span>
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
-              ) : (
-                <Link to="/login" className="text-left px-3 py-2 rounded-lg text-sm font-semibold text-brand-600 hover:bg-brand-50 flex items-center justify-between">
-                  <span>Admin Login</span>
-                </Link>
-              )}
-            </div>
+            {/* State-based mobile dropdown */}
+            {mobileMenuOpen && (
+              <>
+                {/* Click-away overlay */}
+                <div className="fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-slate-200 shadow-xl rounded-xl flex flex-col p-2 gap-1 z-50">
+                  {(["dashboard", "customers", "prediction", "analysis", "campaigns"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => { setActiveTab(tab); setMobileMenuOpen(false); }}
+                      className={`text-left px-3 py-2.5 rounded-lg text-sm font-semibold ${
+                        activeTab === tab ? "bg-brand-50 text-brand-600" : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {tab === "dashboard" && "Dashboard"}
+                      {tab === "customers" && "Customers"}
+                      {tab === "prediction" && "Customer Insights"}
+                      {tab === "analysis" && "Analysis"}
+                      {tab === "campaigns" && "Campaigns"}
+                    </button>
+                  ))}
+                  <div className="h-px bg-slate-200/60 my-1" />
+                  {isAuthenticated ? (
+                    <button
+                      onClick={() => { setMobileMenuOpen(false); navigate('/'); setTimeout(() => logout(), 0); }}
+                      className="text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center justify-between"
+                    >
+                      <span>Logout</span>
+                      <LogOut className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <Link
+                      to="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-brand-600 hover:bg-brand-50 flex items-center justify-between"
+                    >
+                      <span>Admin Login</span>
+                    </Link>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </nav>
