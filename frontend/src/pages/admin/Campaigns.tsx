@@ -63,7 +63,7 @@ export default function Campaigns({
       <div className={cn("w-full space-y-6 animate-fadeIn", hideHeader ? "pt-0 p-8" : "p-8")}>
         
         {/* Campaign Tabs */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="flex md:grid md:grid-cols-4 gap-4 overflow-x-auto pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory">
           {CAMPAIGNS.map(campaign => {
             const Icon = campaign.icon;
             const isActive = activeTab === campaign.id;
@@ -73,7 +73,7 @@ export default function Campaigns({
                 key={campaign.id}
                 onClick={() => setActiveTab(campaign.id)}
                 className={cn(
-                  "p-6 rounded-3xl border text-left transition-all duration-300 flex flex-col group relative overflow-hidden h-full",
+                  "p-6 rounded-3xl border text-left transition-all duration-300 flex flex-col group relative overflow-hidden shrink-0 w-56 md:w-auto snap-start",
                   isActive 
                     ? `shadow-xl bg-white border-brand-300 ring-4 ring-brand-500/10 scale-[1.03] -translate-y-1` 
                     : "bg-white border-zinc-200/80 hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-lg hover:-translate-y-1"
@@ -108,7 +108,7 @@ export default function Campaigns({
         </div>
 
         {/* Data Section */}
-        <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-200/80 flex-1 flex flex-col overflow-hidden min-h-[500px]">
+        <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-200/80 flex-1 flex flex-col overflow-hidden min-h-[400px] md:min-h-[500px]">
           <div className="px-8 py-6 border-b border-zinc-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-brand-50 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none opacity-50"></div>
             
@@ -141,7 +141,8 @@ export default function Campaigns({
                 <span className="text-sm font-medium">Loading campaign roster...</span>
               </div>
             ) : filteredCustomers.length > 0 ? (
-              <table className="w-full text-sm text-left">
+              <div className="overflow-x-auto w-full">
+              <table className="w-full text-sm text-left min-w-[600px]">
                 <thead className="text-[11px] text-zinc-500 bg-zinc-50/80 uppercase tracking-wider border-b border-zinc-100 sticky top-0 z-10">
                   <tr>
                     <th className="px-8 py-4 font-bold">Customer Name</th>
@@ -209,6 +210,7 @@ export default function Campaigns({
                   })}
                 </tbody>
               </table>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
                 <div className="w-16 h-16 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center mb-3">
