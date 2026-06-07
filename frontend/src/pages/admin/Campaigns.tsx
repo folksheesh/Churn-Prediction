@@ -62,9 +62,8 @@ export default function Campaigns({
 
       <div className={cn("w-full space-y-4 md:space-y-6 animate-fadeIn", hideHeader ? "pt-0 px-4 md:px-8 py-4 md:py-8" : "px-4 md:px-8 py-4 md:py-8")}>
         
-        {/* Campaign Tabs - pill style on mobile, card grid on desktop */}
-        {/* Mobile pills */}
-        <div className="flex md:hidden gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
+        {/* Mobile: swipeable snap carousel */}
+        <div className="flex md:hidden gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {CAMPAIGNS.map(campaign => {
             const Icon = campaign.icon;
             const isActive = activeTab === campaign.id;
@@ -73,14 +72,35 @@ export default function Campaigns({
                 key={campaign.id}
                 onClick={() => setActiveTab(campaign.id)}
                 className={cn(
-                  "shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap border transition-all duration-200",
+                  "shrink-0 w-[72vw] max-w-[240px] snap-center p-5 rounded-2xl border text-left transition-all duration-300 flex flex-col relative overflow-hidden",
                   isActive
-                    ? `${campaign.bg} ${campaign.color} ${campaign.border} shadow-sm`
-                    : "bg-white border-zinc-200 text-zinc-600"
+                    ? "bg-white border-brand-300 shadow-lg ring-2 ring-brand-500/20"
+                    : "bg-white border-zinc-200 shadow-sm opacity-60"
                 )}
               >
-                <Icon size={14} />
-                {campaign.id}
+                {isActive && (
+                  <div className="absolute top-0 right-0 p-3 opacity-25 pointer-events-none">
+                    <Sparkles size={52} className="text-brand-400 animate-pulse" />
+                  </div>
+                )}
+                <div className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border relative z-10",
+                  cn(campaign.bg, campaign.color, isActive ? "border-brand-200 shadow-sm" : campaign.border)
+                )}>
+                  <Icon size={18} />
+                </div>
+                <div className="mt-3 relative z-10">
+                  <h3 className={cn(
+                    "font-bold text-[13px] leading-snug",
+                    isActive ? "text-brand-900" : "text-zinc-600"
+                  )}>{campaign.id}</h3>
+                </div>
+                <div className="mt-3">
+                  <div className={cn(
+                    "h-1 rounded-full transition-all duration-500",
+                    isActive ? "bg-brand-500 w-10" : "bg-zinc-200 w-5"
+                  )} />
+                </div>
               </button>
             );
           })}
