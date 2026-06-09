@@ -712,7 +712,7 @@ export default function Home() {
                   const totalRisk = summary.riskStats.reduce((acc: number, s: any) => acc + s.value, 0);
                   return (
                   <div className="h-[240px] w-full flex items-center">
-                    <div className="w-1/2 h-full">
+                    <div className="w-1/2 h-full relative">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
@@ -738,6 +738,13 @@ export default function Home() {
                             }}
                             contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}
                           />
+                          {/* Center label inside the donut hole */}
+                          <text x="50%" y="46%" textAnchor="middle" dominantBaseline="central" className="fill-slate-900 font-outfit" style={{ fontSize: '20px', fontWeight: 800 }}>
+                            {totalRisk.toLocaleString()}
+                          </text>
+                          <text x="50%" y="58%" textAnchor="middle" dominantBaseline="central" className="fill-slate-400" style={{ fontSize: '10px', fontWeight: 600 }}>
+                            Total
+                          </text>
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
