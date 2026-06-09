@@ -35,6 +35,20 @@ def run_batch_prediction(df: pd.DataFrame) -> pd.DataFrame:
     return result_df
 
 def get_model_insights():
+    import json
+    import os
+    
+    # Check if we have a precomputed permutation importance file
+    # This aligns the dashboard perfectly with the more accurate Permutation/SHAP importance from the notebook
+    perm_file = os.path.join(os.path.dirname(__file__), "..", "..", "..", "models", "permutation_importance.json")
+    if os.path.exists(perm_file):
+        try:
+            with open(perm_file, "r") as f:
+                fi_list = json.load(f)
+            return {"feature_importance": fi_list}
+        except Exception as e:
+            print(f"Failed to load permutation importance: {e}")
+
     pipeline = get_pipeline()
     if not pipeline:
         return {"feature_importance": [], "shap_summary": []}
@@ -42,7 +56,7 @@ def get_model_insights():
     model = pipeline["model"]
     feature_names = pipeline["feature_names"]
     
-    # 1. Native XGBoost Feature Importance
+    # 1. Native XGBoost Feature Importance (Fallback)
     try:
         importances = model.feature_importances_
         # Sort them
@@ -52,11 +66,6 @@ def get_model_insights():
         print(f"Error getting feature importance: {e}")
         fi_list = []
 
-    # 2. SHAP Values (Global Summary based on a dummy set of zeroes or typical values, but ideally we want to explain a sample. 
-    # For a general dashboard, we can just return the feature importances as the 'SHAP summary' proxy, or generate dummy sample background to explain).
-    # Since we can't easily get the background dataset here without loading it, we will just pass feature importance as the primary metric, 
-    # but we can initialize an explainer to prove SHAP is wired up.
-    
     return {
         "feature_importance": fi_list
     }
