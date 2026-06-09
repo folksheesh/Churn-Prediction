@@ -711,7 +711,7 @@ export default function Home() {
                 {summary && summary.riskStats ? (() => {
                   const totalRisk = summary.riskStats.reduce((acc: number, s: any) => acc + s.value, 0);
                   return (
-                  <div className="h-[240px] w-full flex items-center justify-center gap-4">
+                  <div className="h-[240px] w-full flex items-center justify-center pl-10 gap-6">
                     <div className="h-full flex-shrink-0" style={{ width: '200px' }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -719,13 +719,13 @@ export default function Home() {
                             data={summary.riskStats}
                             cx="50%"
                             cy="50%"
-                            innerRadius={55}
-                            outerRadius={85}
+                            innerRadius={50}
+                            outerRadius={80}
                             paddingAngle={4}
                             dataKey="value"
                             label={({ cx, cy, midAngle, outerRadius, value }) => {
                               const RADIAN = Math.PI / 180;
-                              const radius = outerRadius + 18;
+                              const radius = outerRadius + 16;
                               const x = cx + radius * Math.cos(-midAngle * RADIAN);
                               const y = cy + radius * Math.sin(-midAngle * RADIAN);
                               const pct = totalRisk > 0 ? ((value / totalRisk) * 100).toFixed(1) : '0';
@@ -749,7 +749,7 @@ export default function Home() {
                             contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}
                           />
                           {/* Center label inside the donut hole */}
-                          <text x="50%" y="46%" textAnchor="middle" dominantBaseline="central" className="fill-slate-900 font-outfit" style={{ fontSize: '20px', fontWeight: 800 }}>
+                          <text x="50%" y="46%" textAnchor="middle" dominantBaseline="central" className="fill-slate-900 font-outfit" style={{ fontSize: '18px', fontWeight: 800 }}>
                             {totalRisk.toLocaleString()}
                           </text>
                           <text x="50%" y="58%" textAnchor="middle" dominantBaseline="central" className="fill-slate-400" style={{ fontSize: '10px', fontWeight: 600 }}>
