@@ -10,6 +10,13 @@ Jalankan dari root project:
 import os
 import sys
 
+# Reconfigure stdout/stderr to UTF-8 to prevent UnicodeEncodeError on Windows
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except AttributeError:
+    pass
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score

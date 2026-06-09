@@ -708,27 +708,56 @@ export default function Home() {
                   <h4 className="text-base font-extrabold text-slate-900 font-outfit">Risk Distribution</h4>
                   <p className="text-xs text-slate-400">Current portfolio risk breakdown.</p>
                 </div>
-                {summary && summary.riskStats ? (
-                  <div className="h-[240px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={summary.riskStats}
-                          innerRadius={65}
-                          outerRadius={90}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {summary.riskStats.map((entry: any, index: number) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }} />
-                        <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                      </PieChart>
-                    </ResponsiveContainer>
+                {summary && summary.riskStats ? (() => {
+                  const totalRisk = summary.riskStats.reduce((acc: number, s: any) => acc + s.value, 0);
+                  return (
+                  <div className="h-[240px] w-full flex items-center">
+                    <div className="w-1/2 h-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={summary.riskStats}
+                            innerRadius={55}
+                            outerRadius={85}
+                            paddingAngle={4}
+                            dataKey="value"
+                            label={({ name, value }) => {
+                              const pct = totalRisk > 0 ? ((value / totalRisk) * 100).toFixed(1) : '0';
+                              return `${pct}%`;
+                            }}
+                            labelLine={false}
+                          >
+                            {summary.riskStats.map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value: any) => {
+                              const pct = totalRisk > 0 ? ((value / totalRisk) * 100).toFixed(1) : '0';
+                              return [`${Number(value).toLocaleString()} (${pct}%)`, ''];
+                            }}
+                            contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="w-1/2 flex flex-col gap-3 pl-2">
+                      {summary.riskStats.map((entry: any, index: number) => {
+                        const pct = totalRisk > 0 ? ((entry.value / totalRisk) * 100).toFixed(1) : '0';
+                        return (
+                          <div key={index} className="flex items-center gap-3">
+                            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: entry.fill }} />
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-slate-700">{entry.name}</span>
+                              <span className="text-sm font-extrabold text-slate-900 font-outfit">{Number(entry.value).toLocaleString()} <span className="text-xs font-semibold text-slate-400">({pct}%)</span></span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                ) : (
+                  );
+                })() : (
                   <div className="h-[240px] flex items-center justify-center text-slate-400">Loading risk stats...</div>
                 )}
               </div>
