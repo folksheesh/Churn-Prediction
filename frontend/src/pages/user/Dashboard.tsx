@@ -711,19 +711,29 @@ export default function Home() {
                 {summary && summary.riskStats ? (() => {
                   const totalRisk = summary.riskStats.reduce((acc: number, s: any) => acc + s.value, 0);
                   return (
-                  <div className="h-[240px] w-full flex items-center">
-                    <div className="w-1/2 h-full relative">
+                  <div className="h-[240px] w-full flex items-center justify-center gap-4">
+                    <div className="h-full flex-shrink-0" style={{ width: '200px' }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={summary.riskStats}
+                            cx="50%"
+                            cy="50%"
                             innerRadius={55}
                             outerRadius={85}
                             paddingAngle={4}
                             dataKey="value"
-                            label={({ name, value }) => {
+                            label={({ cx, cy, midAngle, outerRadius, value }) => {
+                              const RADIAN = Math.PI / 180;
+                              const radius = outerRadius + 18;
+                              const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                              const y = cy + radius * Math.sin(-midAngle * RADIAN);
                               const pct = totalRisk > 0 ? ((value / totalRisk) * 100).toFixed(1) : '0';
-                              return `${pct}%`;
+                              return (
+                                <text x={x} y={y} textAnchor="middle" dominantBaseline="central" style={{ fontSize: '11px', fontWeight: 700, fill: '#475569' }}>
+                                  {pct}%
+                                </text>
+                              );
                             }}
                             labelLine={false}
                           >
@@ -748,7 +758,7 @@ export default function Home() {
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="w-1/2 flex flex-col gap-3 pl-2">
+                    <div className="flex flex-col gap-3">
                       {summary.riskStats.map((entry: any, index: number) => {
                         const pct = totalRisk > 0 ? ((entry.value / totalRisk) * 100).toFixed(1) : '0';
                         return (
