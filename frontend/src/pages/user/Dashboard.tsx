@@ -711,18 +711,48 @@ export default function Home() {
                 {summary && summary.riskStats ? (() => {
                   const totalRisk = summary.riskStats.reduce((acc: number, s: any) => acc + s.value, 0);
                   return (
-                  <div className="w-full flex flex-wrap items-center justify-center gap-8 py-1">
-                    <div className="flex-shrink-0" style={{ width: '210px', height: '210px' }}>
+                  <div className="w-full flex flex-wrap items-center justify-center gap-6 py-1">
+                    <div className="flex-shrink-0" style={{ width: '260px', height: '220px' }}>
                       <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
+                        <PieChart margin={{ top: 18, right: 22, bottom: 18, left: 22 }}>
                           <Pie
                             data={summary.riskStats}
                             cx="50%"
                             cy="50%"
-                            innerRadius={58}
-                            outerRadius={90}
+                            innerRadius={55}
+                            outerRadius={82}
                             paddingAngle={3}
                             dataKey="value"
+                            label={({ cx, cy, midAngle, outerRadius, value, fill }) => {
+                              const RADIAN = Math.PI / 180;
+                              const radius = outerRadius + 24;
+                              const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                              const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                              const pct = totalRisk > 0 ? ((value / totalRisk) * 100).toFixed(1) : '0';
+                              return (
+                                <g>
+                                  <rect
+                                    x={x - 18}
+                                    y={y - 9}
+                                    width={36}
+                                    height={18}
+                                    rx={9}
+                                    ry={9}
+                                    fill={fill}
+                                    fillOpacity={0.15}
+                                  />
+                                  <text
+                                    x={x}
+                                    y={y}
+                                    textAnchor="middle"
+                                    dominantBaseline="central"
+                                    style={{ fontSize: '10px', fontWeight: 700, fill: fill }}
+                                  >
+                                    {pct}%
+                                  </text>
+                                </g>
+                              );
+                            }}
                             labelLine={false}
                           >
                             {summary.riskStats.map((entry: any, index: number) => (
