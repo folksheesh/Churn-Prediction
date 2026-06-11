@@ -704,37 +704,25 @@ export default function Home() {
 
               {/* Top Right: Risk Distribution */}
               <div className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow rounded-xl p-6">
-                <div className="mb-6">
+                <div className="mb-4">
                   <h4 className="text-base font-extrabold text-slate-900 font-outfit">Risk Distribution</h4>
                   <p className="text-xs text-slate-400">Current portfolio risk breakdown.</p>
                 </div>
                 {summary && summary.riskStats ? (() => {
                   const totalRisk = summary.riskStats.reduce((acc: number, s: any) => acc + s.value, 0);
                   return (
-                  <div className="w-full flex flex-wrap items-center justify-center gap-6 py-2">
-                    <div className="flex-shrink-0" style={{ width: '200px', height: '200px' }}>
+                  <div className="w-full flex flex-wrap items-center justify-center gap-8 py-1">
+                    <div className="flex-shrink-0" style={{ width: '210px', height: '210px' }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={summary.riskStats}
                             cx="50%"
                             cy="50%"
-                            innerRadius={50}
-                            outerRadius={80}
-                            paddingAngle={4}
+                            innerRadius={58}
+                            outerRadius={90}
+                            paddingAngle={3}
                             dataKey="value"
-                            label={({ cx, cy, midAngle, outerRadius, value }) => {
-                              const RADIAN = Math.PI / 180;
-                              const radius = outerRadius + 16;
-                              const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                              const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                              const pct = totalRisk > 0 ? ((value / totalRisk) * 100).toFixed(1) : '0';
-                              return (
-                                <text x={x} y={y} textAnchor="middle" dominantBaseline="central" style={{ fontSize: '11px', fontWeight: 700, fill: '#475569' }}>
-                                  {pct}%
-                                </text>
-                              );
-                            }}
                             labelLine={false}
                           >
                             {summary.riskStats.map((entry: any, index: number) => (
@@ -742,17 +730,17 @@ export default function Home() {
                             ))}
                           </Pie>
                           <Tooltip
-                            formatter={(value: any) => {
+                            formatter={(value: any, _name: any, props: any) => {
                               const pct = totalRisk > 0 ? ((value / totalRisk) * 100).toFixed(1) : '0';
-                              return [`${Number(value).toLocaleString()} (${pct}%)`, ''];
+                              return [`${Number(value).toLocaleString()} customers (${pct}%)`, props.payload?.name ?? ''];
                             }}
-                            contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}
+                            contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
                           />
                           {/* Center label inside the donut hole */}
-                          <text x="50%" y="46%" textAnchor="middle" dominantBaseline="central" className="fill-slate-900 font-outfit" style={{ fontSize: '18px', fontWeight: 800 }}>
+                          <text x="50%" y="44%" textAnchor="middle" dominantBaseline="central" style={{ fontSize: '20px', fontWeight: 800, fill: '#0f172a', fontFamily: 'Outfit, sans-serif' }}>
                             {totalRisk.toLocaleString()}
                           </text>
-                          <text x="50%" y="58%" textAnchor="middle" dominantBaseline="central" className="fill-slate-400" style={{ fontSize: '10px', fontWeight: 600 }}>
+                          <text x="50%" y="57%" textAnchor="middle" dominantBaseline="central" style={{ fontSize: '10px', fontWeight: 600, fill: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                             Total
                           </text>
                         </PieChart>
@@ -762,12 +750,23 @@ export default function Home() {
                       {summary.riskStats.map((entry: any, index: number) => {
                         const pct = totalRisk > 0 ? ((entry.value / totalRisk) * 100).toFixed(1) : '0';
                         return (
-                          <div key={index} className="flex items-center gap-3 min-w-0">
-                            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: entry.fill }} />
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-xs font-bold text-slate-700 whitespace-nowrap">{entry.name}</span>
-                              <span className="text-sm font-extrabold text-slate-900 font-outfit whitespace-nowrap">{Number(entry.value).toLocaleString()} <span className="text-xs font-semibold text-slate-400">({pct}%)</span></span>
+                          <div key={index} className="flex flex-col gap-1.5 min-w-[160px]">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.fill }} />
+                                <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">{entry.name}</span>
+                              </div>
+                              <span className="text-xs font-bold tabular-nums whitespace-nowrap px-1.5 py-0.5 rounded-md" style={{ color: entry.fill, backgroundColor: entry.fill + '18' }}>{pct}%</span>
                             </div>
+                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full"
+                                style={{ width: `${pct}%`, backgroundColor: entry.fill, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }}
+                              />
+                            </div>
+                            <span className="text-sm font-extrabold text-slate-900 font-outfit whitespace-nowrap tabular-nums">
+                              {Number(entry.value).toLocaleString()} <span className="text-[10px] font-medium text-slate-400">customers</span>
+                            </span>
                           </div>
                         );
                       })}
