@@ -686,10 +686,9 @@ export default function Home() {
                 {nlpInsights ? (() => {
                   const sentimentData = [
                     { name: 'Positive', value: nlpInsights.positive, fill: '#10b981' },
-                    { name: 'Neutral', value: nlpInsights.neutral, fill: '#6366f1' },
                     { name: 'Negative', value: nlpInsights.negative, fill: '#f43f5e' },
                   ];
-                  const totalSentiment = nlpInsights.total || 1;
+                  const totalSentiment = (nlpInsights.positive + nlpInsights.negative) || 1;
                   return (
                   <div className="w-full flex flex-wrap items-center justify-center gap-6 py-1">
                     <div className="flex-shrink-0" style={{ width: '200px', height: '220px' }}>
