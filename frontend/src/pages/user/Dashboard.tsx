@@ -70,6 +70,7 @@ export default function Home() {
     localStorage.setItem("dashboard_active_tab", activeTab);
   }, [activeTab]);
   const [summary, setSummary] = useState<any>(null);
+  const [nlpInsights, setNlpInsights] = useState<any>(null);
   const [customerData, setCustomerData] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [regionFilter, setRegionFilter] = useState("All");
@@ -120,10 +121,11 @@ export default function Home() {
       });
       const data = res.data.items || [];
       
-      // Fetch true global analytics in parallel (2 requests instead of sequential)
-      const [overviewRes, riskRes] = await Promise.all([
+      // Fetch true global analytics in parallel (3 requests instead of sequential)
+      const [overviewRes, riskRes, nlpRes] = await Promise.all([
         api.get(`/analytics/overview`),
-        api.get(`/analytics/risk-distribution`)
+        api.get(`/analytics/risk-distribution`),
+        api.get(`/analytics/nlp-insights`)
       ]);
       
       // Filter logic for table
@@ -260,6 +262,8 @@ export default function Home() {
           { time: '09:30 AM', text: 'Daily pipeline refresh completed.' }
         ]
       });
+
+      setNlpInsights(nlpRes.data);
 
       // 2. Save to localStorage for stale-while-revalidate on next visit
       try {
@@ -673,32 +677,93 @@ export default function Home() {
             {/* 2x2 CHARTS GRID */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
-              {/* Top Left: Churn Forecast Line Chart */}
+              {/* Top Left: Customer Feedback Sentiment (NLP) */}
               <div className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow rounded-xl p-6">
-                <div className="mb-6">
-                  <h4 className="text-base font-extrabold text-slate-900 font-outfit">Customer Activity Trend</h4>
-                  <p className="text-xs text-slate-400">Projected 7-day engagement trend.</p>
+                <div className="mb-4">
+                  <h4 className="text-base font-extrabold text-slate-900 font-outfit">Customer Feedback Sentiment</h4>
+                  <p className="text-xs text-slate-400">NLP-powered analysis of customer feedback.</p>
                 </div>
-                {summary && summary.churnForecast ? (
-                  <div className="h-[240px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={summary.churnForecast}>
-                        <defs>
-                          <linearGradient id="colorChurn" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="day" tickLine={false} axisLine={false} style={{ fontSize: '11px', fill: '#94a3b8' }} />
-                        <YAxis tickLine={false} axisLine={false} style={{ fontSize: '11px', fill: '#94a3b8' }} unit="%" />
-                        <Tooltip contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px' }} />
-                        <Area type="monotone" dataKey="predictedChurn" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorChurn)" name="Churn Rate" />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                {nlpInsights ? (() => {
+                  const sentimentData = [
+                    { name: 'Positive', value: nlpInsights.positive, fill: '#10b981' },
+                    { name: 'Neutral', value: nlpInsights.neutral, fill: '#6366f1' },
+                    { name: 'Negative', value: nlpInsights.negative, fill: '#f43f5e' },
+                  ];
+                  const totalSentiment = nlpInsights.total || 1;
+                  return (
+                  <div className="w-full flex flex-wrap items-center justify-center gap-6 py-1">
+                    <div className="flex-shrink-0" style={{ width: '200px', height: '220px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                          <Pie
+                            data={sentimentData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={78}
+                            paddingAngle={3}
+                            dataKey="value"
+                            label={({ cx, cy, midAngle, outerRadius, value, fill }) => {
+                              const RADIAN = Math.PI / 180;
+                              const radius = outerRadius + 22;
+                              const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                              const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                              const pct = totalSentiment > 0 ? ((value / totalSentiment) * 100).toFixed(1) : '0';
+                              return (
+                                <g>
+                                  <rect x={x - 18} y={y - 9} width={36} height={18} rx={9} ry={9} fill={fill} fillOpacity={0.15} />
+                                  <text x={x} y={y} textAnchor="middle" dominantBaseline="central" style={{ fontSize: '10px', fontWeight: 700, fill: fill }}>{pct}%</text>
+                                </g>
+                              );
+                            }}
+                            labelLine={false}
+                          >
+                            {sentimentData.map((entry, index) => (
+                              <Cell key={`sent-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value: any, _name: any, props: any) => {
+                              const pct = totalSentiment > 0 ? ((Number(value) / totalSentiment) * 100).toFixed(1) : '0';
+                              return [`${Number(value).toLocaleString()} responses (${pct}%)`, props.payload?.name ?? ''];
+                            }}
+                            contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
+                          />
+                          <text x="50%" y="44%" textAnchor="middle" dominantBaseline="central" style={{ fontSize: '18px', fontWeight: 800, fill: '#0f172a', fontFamily: 'Outfit, sans-serif' }}>
+                            {totalSentiment.toLocaleString()}
+                          </text>
+                          <text x="50%" y="57%" textAnchor="middle" dominantBaseline="central" style={{ fontSize: '9px', fontWeight: 600, fill: '#94a3b8', letterSpacing: '0.05em' }}>
+                            Analyzed
+                          </text>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex flex-col gap-3 min-w-0">
+                      {sentimentData.map((entry, index) => {
+                        const pct = totalSentiment > 0 ? ((entry.value / totalSentiment) * 100).toFixed(1) : '0';
+                        return (
+                          <div key={index} className="flex flex-col gap-1.5 min-w-[160px]">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.fill }} />
+                                <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">{entry.name}</span>
+                              </div>
+                              <span className="text-xs font-bold tabular-nums whitespace-nowrap px-1.5 py-0.5 rounded-md" style={{ color: entry.fill, backgroundColor: entry.fill + '18' }}>{pct}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: entry.fill, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
+                            </div>
+                            <span className="text-sm font-extrabold text-slate-900 font-outfit whitespace-nowrap tabular-nums">
+                              {Number(entry.value).toLocaleString()} <span className="text-[10px] font-medium text-slate-400">responses</span>
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                ) : (
-                  <div className="h-[240px] flex items-center justify-center text-slate-400">Loading forecast...</div>
+                  );
+                })() : (
+                  <div className="h-[240px] flex items-center justify-center text-slate-400">Loading sentiment data...</div>
                 )}
               </div>
 
