@@ -28,8 +28,8 @@ export default function Customers() {
 
   const [formData, setFormData] = useState({
     id: '', name: '', email: '', phone_number: '', age: '', gender: 'Male', plan_tier: 'Starter', 
-    api_calls_90d: 0, logins_90d: 0, days_since_active: 0,
-    points_in_wallet: 0, avg_transaction_value: 0, avg_session_duration: 0
+    api_calls_90d: '', logins_90d: '', days_since_active: '',
+    points_in_wallet: '', avg_transaction_value: '', avg_session_duration: ''
   });
   const [addCustomerStatus, setAddCustomerStatus] = useState<{type: 'error'|'success', msg: string}|null>(null);
 
@@ -108,6 +108,12 @@ export default function Customers() {
       await api.post('/customers/', {
         ...formData,
         age: parseInt(formData.age as string) || 30,
+        api_calls_90d: parseInt(formData.api_calls_90d as string) || 0,
+        logins_90d: parseInt(formData.logins_90d as string) || 0,
+        days_since_active: parseInt(formData.days_since_active as string) || 0,
+        points_in_wallet: parseFloat(formData.points_in_wallet as string) || 0,
+        avg_transaction_value: parseFloat(formData.avg_transaction_value as string) || 0,
+        avg_session_duration: parseFloat(formData.avg_session_duration as string) || 0,
         id: formData.id || `CUST-${Math.floor(Math.random()*10000)}`
       });
       setAddCustomerStatus({type: 'success', msg: 'Customer successfully added!'});
@@ -854,27 +860,27 @@ export default function Customers() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-zinc-700">Days Since Active</label>
-                    <input type="number" required placeholder="0" value={formData.days_since_active} onChange={e => setFormData({...formData, days_since_active: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                    <input type="number" min="0" required placeholder="0" value={formData.days_since_active} onChange={e => setFormData({...formData, days_since_active: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-zinc-700">Logins (90 Days)</label>
-                    <input type="number" required placeholder="0" value={formData.logins_90d} onChange={e => setFormData({...formData, logins_90d: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                    <input type="number" min="0" required placeholder="0" value={formData.logins_90d} onChange={e => setFormData({...formData, logins_90d: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-zinc-700">API Calls (90 Days)</label>
-                    <input type="number" required placeholder="0" value={formData.api_calls_90d} onChange={e => setFormData({...formData, api_calls_90d: parseInt(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                    <input type="number" min="0" required placeholder="0" value={formData.api_calls_90d} onChange={e => setFormData({...formData, api_calls_90d: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-zinc-700">Points in Wallet</label>
-                    <input type="number" required placeholder="0" value={formData.points_in_wallet} onChange={e => setFormData({...formData, points_in_wallet: parseFloat(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                    <input type="number" min="0" step="any" required placeholder="0" value={formData.points_in_wallet} onChange={e => setFormData({...formData, points_in_wallet: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-zinc-700">Avg Transaction Value</label>
-                    <input type="number" required placeholder="0" value={formData.avg_transaction_value} onChange={e => setFormData({...formData, avg_transaction_value: parseFloat(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                    <input type="number" min="0" step="any" required placeholder="0" value={formData.avg_transaction_value} onChange={e => setFormData({...formData, avg_transaction_value: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-zinc-700">Avg Session (Mins)</label>
-                    <input type="number" required placeholder="0" value={formData.avg_session_duration} onChange={e => setFormData({...formData, avg_session_duration: parseFloat(e.target.value) || 0})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                    <input type="number" min="0" step="any" required placeholder="0" value={formData.avg_session_duration} onChange={e => setFormData({...formData, avg_session_duration: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
                   </div>
                 </div>
               </div>

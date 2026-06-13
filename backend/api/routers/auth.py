@@ -138,6 +138,8 @@ def _admin_to_response(admin: AdminUser) -> dict:
         "name": admin.name,
         "role": admin.role or ROLE_ADMIN,
         "status": admin.status or "Active",
+        "phone": admin.phone,
+        "department": admin.department,
         "last_login": admin.last_login.isoformat() + "Z" if admin.last_login else None,
         "created_at": admin.created_at.isoformat() + "Z" if admin.created_at else None,
     }
