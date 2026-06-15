@@ -16,14 +16,16 @@ from fastapi_cache.backends.inmemory import InMemoryBackend
 # Create database tables (including new ones: mitigation_logs, upload_attempts)
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="ChurnSense API", version="1.0.0")
+app = FastAPI(title="ChurnSense API", version="1.1.0")
 
 @app.on_event("startup")
 async def startup():
     FastAPICache.init(InMemoryBackend())
+    print("[ChurnSense v1.1.0] Server starting up...")
     
     # Ensure new columns exist on existing tables (SQLite migration)
     _migrate_database()
+    print("[ChurnSense] Database migration complete.")
     
     # Auto-seed the default admin user if the database is empty (e.g. fresh Postgres)
     _ensure_default_admin()
