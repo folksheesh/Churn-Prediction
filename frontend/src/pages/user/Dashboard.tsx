@@ -886,92 +886,119 @@ export default function Home() {
               </div>
             </div>
 
-            {/* CUSTOMERS NEEDING ATTENTION (MITIGATION) */}
+            {/* CUSTOMER RISK RADAR */}
             <div className="mt-8">
-              <h4 className="text-lg font-black text-slate-900 font-outfit mb-6 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-rose-500" /> Mitigation Action Center
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <AnimatePresence mode="popLayout">
-                  {summary?.highRiskCustomers?.length > 0 ? summary.highRiskCustomers.map((c: any) => {
-                    const isHigh = c.churnProbability >= 75;
-                    
-                    const btnState = sendingOffer === c.customerId ? "loading" : sendingOffer === c.customerId + "_success" ? "success" : "idle";
-                    
-                    return (
-                      <motion.div 
-                        layout
-                        initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, x: -30, filter: "blur(4px)" }}
-                        transition={{ duration: 0.4, type: "spring", bounce: 0.2 }}
-                        key={c.customerId} 
-                        className="relative group bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300"
-                      >
-                      {/* Premium Card Header */}
-                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-amber-500" />
-                      <div className="p-5">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="relative">
-                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-100 to-rose-50 flex items-center justify-center font-black text-rose-700 shadow-inner">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h4 className="text-lg font-black text-slate-900 font-outfit flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-rose-100 flex items-center justify-center">
+                      <AlertCircle className="w-4 h-4 text-rose-600" />
+                    </span>
+                    Customer Risk Radar
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-1 ml-9">Top high-risk customers requiring immediate action</p>
+                </div>
+                {summary?.highRiskCustomers?.length > 0 && (
+                  <span className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-1 rounded-full">
+                    {summary.highRiskCustomers.length} at risk
+                  </span>
+                )}
+              </div>
+
+              {summary?.highRiskCustomers?.length > 0 ? (
+                <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+                  {/* Table Header */}
+                  <div className="grid grid-cols-[2rem_1fr_6rem_8rem_7rem] gap-4 px-5 py-3 bg-slate-50/80 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <div>#</div>
+                    <div>Customer</div>
+                    <div>Plan</div>
+                    <div>Churn Risk</div>
+                    <div className="text-right">Action</div>
+                  </div>
+
+                  {/* Table Rows */}
+                  <AnimatePresence mode="popLayout">
+                    {summary.highRiskCustomers.map((c: any, idx: number) => {
+                      const btnState = sendingOffer === c.customerId ? "loading" : sendingOffer === c.customerId + "_success" ? "success" : "idle";
+                      const isMitigated = c.mitigation_status === "Mitigated" || c.retention_campaign || btnState === "success";
+                      const prob = c.churnProbability ?? 0;
+
+                      return (
+                        <motion.div
+                          key={c.customerId}
+                          layout
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20, filter: "blur(4px)" }}
+                          transition={{ duration: 0.3, delay: idx * 0.04 }}
+                          className="grid grid-cols-[2rem_1fr_6rem_8rem_7rem] gap-4 px-5 py-4 border-b border-slate-100/80 last:border-0 hover:bg-slate-50/60 transition-colors items-center group"
+                        >
+                          {/* Rank */}
+                          <div className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-black ${idx === 0 ? 'bg-rose-100 text-rose-700' : idx === 1 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500'}`}>
+                            {idx + 1}
+                          </div>
+
+                          {/* Customer */}
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="relative shrink-0">
+                              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-100 to-rose-50 flex items-center justify-center font-black text-rose-700 text-xs">
                                 {c.initials}
                               </div>
-                              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-rose-500 border-2 border-white animate-pulse" />
+                              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white animate-pulse" />
                             </div>
                             <div className="min-w-0">
-                              <h5 className="font-bold text-slate-900 text-base truncate group-hover:text-brand-600 transition-colors">{c.name}</h5>
-                              <p className="text-[11px] font-bold text-slate-500">{c.planTier} Plan • ${c.monthlyValue}/mo</p>
+                              <div className="text-sm font-bold text-slate-900 truncate group-hover:text-brand-600 transition-colors">{c.name}</div>
+                              <div className="text-[10px] text-slate-400 font-medium">${c.monthlyValue?.toLocaleString()}/mo</div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-rose-600 font-black text-lg">{c.churnProbability}%</div>
-                            <div className="text-[10px] uppercase font-bold tracking-wider text-rose-400">Risk</div>
+
+                          {/* Plan */}
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-slate-100 text-slate-600">
+                              {c.planTier}
+                            </span>
                           </div>
-                        </div>
-                        
-                        <div className="bg-slate-50 rounded-xl p-3 mb-5 border border-slate-100">
-                          <p className="text-xs text-slate-600 font-medium leading-relaxed line-clamp-2 italic">
-                            <span className="font-bold text-slate-800 not-italic">AI Note:</span> "{c.recommendations?.[0] || 'Engagement has steadily decreased over the last 30 days.'}"
-                          </p>
-                        </div>
-                        
-                        {/* Interactive Action Buttons */}
-                        <div className="space-y-2">
-                          {(c.mitigation_status === "Mitigated" || c.retention_campaign || btnState === "success") ? (
-                            <div className="w-full py-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex flex-col items-center justify-center gap-1">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 size={16} /> <span className="uppercase tracking-wider">Mitigated</span>
-                              </div>
-                              <span className="text-[10px] font-medium text-emerald-600/80 mt-1">
-                                Active Campaign: {c.retention_campaign || (selectedCampaigns[c.customerId] || "Discount Campaign")}
+
+                          {/* Risk Bar */}
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-black text-rose-600">{prob}%</span>
+                            </div>
+                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden w-full">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-500 transition-all duration-700"
+                                style={{ width: `${prob}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Action */}
+                          <div className="flex justify-end">
+                            {isMitigated ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-lg">
+                                <CheckCircle2 size={11} /> Done
                               </span>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setRetentionModalCustomer(c)}
-                              className="w-full py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white border border-rose-100 rounded-xl text-xs font-bold text-center transition-colors"
-                            >
-                              Mitigate Risk
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                    );
-                  }) : (
-                    <motion.div 
-                      initial={{ opacity: 0 }} 
-                      animate={{ opacity: 1 }}
-                      className="col-span-3 py-16 flex flex-col items-center justify-center bg-white border border-slate-100 rounded-2xl border-dashed"
-                    >
-                      <CheckCircle className="w-10 h-10 text-emerald-400 mb-3" />
-                      <h3 className="text-sm font-bold text-slate-900">All Clear!</h3>
-                      <p className="text-xs text-slate-500 mt-1">No high-risk customers requiring immediate mitigation.</p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                            ) : (
+                              <button
+                                onClick={() => setRetentionModalCustomer(c)}
+                                className="text-[11px] font-bold px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-all active:scale-95 shadow-sm shadow-rose-200 hover:shadow-md"
+                              >
+                                Mitigate
+                              </button>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <div className="py-16 flex flex-col items-center justify-center bg-white border border-slate-100 rounded-2xl border-dashed">
+                  <CheckCircle className="w-10 h-10 text-emerald-400 mb-3" />
+                  <h3 className="text-sm font-bold text-slate-900">All Clear!</h3>
+                  <p className="text-xs text-slate-500 mt-1">No high-risk customers requiring immediate mitigation.</p>
+                </div>
+              )}
             </div>
           </div>
         )}
