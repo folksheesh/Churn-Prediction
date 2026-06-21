@@ -171,7 +171,7 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
-                    {alerts.map((row, i) => (
+                    {alerts.slice(0, 7).map((row, i) => (
                       <tr key={i} className="hover:bg-zinc-50 transition-colors group">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3.5">
