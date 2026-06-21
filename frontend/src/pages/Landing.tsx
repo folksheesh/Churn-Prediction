@@ -4,6 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Activity, ShieldAlert, BarChart3, Users, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import presentationImg from '@/assets/presentation.png';
+import feature1Img from '@/assets/feature-1.png';
+import feature2Img from '@/assets/feature-2.png';
+import feature3Img from '@/assets/feature-3.png';
+import feature4Img from '@/assets/feature-4.png';
 
 export default function Landing() {
   const { isAuthenticated } = useAuth();
@@ -146,55 +150,73 @@ export default function Landing() {
             <p className="text-slate-500 text-lg max-w-2xl mx-auto">From live dashboards to automated mitigation pipelines, ChurnSense gives you the tools to act fast.</p>
           </motion.div>
 
-          <motion.div 
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-50px" }}
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 px-6 md:px-12 max-w-[1400px] mx-auto"
-          >
+          <div className="flex flex-col gap-28 px-6 md:px-12 max-w-[1400px] mx-auto mt-12">
             
-            <motion.div variants={staggerItem} className="bg-[#f8fafc] p-8 rounded-[24px] border border-slate-100 hover:border-slate-200 transition-all duration-200 group">
-              <div className="w-12 h-12 bg-white text-brand-600 rounded-xl flex items-center justify-center mb-6 shadow-sm border border-slate-100 group-hover:scale-105 transition-transform">
-                <Activity size={24} />
+            {/* Feature 1: Image Left, Text Right */}
+            <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
+              <div className="order-2 md:order-1 flex justify-center">
+                <img src={feature1Img} alt="Live Risk Dashboard" className="w-full max-w-[500px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-3">Live Risk Dashboard</h3>
-              <p className="text-slate-500 leading-relaxed text-sm">
-                Monitor your entire customer base in real-time. Spot trends and overall health scores instantly with clear visual analytics.
-              </p>
+              <div className="order-1 md:order-2 space-y-6">
+                <div className="w-14 h-14 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center shadow-sm border border-brand-100">
+                  <Activity size={28} />
+                </div>
+                <h3 className="text-3xl font-black text-slate-900 font-outfit tracking-tight">Live Risk Dashboard</h3>
+                <p className="text-slate-500 leading-relaxed text-lg">
+                  Monitor your entire customer base in real-time. Spot trends and overall health scores instantly with clear visual analytics to proactively keep your customers happy.
+                </p>
+              </div>
             </motion.div>
 
-            <motion.div variants={staggerItem} className="bg-[#f8fafc] p-8 rounded-[24px] border border-slate-100 hover:border-slate-200 transition-all duration-200 group">
-              <div className="w-12 h-12 bg-white text-rose-500 rounded-xl flex items-center justify-center mb-6 shadow-sm border border-slate-100 group-hover:scale-105 transition-transform">
-                <ShieldAlert size={24} />
+            {/* Feature 2: Text Left, Image Right */}
+            <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
+              <div className="space-y-6 md:pr-8">
+                <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center shadow-sm border border-rose-100">
+                  <ShieldAlert size={28} />
+                </div>
+                <h3 className="text-3xl font-black text-slate-900 font-outfit tracking-tight">Early Warning System</h3>
+                <p className="text-slate-500 leading-relaxed text-lg">
+                  Get alerted the moment behavior changes, allowing you to intervene with automated mitigation campaigns before it's too late. Stop churn before it happens.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-3">Early Warning System</h3>
-              <p className="text-slate-500 leading-relaxed text-sm">
-                Get alerted the moment behavior changes, allowing you to intervene with automated mitigation campaigns before it's too late.
-              </p>
+              <div className="flex justify-center">
+                <img src={feature2Img} alt="Early Warning System" className="w-full max-w-[500px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
+              </div>
             </motion.div>
 
-            <motion.div variants={staggerItem} className="bg-[#f8fafc] p-8 rounded-[24px] border border-slate-100 hover:border-slate-200 transition-all duration-200 group">
-              <div className="w-12 h-12 bg-white text-purple-600 rounded-xl flex items-center justify-center mb-6 shadow-sm border border-slate-100 group-hover:scale-105 transition-transform">
-                <BarChart3 size={24} />
+            {/* Feature 3: Image Left, Text Right */}
+            <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
+              <div className="order-2 md:order-1 flex justify-center">
+                <img src={feature3Img} alt="Deep Analytics" className="w-full max-w-[500px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-3">Deep Analytics</h3>
-              <p className="text-slate-500 leading-relaxed text-sm">
-                Understand the 'why' behind churn. Analyze geographical, behavioral, and engagement factors to optimize product flow.
-              </p>
+              <div className="order-1 md:order-2 space-y-6">
+                <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shadow-sm border border-purple-100">
+                  <BarChart3 size={28} />
+                </div>
+                <h3 className="text-3xl font-black text-slate-900 font-outfit tracking-tight">Deep Analytics</h3>
+                <p className="text-slate-500 leading-relaxed text-lg">
+                  Understand the 'why' behind churn. Analyze geographical, behavioral, and engagement factors to optimize product flow and pinpoint the root cause.
+                </p>
+              </div>
             </motion.div>
 
-            <motion.div variants={staggerItem} className="bg-[#f8fafc] p-8 rounded-[24px] border border-slate-100 hover:border-slate-200 transition-all duration-200 group">
-              <div className="w-12 h-12 bg-white text-emerald-600 rounded-xl flex items-center justify-center mb-6 shadow-sm border border-slate-100 group-hover:scale-105 transition-transform">
-                <Users size={24} />
+            {/* Feature 4: Text Left, Image Right */}
+            <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
+              <div className="space-y-6 md:pr-8">
+                <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-sm border border-emerald-100">
+                  <Users size={28} />
+                </div>
+                <h3 className="text-3xl font-black text-slate-900 font-outfit tracking-tight">Smart Segmentation</h3>
+                <p className="text-slate-500 leading-relaxed text-lg">
+                  Automatically group users by risk level and MRR to prioritize your retention efforts effectively and maximize revenue saved dynamically.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-3">Smart Segmentation</h3>
-              <p className="text-slate-500 leading-relaxed text-sm">
-                Automatically group users by risk level and MRR to prioritize your retention efforts effectively and maximize revenue saved.
-              </p>
+              <div className="flex justify-center">
+                <img src={feature4Img} alt="Smart Segmentation" className="w-full max-w-[500px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
+              </div>
             </motion.div>
             
-          </motion.div>
+          </div>
         </section>
 
         {/* How It Works Section */}
