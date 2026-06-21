@@ -57,7 +57,7 @@ export default function Landing() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="flex justify-between items-center px-6 py-5 md:px-12 max-w-[1400px] mx-auto w-full bg-white/70 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200/50"
+        className="absolute top-0 left-0 right-0 flex justify-between items-center px-6 py-6 md:px-12 max-w-[1400px] mx-auto w-full z-50"
       >
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-brand-600 rounded-lg flex items-center justify-center shadow-sm">
@@ -65,9 +65,12 @@ export default function Landing() {
           </div>
           <span className="text-xl font-bold tracking-tight text-slate-900 font-outfit">ChurnSense</span>
         </div>
-        <div className="flex items-center gap-5">
-          <Link to="/login" className="flex items-center gap-2 px-5 py-2 bg-brand-600 hover:bg-brand-700 rounded-lg text-sm font-semibold text-white transition-all shadow-sm">
-            Admin Login
+        <div className="flex items-center gap-3">
+          <Link to="/login" className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
+            Sign In
+          </Link>
+          <Link to="/signup" className="px-5 py-2 bg-brand-600 hover:bg-brand-700 rounded-lg text-sm font-semibold text-white transition-all shadow-sm">
+            Sign Up
           </Link>
         </div>
       </motion.header>
@@ -75,7 +78,7 @@ export default function Landing() {
       <main className="flex-1 w-full relative z-10">
         
         {/* Hero Section */}
-        <section className="pt-12 pb-16 px-6 md:px-12 max-w-[1400px] mx-auto relative">
+        <section className="pt-32 pb-16 px-6 md:px-12 max-w-[1400px] mx-auto relative">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Left Content (Text) */}
