@@ -66,11 +66,8 @@ export default function Landing() {
           <span className="text-xl font-bold tracking-tight text-slate-900 font-outfit">ChurnSense</span>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/login" className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
+          <Link to="/login" className="px-5 py-2 bg-brand-600 hover:bg-brand-700 rounded-lg text-sm font-semibold text-white transition-all shadow-sm">
             Sign In
-          </Link>
-          <Link to="/signup" className="px-5 py-2 bg-brand-600 hover:bg-brand-700 rounded-lg text-sm font-semibold text-white transition-all shadow-sm">
-            Sign Up
           </Link>
         </div>
       </motion.header>

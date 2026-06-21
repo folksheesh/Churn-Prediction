@@ -1524,9 +1524,7 @@ export default function Home() {
 
         {/* VIEW G: PROFILE TAB */}
         {activeTab === "profile" && (
-          <div className="bg-white border border-slate-100 shadow-sm rounded-xl overflow-hidden min-h-[600px] flex flex-col">
-            <Profile />
-          </div>
+          <Profile />
         )}
 
         {/* CUSTOMER DETAILS MODAL */}

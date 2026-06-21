@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from backend.core.database import get_db
 from backend.core.models import (
     MitigationLog, ActivityLog, Customer, User,
-    ROLE_CS_MANAGER, ROLE_CS_AGENT
+    ROLE_COMPANY_ADMIN
 )
 from backend.api.routers.auth import get_current_user, get_optional_admin
 from backend.api.services.email_service import send_campaign_email
@@ -271,8 +271,8 @@ def get_cs_agents(
 ):
     """Return list of admins who can be assigned as CS agents."""
     agents = db.query(User).filter(
-        User.status == "Active",
-        User.role.in_([ROLE_CS_AGENT, ROLE_CS_MANAGER])
+        User.status == "active",
+        User.role.in_([ROLE_COMPANY_ADMIN])
     ).all()
 
     return [

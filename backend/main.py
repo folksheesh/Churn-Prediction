@@ -13,15 +13,15 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 
-# Create database tables (including new ones: mitigation_logs, upload_attempts)
+# Create database tables (including new ones: invitations)
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="ChurnSense API", version="1.1.0")
+app = FastAPI(title="ChurnSense API", version="2.0.0")
 
 @app.on_event("startup")
 async def startup():
     FastAPICache.init(InMemoryBackend())
-    print("[ChurnSense v1.1.0] Server starting up...")
+    print("[ChurnSense v2.0.0] Server starting up...")
     
     # Ensure new columns exist on existing tables (SQLite migration)
     _migrate_database()
@@ -81,7 +81,7 @@ def _migrate_database():
     if "role" not in user_columns:
         cursor.execute("ALTER TABLE users ADD COLUMN role VARCHAR DEFAULT 'user'")
     if "status" not in user_columns:
-        cursor.execute("ALTER TABLE users ADD COLUMN status VARCHAR DEFAULT 'Active'")
+        cursor.execute("ALTER TABLE users ADD COLUMN status VARCHAR DEFAULT 'active'")
     if "last_login" not in user_columns:
         cursor.execute("ALTER TABLE users ADD COLUMN last_login DATETIME")
     if "phone" not in user_columns:
@@ -90,6 +90,23 @@ def _migrate_database():
         cursor.execute("ALTER TABLE users ADD COLUMN department VARCHAR")
     if "updated_at" not in user_columns:
         cursor.execute("ALTER TABLE users ADD COLUMN updated_at DATETIME")
+    
+    # ── Migrate old roles to new 3-role system ───────────────────────────
+    role_migration = {
+        "Super Admin": "super_admin",
+        "Admin": "company_admin",
+        "CS Manager": "company_admin",
+        "CS Agent": "company_admin",
+    }
+    for old_role, new_role in role_migration.items():
+        cursor.execute(
+            "UPDATE users SET role = ? WHERE role = ?",
+            (new_role, old_role)
+        )
+    
+    # Migrate status values to lowercase
+    cursor.execute("UPDATE users SET status = 'active' WHERE status = 'Active'")
+    cursor.execute("UPDATE users SET status = 'inactive' WHERE status IN ('Inactive', 'Suspended')")
     
     # Get existing columns for activity_logs
     cursor.execute("PRAGMA table_info(activity_logs)")
@@ -119,8 +136,8 @@ def _migrate_database():
     if "phone_number" not in cust_columns:
         cursor.execute("ALTER TABLE customers ADD COLUMN phone_number VARCHAR")
     
-    # Set default role for existing admin (Super Admin for the seed account)
-    cursor.execute("UPDATE users SET role = 'Super Admin' WHERE email = 'admin@churnsense.com' AND (role IS NULL OR role = 'Admin')")
+    # Ensure default admin has super_admin role
+    cursor.execute("UPDATE users SET role = 'super_admin' WHERE email = 'admin@churnsense.com' AND role NOT IN ('super_admin')")
     
     conn.commit()
     conn.close()
@@ -139,8 +156,8 @@ def _ensure_default_admin():
                 email="admin@churnsense.com",
                 name="Super Admin",
                 hashed_password=get_password_hash("Admin#123"),
-                role="Super Admin",
-                status="Active"
+                role="super_admin",
+                status="active"
             )
             db.add(default_admin)
             db.commit()

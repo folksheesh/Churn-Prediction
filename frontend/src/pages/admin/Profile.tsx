@@ -58,10 +58,6 @@ export default function Profile() {
 
   return (
     <>
-      <header className="h-16 hidden md:flex items-center px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
-        <h1 className="text-lg font-semibold tracking-tight text-zinc-900">My Profile</h1>
-      </header>
-      
       <div className="p-4 sm:p-8 w-full max-w-4xl mx-auto flex flex-col gap-6">
         
         {/* Profile Header */}

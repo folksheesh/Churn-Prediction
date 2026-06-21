@@ -26,7 +26,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired or invalid — clean up and redirect
       const currentPath = window.location.pathname;
-      if (currentPath !== '/login' && currentPath !== '/' && currentPath !== '/user-dashboard') {
+      if (currentPath !== '/login' && currentPath !== '/' && currentPath !== '/user-dashboard' && currentPath !== '/activate-account') {
         localStorage.removeItem('churn_token');
         localStorage.removeItem('churn_user');
         window.location.href = '/login';

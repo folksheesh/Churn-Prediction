@@ -4,9 +4,14 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import Optional
 import re
+import secrets
+import uuid
 
 from backend.core.database import get_db
-from backend.core.models import User, ActivityLog, ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_CS_MANAGER, ROLE_CS_AGENT, ALL_ROLES
+from backend.core.models import (
+    User, Invitation, ActivityLog,
+    ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN, ROLE_USER, ALL_ROLES
+)
 from backend.core.security import (
     verify_password,
     get_password_hash,
@@ -24,18 +29,20 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
-class UserSignUp(BaseModel):
+class InviteRequest(BaseModel):
     email: EmailStr
+
+class ActivateAccountRequest(BaseModel):
+    token: str
     name: str
     password: str
+    confirm_password: str
 
 class AdminCreate(BaseModel):
     email: EmailStr
     name: str
     password: str
-    role: str = ROLE_ADMIN
-    phone: Optional[str] = None
-    department: Optional[str] = None
+    role: str = ROLE_COMPANY_ADMIN
 
 class AdminUpdate(BaseModel):
     email: Optional[EmailStr] = None
@@ -44,6 +51,9 @@ class AdminUpdate(BaseModel):
     role: Optional[str] = None
     phone: Optional[str] = None
     department: Optional[str] = None
+
+class UserStatusUpdate(BaseModel):
+    status: str  # active, inactive
 
 class ChangePassword(BaseModel):
     current_password: str
@@ -114,6 +124,10 @@ def require_role(*allowed_roles):
         return current_user
     return checker
 
+def require_admin():
+    """Only super_admin and company_admin can access."""
+    return require_role(ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN)
+
 # ── Password Validation ──────────────────────────────────────────────────────
 
 def validate_password_strength(password: str):
@@ -127,7 +141,6 @@ def validate_password_strength(password: str):
     if not re.search(r"\d", password):
         raise HTTPException(status_code=400, detail="Password must contain at least one number")
     # Accept any non-alphanumeric, non-whitespace character as a special character.
-    # This supports: / \ - _ + . ( ) @ $ ! % * ? & # ^ = [ ] { } ; : ' " | , < > ~ `
     if not re.search(r"[^A-Za-z0-9\s]", password):
         raise HTTPException(
             status_code=400, 
@@ -141,15 +154,15 @@ def _admin_to_response(admin: User) -> dict:
         "id": admin.id,
         "email": admin.email,
         "name": admin.name,
-        "role": admin.role or ROLE_ADMIN,
-        "status": admin.status or "Active",
+        "role": admin.role or ROLE_USER,
+        "status": admin.status or "active",
         "phone": admin.phone,
         "department": admin.department,
         "last_login": admin.last_login.isoformat() + "Z" if admin.last_login else None,
         "created_at": admin.created_at.isoformat() + "Z" if admin.created_at else None,
     }
 
-# ── Endpoints ────────────────────────────────────────────────────────────────
+# ── Login ────────────────────────────────────────────────────────────────────
 
 @router.post("/login", response_model=Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -162,7 +175,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
         )
     
     # Check if account is active
-    if admin.status and admin.status != "Active":
+    if admin.status and admin.status not in ("active", "Active"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Account is {admin.status}. Please contact an administrator."
@@ -173,7 +186,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     
     # Log activity
     log = ActivityLog(
-        action="Admin Login",
+        action="Login",
         user=admin.email,
         details=f"{admin.name} logged in",
         result="success"
@@ -184,7 +197,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": admin.email, "role": admin.role or ROLE_ADMIN}, 
+        data={"sub": admin.email, "role": admin.role or ROLE_USER}, 
         expires_delta=access_token_expires
     )
     return {
@@ -193,22 +206,332 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
         "user": _admin_to_response(admin)
     }
 
+# ── Invitation System ────────────────────────────────────────────────────────
+
+def _generate_invitation_token():
+    """Generate a secure, unique invitation token."""
+    return f"{uuid.uuid4().hex}{secrets.token_hex(16)}"
+
+@router.post("/invite")
+def invite_user(
+    data: InviteRequest,
+    current_user: User = Depends(require_admin()),
+    db: Session = Depends(get_db)
+):
+    """Admin invites a new user via email."""
+    # Check if user already exists
+    existing = db.query(User).filter(User.email == data.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="A user with this email already exists.")
+    
+    # Invalidate any existing pending invitations for this email
+    db.query(Invitation).filter(
+        Invitation.email == data.email,
+        Invitation.status == "pending"
+    ).update({"status": "expired"})
+    
+    # Create new invitation
+    token = _generate_invitation_token()
+    invitation = Invitation(
+        email=data.email,
+        invitation_token=token,
+        invited_by=current_user.email,
+        status="pending",
+        expired_at=datetime.utcnow() + timedelta(hours=24)
+    )
+    db.add(invitation)
+    
+    # Send invitation email
+    email_sent = False
+    smtp_error = None
+    try:
+        _send_invitation_email(data.email, token, current_user.name)
+        email_sent = True
+    except RuntimeError as e:
+        smtp_error = str(e)
+    except Exception as e:
+        smtp_error = f"{type(e).__name__}: {e}"
+    
+    # Log activity
+    log = ActivityLog(
+        action="User Invited",
+        user=current_user.email,
+        details=f"Invited {data.email}" + (f" (email failed: {smtp_error})" if not email_sent else ""),
+        result="success" if email_sent else "email_failed"
+    )
+    db.add(log)
+    db.commit()
+    
+    if not email_sent:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Invitation created but email failed to send. Error: {smtp_error}"
+        )
+    
+    return {
+        "message": f"Invitation sent to {data.email}",
+        "email": data.email,
+        "expires_in": "24 hours"
+    }
+
+@router.post("/invite/resend")
+def resend_invitation(
+    data: InviteRequest,
+    current_user: User = Depends(require_admin()),
+    db: Session = Depends(get_db)
+):
+    """Resend invitation email with a new token."""
+    # Check if user already activated
+    existing_user = db.query(User).filter(User.email == data.email).first()
+    if existing_user and existing_user.status == "active":
+        raise HTTPException(status_code=400, detail="This user is already active.")
+    
+    # Expire old invitations
+    db.query(Invitation).filter(
+        Invitation.email == data.email,
+        Invitation.status == "pending"
+    ).update({"status": "expired"})
+    
+    # Create new invitation
+    token = _generate_invitation_token()
+    invitation = Invitation(
+        email=data.email,
+        invitation_token=token,
+        invited_by=current_user.email,
+        status="pending",
+        expired_at=datetime.utcnow() + timedelta(hours=24)
+    )
+    db.add(invitation)
+    
+    # Send email
+    email_sent = False
+    smtp_error = None
+    try:
+        _send_invitation_email(data.email, token, current_user.name)
+        email_sent = True
+    except RuntimeError as e:
+        smtp_error = str(e)
+    except Exception as e:
+        smtp_error = f"{type(e).__name__}: {e}"
+    
+    log = ActivityLog(
+        action="Invitation Resent",
+        user=current_user.email,
+        details=f"Resent invitation to {data.email}",
+        result="success" if email_sent else "email_failed"
+    )
+    db.add(log)
+    db.commit()
+    
+    if not email_sent:
+        raise HTTPException(status_code=500, detail=f"Failed to send invitation email. Error: {smtp_error}")
+    
+    return {"message": f"Invitation resent to {data.email}"}
+
+@router.get("/invite/validate")
+def validate_invitation(token: str, db: Session = Depends(get_db)):
+    """Validate an invitation token (public endpoint for activate-account page)."""
+    invitation = db.query(Invitation).filter(
+        Invitation.invitation_token == token,
+    ).first()
+    
+    if not invitation:
+        raise HTTPException(status_code=404, detail="Invalid invitation link.")
+    
+    if invitation.status == "accepted":
+        raise HTTPException(status_code=400, detail="This invitation has already been used.")
+    
+    if invitation.status == "expired" or datetime.utcnow() > invitation.expired_at.replace(tzinfo=None):
+        # Mark as expired if not already
+        if invitation.status != "expired":
+            invitation.status = "expired"
+            db.commit()
+        raise HTTPException(status_code=410, detail="This invitation has expired. Please contact your administrator to resend.")
+    
+    return {
+        "valid": True,
+        "email": invitation.email,
+        "invited_by": invitation.invited_by,
+        "expires_at": invitation.expired_at.isoformat() + "Z"
+    }
+
+@router.post("/activate-account")
+def activate_account(data: ActivateAccountRequest, db: Session = Depends(get_db)):
+    """Activate a user account from an invitation token."""
+    # Validate token
+    invitation = db.query(Invitation).filter(
+        Invitation.invitation_token == data.token,
+        Invitation.status == "pending"
+    ).first()
+    
+    if not invitation:
+        raise HTTPException(status_code=400, detail="Invalid or expired invitation token.")
+    
+    # Check expiration
+    if datetime.utcnow() > invitation.expired_at.replace(tzinfo=None):
+        invitation.status = "expired"
+        db.commit()
+        raise HTTPException(status_code=410, detail="This invitation has expired.")
+    
+    # Validate passwords match
+    if data.password != data.confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match.")
+    
+    # Validate name
+    if not data.name or len(data.name.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Full name must be at least 2 characters.")
+    
+    # Validate password strength
+    validate_password_strength(data.password)
+    
+    # Check if user already exists
+    existing = db.query(User).filter(User.email == invitation.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="An account with this email already exists.")
+    
+    # Create user
+    hashed_password = get_password_hash(data.password)
+    new_user = User(
+        email=invitation.email,
+        name=data.name.strip(),
+        hashed_password=hashed_password,
+        role=ROLE_USER,
+        status="active"
+    )
+    db.add(new_user)
+    
+    # Mark invitation as accepted
+    invitation.status = "accepted"
+    
+    # Log activity
+    log = ActivityLog(
+        action="Account Activated",
+        user=invitation.email,
+        details=f"User {data.name} activated account via invitation",
+        result="success"
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(new_user)
+    
+    # Auto-login: generate JWT token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": new_user.email, "role": new_user.role},
+        expires_delta=access_token_expires
+    )
+    
+    return {
+        "message": "Account activated successfully!",
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": _admin_to_response(new_user)
+    }
+
+# ── User Management (Admin) ─────────────────────────────────────────────────
+
+@router.get("/users")
+def get_users(current_user: User = Depends(require_admin()), db: Session = Depends(get_db)):
+    """Get all users for admin management."""
+    users = db.query(User).all()
+    return [_admin_to_response(u) for u in users]
+
+@router.get("/users/invitations")
+def get_invitations(current_user: User = Depends(require_admin()), db: Session = Depends(get_db)):
+    """Get all invitations (for admin to see pending/expired)."""
+    invitations = db.query(Invitation).order_by(Invitation.created_at.desc()).all()
+    return [
+        {
+            "id": inv.id,
+            "email": inv.email,
+            "invited_by": inv.invited_by,
+            "status": inv.status,
+            "expired_at": inv.expired_at.isoformat() + "Z" if inv.expired_at else None,
+            "created_at": inv.created_at.isoformat() + "Z" if inv.created_at else None,
+        }
+        for inv in invitations
+    ]
+
+@router.put("/users/{user_id}/status")
+def update_user_status(
+    user_id: int,
+    data: UserStatusUpdate,
+    current_user: User = Depends(require_admin()),
+    db: Session = Depends(get_db)
+):
+    """Activate or deactivate a user."""
+    if data.status not in ("active", "inactive"):
+        raise HTTPException(status_code=400, detail="Status must be 'active' or 'inactive'.")
+    
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    if target.email == "admin@churnsense.com":
+        raise HTTPException(status_code=400, detail="Cannot change the status of the default admin.")
+    
+    if target.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot change your own status.")
+    
+    target.status = data.status
+    
+    log = ActivityLog(
+        action=f"User {'Activated' if data.status == 'active' else 'Deactivated'}",
+        user=current_user.email,
+        details=f"Set {target.email} status to {data.status}",
+        result="success"
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(target)
+    
+    return _admin_to_response(target)
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+    user_id: int,
+    current_user: User = Depends(require_admin()),
+    db: Session = Depends(get_db)
+):
+    """Delete a user."""
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    if target.email == "admin@churnsense.com":
+        raise HTTPException(status_code=400, detail="Cannot delete the default admin.")
+    
+    if target.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account.")
+    
+    db.delete(target)
+    
+    log = ActivityLog(
+        action="User Deleted",
+        user=current_user.email,
+        details=f"Deleted user {target.email}",
+        result="success"
+    )
+    db.add(log)
+    db.commit()
+    return {"detail": "User deleted successfully."}
+
+# ── Admin CRUD (kept for backward compatibility) ─────────────────────────────
+
 @router.get("/admins")
 def get_admins(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    admins = db.query(User).all()
+    admins = db.query(User).filter(User.role.in_([ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN])).all()
     return [_admin_to_response(a) for a in admins]
 
 @router.post("/admins", status_code=status.HTTP_201_CREATED)
-def create_admin(admin_data: AdminCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Check if admin already exists
+def create_admin(admin_data: AdminCreate, current_user: User = Depends(require_role(ROLE_SUPER_ADMIN)), db: Session = Depends(get_db)):
+    """Only Super Admin can create Company Admins."""
     if db.query(User).filter(User.email == admin_data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    # Validate role
-    if admin_data.role not in ALL_ROLES:
-        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(ALL_ROLES)}")
+    if admin_data.role not in [ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN]:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {ROLE_SUPER_ADMIN}, {ROLE_COMPANY_ADMIN}")
         
-    # Validate password strength
     validate_password_strength(admin_data.password)
     
     hashed_password = get_password_hash(admin_data.password)
@@ -217,13 +540,10 @@ def create_admin(admin_data: AdminCreate, current_user: User = Depends(get_curre
         name=admin_data.name,
         hashed_password=hashed_password,
         role=admin_data.role,
-        status="Active",
-        phone=admin_data.phone,
-        department=admin_data.department
+        status="active",
     )
     db.add(new_admin)
     
-    # Log activity
     log = ActivityLog(
         action="Admin Created",
         user=current_user.email,
@@ -231,49 +551,15 @@ def create_admin(admin_data: AdminCreate, current_user: User = Depends(get_curre
         result="success"
     )
     db.add(log)
-    
     db.commit()
     db.refresh(new_admin)
     return _admin_to_response(new_admin)
-
-@router.post("/signup", status_code=status.HTTP_201_CREATED)
-def signup(user_data: UserSignUp, db: Session = Depends(get_db)):
-    # Check if user already exists
-    if db.query(User).filter(User.email == user_data.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
-        
-    # Validate password strength
-    validate_password_strength(user_data.password)
-    
-    hashed_password = get_password_hash(user_data.password)
-    new_user = User(
-        email=user_data.email,
-        name=user_data.name,
-        hashed_password=hashed_password,
-        role="user",
-        status="Active"
-    )
-    db.add(new_user)
-    
-    # Log activity
-    log = ActivityLog(
-        action="User Sign Up",
-        user=user_data.email,
-        details=f"New user registered: {user_data.email}",
-        result="success"
-    )
-    db.add(log)
-    
-    db.commit()
-    db.refresh(new_user)
-    return _admin_to_response(new_user)
-
 
 @router.put("/admins/{admin_id}")
 def update_admin(admin_id: int, admin_data: AdminUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     admin = db.query(User).filter(User.id == admin_id).first()
     if not admin:
-        raise HTTPException(status_code=404, detail="Admin not found")
+        raise HTTPException(status_code=404, detail="User not found")
         
     if admin_data.email and admin_data.email != admin.email:
         if admin.email == "admin@churnsense.com":
@@ -300,22 +586,20 @@ def update_admin(admin_id: int, admin_data: AdminUpdate, current_user: User = De
         validate_password_strength(admin_data.password)
         admin.hashed_password = get_password_hash(admin_data.password)
     
-    # Log activity
     log = ActivityLog(
-        action="Admin Updated",
+        action="User Updated",
         user=current_user.email,
-        details=f"Updated admin {admin.email}",
+        details=f"Updated user {admin.email}",
         result="success"
     )
     db.add(log)
-        
     db.commit()
     db.refresh(admin)
     return _admin_to_response(admin)
 
 @router.put("/change-password")
 def change_password(data: ChangePassword, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Change the current admin's password."""
+    """Change the current user's password."""
     if not verify_password(data.current_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     
@@ -329,7 +613,6 @@ def change_password(data: ChangePassword, current_user: User = Depends(get_curre
         result="success"
     )
     db.add(log)
-    
     db.commit()
     return {"message": "Password changed successfully"}
 
@@ -337,7 +620,7 @@ def change_password(data: ChangePassword, current_user: User = Depends(get_curre
 def delete_admin(admin_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     admin = db.query(User).filter(User.id == admin_id).first()
     if not admin:
-        raise HTTPException(status_code=404, detail="Admin not found")
+        raise HTTPException(status_code=404, detail="User not found")
         
     if admin.email == "admin@churnsense.com":
         raise HTTPException(status_code=400, detail="Cannot delete default admin")
@@ -347,29 +630,27 @@ def delete_admin(admin_id: int, current_user: User = Depends(get_current_user), 
         
     db.delete(admin)
     
-    # Log activity
     log = ActivityLog(
-        action="Admin Deleted",
+        action="User Deleted",
         user=current_user.email,
-        details=f"Deleted admin {admin.email}",
+        details=f"Deleted user {admin.email}",
         result="success"
     )
     db.add(log)
-    
     db.commit()
-    return {"detail": "Admin successfully deleted"}
+    return {"detail": "User successfully deleted"}
+
+# ── CS Team (kept for backward compatibility) ────────────────────────────────
 
 from backend.core.models import Customer
 from sqlalchemy import func
 
 @router.get("/cs-team")
 def get_cs_team(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Get all CS Agents and CS Managers
     cs_admins = db.query(User).filter(
-        User.role.in_([ROLE_CS_AGENT, ROLE_CS_MANAGER])
+        User.role.in_([ROLE_COMPANY_ADMIN])
     ).all()
     
-    # Calculate workloads (assigned customers where status is Active and mitigation is assigned)
     workloads = db.query(
         Customer.assigned_to, 
         func.count(Customer.id).label("customer_count")
@@ -403,9 +684,92 @@ import os
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 RESEND_FROM    = os.getenv("RESEND_FROM", "ChurnSense <noreply@churnsense.sbs>")
 
+# ── Invitation Email ─────────────────────────────────────────────────────────
+
+def _get_frontend_url():
+    """Get the frontend URL for generating invitation links."""
+    return os.getenv("FRONTEND_URL", "https://churn-prediction-eta-ecru.vercel.app")
+
+def _send_invitation_email(to_email: str, token: str, inviter_name: str):
+    """Send invitation email via Resend API."""
+    api_key = os.getenv("RESEND_API_KEY")
+    from_addr = os.getenv("RESEND_FROM", "ChurnSense <noreply@churnsense.sbs>")
+    
+    if not api_key:
+        print(f"\n[Resend not configured] Invitation for {to_email}: token={token}\n")
+        raise RuntimeError("RESEND_API_KEY is not set. Please add it in Render Environment Variables.")
+    
+    frontend_url = _get_frontend_url()
+    activation_link = f"{frontend_url}/activate-account?token={token}"
+    
+    html_body = f"""
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 0;">
+      <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); padding: 32px 32px 24px; border-radius: 16px 16px 0 0; text-align: center;">
+        <h1 style="color: #ffffff; font-size: 24px; font-weight: 800; margin: 0 0 8px;">ChurnSense</h1>
+        <p style="color: #a5b4fc; font-size: 13px; margin: 0;">You're Invited!</p>
+      </div>
+      <div style="background: #ffffff; padding: 32px; border: 1px solid #e5e7eb; border-top: none;">
+        <p style="color: #374151; font-size: 15px; margin: 0 0 8px;">Hi there,</p>
+        <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+          <strong>{inviter_name}</strong> has invited you to join <strong>ChurnSense</strong> — an AI-powered customer retention platform. Click the button below to set up your account:
+        </p>
+        <div style="text-align: center; margin: 0 0 24px;">
+          <a href="{activation_link}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: #ffffff; text-decoration: none; border-radius: 12px; font-size: 14px; font-weight: 700; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">
+            Activate My Account
+          </a>
+        </div>
+        <p style="color: #9ca3af; font-size: 12px; line-height: 1.5; margin: 0 0 16px;">
+          ⏱ This link expires in <strong>24 hours</strong>.<br>
+          If you didn't expect this invitation, you can safely ignore this email.
+        </p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-top: 16px;">
+          <p style="color: #64748b; font-size: 11px; margin: 0; word-break: break-all;">
+            If the button doesn't work, copy this link:<br>
+            <a href="{activation_link}" style="color: #4f46e5; text-decoration: underline;">{activation_link}</a>
+          </p>
+        </div>
+      </div>
+      <div style="background: #f9fafb; padding: 16px 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 16px 16px; text-align: center;">
+        <p style="color: #9ca3af; font-size: 11px; margin: 0;">&copy; 2026 ChurnSense Inc. All rights reserved.</p>
+      </div>
+    </div>
+    """
+    
+    try:
+        response = httpx.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": from_addr,
+                "to": [to_email],
+                "subject": f"🎉 You're invited to join ChurnSense!",
+                "html": html_body,
+            },
+            timeout=15,
+        )
+        print(f"[Resend] status={response.status_code} body={response.text}")
+        if response.status_code in (200, 201):
+            print(f"[Resend] Invitation email sent successfully to {to_email}")
+            return True
+        else:
+            raise RuntimeError(f"Resend API error {response.status_code}: {response.text}")
+    except httpx.RequestError as e:
+        print(f"[Resend ERROR] Network error: {e}")
+        raise RuntimeError(f"Network error calling Resend API: {e}")
+    except RuntimeError:
+        raise
+    except Exception as e:
+        print(f"[Resend ERROR] {type(e).__name__}: {e}")
+        raise RuntimeError(f"{type(e).__name__}: {e}")
+
+
+# ── OTP Email (Forgot Password) ─────────────────────────────────────────────
+
 def send_otp_email(to_email: str, otp_code: str, admin_name: str):
     """Send OTP code via Resend API (HTTPS - works on all cloud providers)."""
-    # Baca env var fresh di setiap panggilan
     api_key  = os.getenv("RESEND_API_KEY")
     from_addr = os.getenv("RESEND_FROM", "ChurnSense <noreply@churnsense.sbs>")
 
@@ -484,18 +848,14 @@ class ResetPasswordRequest(BaseModel):
 @router.post("/forgot-password")
 def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Generate a 6-digit OTP and send it via email."""
-    # Check if the email exists
     admin = db.query(User).filter(User.email == data.email).first()
     if not admin:
         raise HTTPException(status_code=404, detail="No account found with this email address.")
     
-    # Invalidate any previous OTPs for this email
     db.query(PasswordResetOTP).filter(PasswordResetOTP.email == data.email).delete()
     
-    # Generate a 6-digit OTP
     otp_code = ''.join(random.choices(string.digits, k=6))
     
-    # Store OTP with 10-minute expiration
     otp_record = PasswordResetOTP(
         email=data.email,
         otp_code=otp_code,
@@ -503,7 +863,6 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     )
     db.add(otp_record)
     
-    # Send OTP via email
     smtp_error = None
     try:
         send_otp_email(data.email, otp_code, admin.name)
@@ -515,7 +874,6 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
         email_sent = False
         smtp_error = f"{type(e).__name__}: {e}"
     
-    # Log the activity
     log = ActivityLog(
         action="Password Reset Requested",
         user=data.email,
@@ -546,13 +904,11 @@ def verify_otp(data: VerifyOTPRequest, db: Session = Depends(get_db)):
     if not otp_record:
         raise HTTPException(status_code=400, detail="Invalid OTP code. Please check and try again.")
     
-    # Check expiration
     if datetime.utcnow() > otp_record.expires_at.replace(tzinfo=None):
         db.delete(otp_record)
         db.commit()
         raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
     
-    # Mark as verified
     otp_record.is_verified = True
     db.commit()
     
@@ -562,7 +918,6 @@ def verify_otp(data: VerifyOTPRequest, db: Session = Depends(get_db)):
 @router.post("/reset-password")
 def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
     """Reset the password after OTP verification."""
-    # Check for a verified OTP
     otp_record = db.query(PasswordResetOTP).filter(
         PasswordResetOTP.email == data.email,
         PasswordResetOTP.otp_code == data.otp,
@@ -572,26 +927,21 @@ def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
     if not otp_record:
         raise HTTPException(status_code=400, detail="OTP not verified. Please verify your OTP first.")
     
-    # Check expiration (extra safety)
     if datetime.utcnow() > otp_record.expires_at.replace(tzinfo=None):
         db.delete(otp_record)
         db.commit()
         raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
     
-    # Validate new password strength
     validate_password_strength(data.new_password)
     
-    # Update the admin's password
     admin = db.query(User).filter(User.email == data.email).first()
     if not admin:
         raise HTTPException(status_code=404, detail="Account not found.")
     
     admin.hashed_password = get_password_hash(data.new_password)
     
-    # Clean up OTP records for this email
     db.query(PasswordResetOTP).filter(PasswordResetOTP.email == data.email).delete()
     
-    # Log activity
     log = ActivityLog(
         action="Password Reset Completed",
         user=data.email,
