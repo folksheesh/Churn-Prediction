@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Send, Image as ImageIcon, Users, Eye, Sparkles, Loader2, Check } from 'lucide-react';
+import { ArrowLeft, Save, Send, Image as ImageIcon, Users, Eye, Sparkles, Loader2, Check, X, AlertTriangle, CheckCircle } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import api from '@/lib/api';
@@ -34,6 +34,13 @@ export default function CampaignEditor() {
   const [showPreview, setShowPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<{subject: string, html: string} | null>(null);
 
+  const [toast, setToast] = useState<{show: boolean, message: string, type: 'success'|'error'}>({ show: false, message: '', type: 'success' });
+
+  const showToast = (message: string, type: 'success'|'error' = 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 4000);
+  };
+
   useEffect(() => {
     if (!isNew) {
       fetchCampaign();
@@ -55,7 +62,7 @@ export default function CampaignEditor() {
       });
     } catch (err) {
       console.error(err);
-      alert('Failed to load campaign');
+      showToast('Failed to load campaign', 'error');
     } finally {
       setLoading(false);
     }
@@ -78,10 +85,10 @@ export default function CampaignEditor() {
         navigate(`/admin/campaigns/${res.data.id}`);
       } else {
         await api.put(`/campaigns/${id}`, campaign);
-        alert('Campaign saved successfully');
+        showToast('Campaign saved successfully', 'success');
       }
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to save campaign');
+      showToast(err.response?.data?.detail || 'Failed to save campaign. (Is backend running/updated?)', 'error');
     } finally {
       setSaving(false);
     }
@@ -90,17 +97,17 @@ export default function CampaignEditor() {
   const handleSend = async () => {
     if (!id) return;
     if (recipients.length === 0) {
-      alert("Please add recipients first.");
+      showToast("Please add recipients first.", 'error');
       return;
     }
     if (!window.confirm(`Are you sure you want to send this campaign to ${recipients.length} recipients?`)) return;
     
     try {
       await api.post(`/campaigns/${id}/send`);
-      alert('Campaign sending started!');
-      navigate('/admin/campaigns');
+      showToast('Campaign sending started!', 'success');
+      setTimeout(() => navigate('/admin/campaigns'), 1500);
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to send campaign');
+      showToast(err.response?.data?.detail || 'Failed to send campaign', 'error');
     }
   };
 
@@ -116,7 +123,7 @@ export default function CampaignEditor() {
       setShowPreview(true);
     } catch (err) {
       console.error(err);
-      alert('Failed to generate preview');
+      showToast('Failed to generate preview', 'error');
     }
   };
 
@@ -125,7 +132,7 @@ export default function CampaignEditor() {
     if (!file) return;
     
     if (file.size > 2 * 1024 * 1024) {
-      alert("Image is too large. Max size is 2MB.");
+      showToast("Image is too large. Max size is 2MB.", 'error');
       return;
     }
     
@@ -142,7 +149,7 @@ export default function CampaignEditor() {
 
   const addRecipientsByRisk = async (risk: string) => {
     if (isNew) {
-      alert("Please save the campaign first before adding recipients.");
+      showToast("Please save the campaign first before adding recipients.", 'error');
       return;
     }
     try {
@@ -150,7 +157,7 @@ export default function CampaignEditor() {
       fetchRecipients();
     } catch (err) {
       console.error(err);
-      alert('Failed to add recipients');
+      showToast('Failed to add recipients', 'error');
     }
   };
 
@@ -423,6 +430,17 @@ export default function CampaignEditor() {
               />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-xl shadow-black/5 border animate-in slide-in-from-bottom-5 fade-in duration-300 flex items-center gap-3 ${toast.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'}`}>
+          {toast.type === 'success' ? <CheckCircle size={18} className="text-emerald-600 shrink-0" /> : <AlertTriangle size={18} className="text-rose-600 shrink-0" />}
+          <p className="font-bold text-sm">{toast.message}</p>
+          <button onClick={() => setToast(prev => ({...prev, show: false}))} className={`ml-3 p-1 rounded-md transition-colors ${toast.type === 'success' ? 'text-emerald-600 hover:bg-emerald-100' : 'text-rose-600 hover:bg-rose-100'}`}>
+            <X size={16} />
+          </button>
         </div>
       )}
     </div>
