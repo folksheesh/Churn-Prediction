@@ -6,7 +6,7 @@ from typing import Optional
 import re
 
 from backend.core.database import get_db
-from backend.core.models import AdminUser, ActivityLog, ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_CS_MANAGER, ROLE_CS_AGENT, ALL_ROLES
+from backend.core.models import User, ActivityLog, ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_CS_MANAGER, ROLE_CS_AGENT, ALL_ROLES
 from backend.core.security import (
     verify_password,
     get_password_hash,
@@ -23,6 +23,11 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
+
+class UserSignUp(BaseModel):
+    email: EmailStr
+    name: str
+    password: str
 
 class AdminCreate(BaseModel):
     email: EmailStr
@@ -65,7 +70,7 @@ class Token(BaseModel):
 
 # ── Auth Dependencies ────────────────────────────────────────────────────────
 
-def get_current_admin(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -79,7 +84,7 @@ def get_current_admin(token: str = Depends(oauth2_scheme), db: Session = Depends
     except JWTError:
         raise credentials_exception
         
-    admin = db.query(AdminUser).filter(AdminUser.email == email).first()
+    admin = db.query(User).filter(User.email == email).first()
     if admin is None:
         raise credentials_exception
     return admin
@@ -96,17 +101,17 @@ def get_optional_admin(token: str = Depends(oauth2_scheme_optional), db: Session
             return None
     except JWTError:
         return None
-    return db.query(AdminUser).filter(AdminUser.email == email).first()
+    return db.query(User).filter(User.email == email).first()
 
 def require_role(*allowed_roles):
     """Dependency factory for role-based access control."""
-    def checker(current_admin: AdminUser = Depends(get_current_admin)):
-        if current_admin.role not in allowed_roles:
+    def checker(current_user: User = Depends(get_current_user)):
+        if current_user.role not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Insufficient permissions. Required role: {', '.join(allowed_roles)}"
             )
-        return current_admin
+        return current_user
     return checker
 
 # ── Password Validation ──────────────────────────────────────────────────────
@@ -129,9 +134,9 @@ def validate_password_strength(password: str):
             detail="Password must contain at least one special character (e.g. @$!%*?&#/\\-_+.())"
         )
 
-# ── Helper to serialize AdminUser ────────────────────────────────────────────
+# ── Helper to serialize User ────────────────────────────────────────────
 
-def _admin_to_response(admin: AdminUser) -> dict:
+def _admin_to_response(admin: User) -> dict:
     return {
         "id": admin.id,
         "email": admin.email,
@@ -148,7 +153,7 @@ def _admin_to_response(admin: AdminUser) -> dict:
 
 @router.post("/login", response_model=Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    admin = db.query(AdminUser).filter(AdminUser.email == form_data.username).first()
+    admin = db.query(User).filter(User.email == form_data.username).first()
     if not admin or not verify_password(form_data.password, admin.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -189,14 +194,14 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     }
 
 @router.get("/admins")
-def get_admins(current_admin: AdminUser = Depends(get_current_admin), db: Session = Depends(get_db)):
-    admins = db.query(AdminUser).all()
+def get_admins(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    admins = db.query(User).all()
     return [_admin_to_response(a) for a in admins]
 
 @router.post("/admins", status_code=status.HTTP_201_CREATED)
-def create_admin(admin_data: AdminCreate, current_admin: AdminUser = Depends(get_current_admin), db: Session = Depends(get_db)):
+def create_admin(admin_data: AdminCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     # Check if admin already exists
-    if db.query(AdminUser).filter(AdminUser.email == admin_data.email).first():
+    if db.query(User).filter(User.email == admin_data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
     
     # Validate role
@@ -207,7 +212,7 @@ def create_admin(admin_data: AdminCreate, current_admin: AdminUser = Depends(get
     validate_password_strength(admin_data.password)
     
     hashed_password = get_password_hash(admin_data.password)
-    new_admin = AdminUser(
+    new_admin = User(
         email=admin_data.email,
         name=admin_data.name,
         hashed_password=hashed_password,
@@ -221,7 +226,7 @@ def create_admin(admin_data: AdminCreate, current_admin: AdminUser = Depends(get
     # Log activity
     log = ActivityLog(
         action="Admin Created",
-        user=current_admin.email,
+        user=current_user.email,
         details=f"Created admin {admin_data.email} with role {admin_data.role}",
         result="success"
     )
@@ -231,16 +236,49 @@ def create_admin(admin_data: AdminCreate, current_admin: AdminUser = Depends(get
     db.refresh(new_admin)
     return _admin_to_response(new_admin)
 
+@router.post("/signup", status_code=status.HTTP_201_CREATED)
+def signup(user_data: UserSignUp, db: Session = Depends(get_db)):
+    # Check if user already exists
+    if db.query(User).filter(User.email == user_data.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+        
+    # Validate password strength
+    validate_password_strength(user_data.password)
+    
+    hashed_password = get_password_hash(user_data.password)
+    new_user = User(
+        email=user_data.email,
+        name=user_data.name,
+        hashed_password=hashed_password,
+        role="user",
+        status="Active"
+    )
+    db.add(new_user)
+    
+    # Log activity
+    log = ActivityLog(
+        action="User Sign Up",
+        user=user_data.email,
+        details=f"New user registered: {user_data.email}",
+        result="success"
+    )
+    db.add(log)
+    
+    db.commit()
+    db.refresh(new_user)
+    return _admin_to_response(new_user)
+
+
 @router.put("/admins/{admin_id}")
-def update_admin(admin_id: int, admin_data: AdminUpdate, current_admin: AdminUser = Depends(get_current_admin), db: Session = Depends(get_db)):
-    admin = db.query(AdminUser).filter(AdminUser.id == admin_id).first()
+def update_admin(admin_id: int, admin_data: AdminUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    admin = db.query(User).filter(User.id == admin_id).first()
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found")
         
     if admin_data.email and admin_data.email != admin.email:
         if admin.email == "admin@churnsense.com":
             raise HTTPException(status_code=400, detail="Cannot change email of default admin")
-        if db.query(AdminUser).filter(AdminUser.email == admin_data.email).first():
+        if db.query(User).filter(User.email == admin_data.email).first():
             raise HTTPException(status_code=400, detail="Email already registered")
         admin.email = admin_data.email
         
@@ -265,7 +303,7 @@ def update_admin(admin_id: int, admin_data: AdminUpdate, current_admin: AdminUse
     # Log activity
     log = ActivityLog(
         action="Admin Updated",
-        user=current_admin.email,
+        user=current_user.email,
         details=f"Updated admin {admin.email}",
         result="success"
     )
@@ -276,18 +314,18 @@ def update_admin(admin_id: int, admin_data: AdminUpdate, current_admin: AdminUse
     return _admin_to_response(admin)
 
 @router.put("/change-password")
-def change_password(data: ChangePassword, current_admin: AdminUser = Depends(get_current_admin), db: Session = Depends(get_db)):
+def change_password(data: ChangePassword, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Change the current admin's password."""
-    if not verify_password(data.current_password, current_admin.hashed_password):
+    if not verify_password(data.current_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     
     validate_password_strength(data.new_password)
-    current_admin.hashed_password = get_password_hash(data.new_password)
+    current_user.hashed_password = get_password_hash(data.new_password)
     
     log = ActivityLog(
         action="Password Changed",
-        user=current_admin.email,
-        details=f"{current_admin.name} changed their password",
+        user=current_user.email,
+        details=f"{current_user.name} changed their password",
         result="success"
     )
     db.add(log)
@@ -296,15 +334,15 @@ def change_password(data: ChangePassword, current_admin: AdminUser = Depends(get
     return {"message": "Password changed successfully"}
 
 @router.delete("/admins/{admin_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_admin(admin_id: int, current_admin: AdminUser = Depends(get_current_admin), db: Session = Depends(get_db)):
-    admin = db.query(AdminUser).filter(AdminUser.id == admin_id).first()
+def delete_admin(admin_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    admin = db.query(User).filter(User.id == admin_id).first()
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found")
         
     if admin.email == "admin@churnsense.com":
         raise HTTPException(status_code=400, detail="Cannot delete default admin")
         
-    if admin.id == current_admin.id:
+    if admin.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot delete your own account")
         
     db.delete(admin)
@@ -312,7 +350,7 @@ def delete_admin(admin_id: int, current_admin: AdminUser = Depends(get_current_a
     # Log activity
     log = ActivityLog(
         action="Admin Deleted",
-        user=current_admin.email,
+        user=current_user.email,
         details=f"Deleted admin {admin.email}",
         result="success"
     )
@@ -325,10 +363,10 @@ from backend.core.models import Customer
 from sqlalchemy import func
 
 @router.get("/cs-team")
-def get_cs_team(current_admin: AdminUser = Depends(get_current_admin), db: Session = Depends(get_db)):
+def get_cs_team(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     # Get all CS Agents and CS Managers
-    cs_admins = db.query(AdminUser).filter(
-        AdminUser.role.in_([ROLE_CS_AGENT, ROLE_CS_MANAGER])
+    cs_admins = db.query(User).filter(
+        User.role.in_([ROLE_CS_AGENT, ROLE_CS_MANAGER])
     ).all()
     
     # Calculate workloads (assigned customers where status is Active and mitigation is assigned)
@@ -447,7 +485,7 @@ class ResetPasswordRequest(BaseModel):
 def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Generate a 6-digit OTP and send it via email."""
     # Check if the email exists
-    admin = db.query(AdminUser).filter(AdminUser.email == data.email).first()
+    admin = db.query(User).filter(User.email == data.email).first()
     if not admin:
         raise HTTPException(status_code=404, detail="No account found with this email address.")
     
@@ -544,7 +582,7 @@ def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
     validate_password_strength(data.new_password)
     
     # Update the admin's password
-    admin = db.query(AdminUser).filter(AdminUser.email == data.email).first()
+    admin = db.query(User).filter(User.email == data.email).first()
     if not admin:
         raise HTTPException(status_code=404, detail="Account not found.")
     

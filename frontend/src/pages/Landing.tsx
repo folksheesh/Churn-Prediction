@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Activity, ShieldAlert, BarChart3, Users, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import presentationImg from '@/assets/presentation.png';
 
 export default function Landing() {
   const { isAuthenticated } = useAuth();
@@ -53,64 +54,88 @@ export default function Landing() {
       <main className="flex-1 w-full relative z-10">
         
         {/* Hero Section */}
-        <section className="pt-24 pb-32 px-6 text-center max-w-5xl mx-auto relative">
-          
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-600 text-xs font-bold tracking-wide mb-8"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
-            </span>
-            Enterprise Customer Retention
-          </motion.div>
-          
-          <motion.h1 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-5xl md:text-7xl font-black tracking-tight text-slate-900 mb-6 leading-[1.1] font-outfit"
-          >
-            Stop guessing. <br className="hidden md:block" />
-            <span className="text-brand-600">Start predicting churn.</span>
-          </motion.h1>
-          
-          <motion.p 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-lg md:text-xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed"
-          >
-            Analyze behavior, accurately predict risk with machine learning, and automate mitigation campaigns before your customers cancel.
-          </motion.p>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
-          >
-            <Link 
-              to="/user-dashboard"
-              className="group bg-slate-900 hover:bg-slate-800 text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-md flex items-center gap-3 w-full sm:w-auto justify-center text-[15px]"
-            >
-              Let's Get Started <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </motion.div>
+        <section className="pt-20 pb-28 px-6 md:px-12 max-w-[1400px] mx-auto relative">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            {/* Left Content (Text) */}
+            <div className="lg:col-span-7 text-left flex flex-col items-start">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-600 text-xs font-bold tracking-wide mb-6"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+                </span>
+                Enterprise Customer Retention
+              </motion.div>
+              
+              <motion.h1 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-slate-900 mb-6 leading-[1.1] font-outfit"
+              >
+                Stop guessing. <br />
+                <span className="text-brand-600">Start predicting churn.</span>
+              </motion.h1>
+              
+              <motion.p 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="text-lg text-slate-500 mb-8 max-w-xl leading-relaxed"
+              >
+                Analyze behavior, accurately predict risk with machine learning, and automate mitigation campaigns before your customers cancel.
+              </motion.p>
+              
+              <motion.div 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mb-8"
+              >
+                <Link 
+                  to="/user-dashboard"
+                  className="group bg-slate-900 hover:bg-slate-800 text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-md flex items-center gap-3 w-full sm:w-auto justify-center text-[15px]"
+                >
+                  Let's Get Started <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </motion.div>
 
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            className="mt-10 flex flex-wrap justify-center gap-6 text-sm font-medium text-slate-400"
-          >
-            <span className="flex items-center gap-1.5"><CheckCircle2 size={16} className="text-emerald-500"/> No credit card required</span>
-            <span className="flex items-center gap-1.5"><CheckCircle2 size={16} className="text-emerald-500"/> Setup in minutes</span>
-            <span className="flex items-center gap-1.5"><CheckCircle2 size={16} className="text-emerald-500"/> 92% Prediction Accuracy</span>
-          </motion.div>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="flex flex-wrap gap-4 text-xs font-medium text-slate-400"
+              >
+                <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-500"/> No credit card required</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-500"/> Setup in minutes</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-500"/> 92% Prediction Accuracy</span>
+              </motion.div>
+            </div>
+
+            {/* Right Content (Image) */}
+            <motion.div 
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="lg:col-span-5 relative flex justify-center lg:justify-end items-center w-full"
+            >
+              {/* Decorative background glows */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-brand-400/20 blur-[80px] rounded-full -z-10 pointer-events-none"></div>
+              <div className="absolute top-1/3 left-2/3 w-[50%] h-[50%] bg-purple-400/10 blur-[60px] rounded-full -z-10 pointer-events-none"></div>
+              
+              <img 
+                src={presentationImg} 
+                alt="ChurnSense Customer Analytics Presentation" 
+                className="w-full max-w-[500px] h-auto object-contain drop-shadow-[0_20px_50px_rgba(37,99,235,0.15)] transition-all duration-500 hover:scale-[1.02]"
+              />
+            </motion.div>
+            
+          </div>
         </section>
 
         {/* Features Cards Section */}

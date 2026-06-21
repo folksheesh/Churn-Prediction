@@ -1,30 +1,29 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import api from '@/lib/api';
 import { Activity, Eye, EyeOff, ArrowLeft, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 
-export default function Login() {
+export default function SignUp() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
-      const user = await login(email, password);
-      if (user.role === 'user') {
-        navigate('/dashboard');
-      } else {
-        navigate('/admin/dashboard');
-      }
+      await api.post('/auth/signup', { name, email, password });
+      setSuccess('Account created successfully. You can now log in.');
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.detail || 'Sign up failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -34,12 +33,10 @@ export default function Login() {
     <div className="flex w-full min-h-screen font-outfit">
       {/* LEFT SIDE: Interactive Hero / Branding */}
       <div className="hidden lg:flex w-[55%] relative overflow-hidden bg-zinc-950 p-12 flex-col justify-between">
-        {/* Animated Gradient Background Elements */}
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-600/30 blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-brand-600/30 blur-[120px] pointer-events-none" />
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
         
-        {/* Top Logo Area */}
         <div className="relative z-10">
           <Link to="/" className="inline-flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="w-10 h-10 bg-gradient-to-tr from-brand-600 to-brand-400 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-brand-500/20">
@@ -49,17 +46,12 @@ export default function Login() {
           </Link>
         </div>
 
-        {/* Center Content */}
         <div className="relative z-10 max-w-xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/80 border border-zinc-800 text-brand-400 text-xs font-bold mb-6 backdrop-blur-sm">
-            <Zap size={14} className="fill-brand-500" />
-            V2.0 is now live
-          </div>
           <h1 className="text-5xl font-black text-white leading-[1.1] mb-6">
-            Predict churn before it <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-indigo-400">happens.</span>
+            Join thousands of businesses <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-indigo-400">reducing churn.</span>
           </h1>
           <p className="text-lg text-zinc-400 leading-relaxed max-w-md">
-            Empower your retention teams with real-time AI insights, automated campaigns, and powerful visual analytics.
+            Create an account today to access AI-powered predictive analytics for your customer retention strategies.
           </p>
 
           <div className="mt-12 grid grid-cols-2 gap-6">
@@ -68,8 +60,8 @@ export default function Login() {
                 <ShieldCheck size={20} className="text-emerald-400" />
               </div>
               <div>
-                <h4 className="font-bold text-white text-sm">Enterprise Security</h4>
-                <p className="text-zinc-500 text-xs mt-1">Bank-grade encryption for all your customer data.</p>
+                <h4 className="font-bold text-white text-sm">Get Started Fast</h4>
+                <p className="text-zinc-500 text-xs mt-1">Setup takes less than 5 minutes. No credit card required.</p>
               </div>
             </div>
             <div className="flex gap-4 items-start">
@@ -77,14 +69,13 @@ export default function Login() {
                 <Activity size={20} className="text-brand-400" />
               </div>
               <div>
-                <h4 className="font-bold text-white text-sm">99% Accuracy</h4>
-                <p className="text-zinc-500 text-xs mt-1">Advanced ML models trained on millions of signals.</p>
+                <h4 className="font-bold text-white text-sm">Actionable Insights</h4>
+                <p className="text-zinc-500 text-xs mt-1">Discover why customers leave before they actually do.</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Footer Area */}
         <div className="relative z-10 flex items-center justify-between text-zinc-500 text-xs font-semibold">
           <p>&copy; 2026 ChurnSense Inc.</p>
           <div className="flex gap-4">
@@ -94,7 +85,7 @@ export default function Login() {
         </div>
       </div>
 
-      {/* RIGHT SIDE: Login Form */}
+      {/* RIGHT SIDE: Sign Up Form */}
       <div className="flex-1 flex flex-col justify-center bg-white relative">
         <Link to="/" className="absolute top-8 left-8 lg:hidden flex items-center gap-2 text-sm font-semibold text-zinc-500 hover:text-zinc-900 transition-colors">
           <ArrowLeft size={16} /> Back
@@ -102,7 +93,6 @@ export default function Login() {
 
         <div className="w-full max-w-md mx-auto px-8 sm:px-12 py-12">
           
-          {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10">
             <div className="w-10 h-10 bg-gradient-to-tr from-brand-600 to-brand-400 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-brand-500/20">
               <Activity size={20} strokeWidth={3} />
@@ -111,8 +101,8 @@ export default function Login() {
           </div>
 
           <div className="mb-10">
-            <h2 className="text-3xl font-black text-zinc-900 tracking-tight">Welcome back</h2>
-            <p className="mt-2 text-zinc-500 font-medium">Please enter your credentials to access your workspace.</p>
+            <h2 className="text-3xl font-black text-zinc-900 tracking-tight">Create an account</h2>
+            <p className="mt-2 text-zinc-500 font-medium">Sign up to get started with your workspace.</p>
           </div>
           
           {error && (
@@ -124,8 +114,29 @@ export default function Login() {
             </div>
           )}
 
+          {success && (
+            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200/60 rounded-xl flex items-start gap-3 animate-fade-in">
+              <div className="bg-emerald-100 p-1 rounded-full shrink-0 mt-0.5">
+                <ShieldCheck size={14} className="text-emerald-600" />
+              </div>
+              <p className="text-sm font-semibold text-emerald-800 leading-snug">{success}</p>
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-bold text-zinc-700 mb-2">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="appearance-none block w-full px-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-xl placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white text-zinc-900 font-medium transition-all"
+                  placeholder="John Doe"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">Email Address</label>
                 <input
@@ -139,10 +150,7 @@ export default function Login() {
               </div>
 
               <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-bold text-zinc-700">Password</label>
-                  <Link to="/forgot-password" className="text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors">Forgot password?</Link>
-                </div>
+                <label className="block text-sm font-bold text-zinc-700 mb-2">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -163,6 +171,7 @@ export default function Login() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                <p className="mt-2 text-xs text-zinc-500">Must be at least 8 characters, include an uppercase letter, number, and special character.</p>
               </div>
             </div>
 
@@ -172,14 +181,14 @@ export default function Login() {
                 disabled={loading}
                 className="group w-full flex items-center justify-center gap-2 py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-zinc-900 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-900 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {loading ? 'Authenticating...' : 'Sign In to Workspace'}
+                {loading ? 'Creating Account...' : 'Sign Up'}
                 {!loading && <ArrowRight size={16} className="opacity-70 group-hover:translate-x-1 transition-transform" />}
               </button>
             </div>
             
             <div className="mt-6 text-center">
               <p className="text-sm font-medium text-zinc-600">
-                Don't have an account? <Link to="/signup" className="font-bold text-brand-600 hover:text-brand-700 transition-colors">Sign up</Link>
+                Already have an account? <Link to="/login" className="font-bold text-brand-600 hover:text-brand-700 transition-colors">Sign in</Link>
               </p>
             </div>
 

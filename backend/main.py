@@ -63,20 +63,33 @@ def _migrate_database():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Get existing columns for admin_users
-    cursor.execute("PRAGMA table_info(admin_users)")
-    admin_columns = {row[1] for row in cursor.fetchall()}
+    # Migrate data from admin_users to users if admin_users exists
+    try:
+        cursor.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='admin_users'")
+        if cursor.fetchone()[0] > 0:
+            cursor.execute("SELECT count(*) FROM users")
+            user_count = cursor.fetchone()[0]
+            if user_count == 0:
+                cursor.execute("INSERT INTO users (id, email, name, hashed_password, role, status, phone, department, last_login, created_at) SELECT id, email, name, hashed_password, role, status, phone, department, last_login, created_at FROM admin_users")
+    except Exception as e:
+        print(f"Error migrating admin_users to users: {e}")
     
-    if "role" not in admin_columns:
-        cursor.execute("ALTER TABLE admin_users ADD COLUMN role VARCHAR DEFAULT 'Admin'")
-    if "status" not in admin_columns:
-        cursor.execute("ALTER TABLE admin_users ADD COLUMN status VARCHAR DEFAULT 'Active'")
-    if "last_login" not in admin_columns:
-        cursor.execute("ALTER TABLE admin_users ADD COLUMN last_login DATETIME")
-    if "phone" not in admin_columns:
-        cursor.execute("ALTER TABLE admin_users ADD COLUMN phone VARCHAR")
-    if "department" not in admin_columns:
-        cursor.execute("ALTER TABLE admin_users ADD COLUMN department VARCHAR")
+    # Get existing columns for users
+    cursor.execute("PRAGMA table_info(users)")
+    user_columns = {row[1] for row in cursor.fetchall()}
+    
+    if "role" not in user_columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN role VARCHAR DEFAULT 'user'")
+    if "status" not in user_columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN status VARCHAR DEFAULT 'Active'")
+    if "last_login" not in user_columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN last_login DATETIME")
+    if "phone" not in user_columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN phone VARCHAR")
+    if "department" not in user_columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN department VARCHAR")
+    if "updated_at" not in user_columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN updated_at DATETIME")
     
     # Get existing columns for activity_logs
     cursor.execute("PRAGMA table_info(activity_logs)")
@@ -107,22 +120,22 @@ def _migrate_database():
         cursor.execute("ALTER TABLE customers ADD COLUMN phone_number VARCHAR")
     
     # Set default role for existing admin (Super Admin for the seed account)
-    cursor.execute("UPDATE admin_users SET role = 'Super Admin' WHERE email = 'admin@churnsense.com' AND (role IS NULL OR role = 'Admin')")
+    cursor.execute("UPDATE users SET role = 'Super Admin' WHERE email = 'admin@churnsense.com' AND (role IS NULL OR role = 'Admin')")
     
     conn.commit()
     conn.close()
 
 def _ensure_default_admin():
     from backend.core.database import SessionLocal
-    from backend.core.models import AdminUser
+    from backend.core.models import User
     from backend.core.security import get_password_hash
     
     db = SessionLocal()
     try:
-        admin = db.query(AdminUser).filter(AdminUser.email == "admin@churnsense.com").first()
+        admin = db.query(User).filter(User.email == "admin@churnsense.com").first()
         if not admin:
             print("Auto-creating default Super Admin...")
-            default_admin = AdminUser(
+            default_admin = User(
                 email="admin@churnsense.com",
                 name="Super Admin",
                 hashed_password=get_password_hash("Admin#123"),

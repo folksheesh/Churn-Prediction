@@ -7,7 +7,8 @@ ROLE_SUPER_ADMIN = "Super Admin"
 ROLE_ADMIN = "Admin"
 ROLE_CS_MANAGER = "CS Manager"
 ROLE_CS_AGENT = "CS Agent"
-ALL_ROLES = [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_CS_MANAGER, ROLE_CS_AGENT]
+ROLE_USER = "user"
+ALL_ROLES = [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_CS_MANAGER, ROLE_CS_AGENT, ROLE_USER]
 
 class Customer(Base):
     __tablename__ = "customers"
@@ -67,19 +68,20 @@ class ActivityLog(Base):
     email_status = Column(String, nullable=True)  # Pending, Sent, Delivered, Failed
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
-class AdminUser(Base):
-    __tablename__ = "admin_users"
+class User(Base):
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     name = Column(String)
     hashed_password = Column(String)
-    role = Column(String, default=ROLE_ADMIN)       # Super Admin, Admin, CS Manager, CS Agent
+    role = Column(String, default=ROLE_USER)        # Super Admin, Admin, CS Manager, CS Agent, user
     status = Column(String, default="Active")       # Active, Inactive, Suspended
     phone = Column(String, nullable=True)           # For CS Agent profiles
     department = Column(String, nullable=True)      # e.g., Retention, Support, Onboarding
     last_login = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 class MitigationLog(Base):
     __tablename__ = "mitigation_logs"

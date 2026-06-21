@@ -18,16 +18,16 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
   const [adminOpen, setAdminOpen] = useState(true);
 
   const mainNavItems = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Analysis', href: '/analysis', icon: BarChart3 },
-    { name: 'Customers', href: '/customers', icon: Users },
-    { name: 'Active Campaigns', href: '/campaigns', icon: Target },
+    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Analysis', href: '/admin/analysis', icon: BarChart3 },
+    { name: 'Customers', href: '/admin/customers', icon: Users },
+    { name: 'Active Campaigns', href: '/admin/campaigns', icon: Target },
   ];
 
   const adminNavItems = [
     { name: 'System Status', href: '/admin', icon: Zap },
-    { name: 'Manage Admins', href: '/manage-admins', icon: ShieldCheck },
-    { name: 'CS Management', href: '/cs-management', icon: Users },
+    { name: 'Manage Admins', href: '/admin/manage-admins', icon: ShieldCheck },
+    { name: 'CS Management', href: '/admin/cs-management', icon: Users },
   ];
 
   return (
@@ -124,7 +124,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
       {/* Footer User Profile */}
       <div className="p-4 border-t border-slate-200/60 mt-auto">
         <Link 
-          to="/profile"
+          to="/admin/profile"
           className="flex items-center justify-between p-2 -mx-2 rounded-xl hover:bg-slate-100/80 transition-colors group cursor-pointer"
         >
           <div className="flex items-center gap-3">

@@ -12,6 +12,7 @@ import Campaigns from '@/pages/admin/Campaigns';
 
 import Analysis from '@/pages/admin/Analysis';
 import Login from '@/pages/auth/Login';
+import SignUp from '@/pages/auth/SignUp';
 import ForgotPassword from '@/pages/auth/ForgotPassword';
 import AdminManagement from '@/pages/admin/AdminManagement';
 import Landing from '@/pages/Landing';
@@ -28,6 +29,7 @@ export default function App() {
           {/* Public Auth Routes */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
           </Route>
 
@@ -35,21 +37,23 @@ export default function App() {
           <Route path="/" element={<Landing />} />
 
           {/* Protected Admin Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<AdminLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/customers" element={<Customers />} />
-              <Route path="/campaigns" element={<Campaigns />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/manage-admins" element={<AdminManagement />} />
-              <Route path="/cs-management" element={<CsManagement />} />
-              <Route path="/analysis" element={<Analysis />} />
-              <Route path="/profile" element={<Profile />} />
+          <Route element={<ProtectedRoute allowedRoles={['Admin', 'Super Admin', 'CS Manager', 'CS Agent']} />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="customers" element={<Customers />} />
+              <Route path="campaigns" element={<Campaigns />} />
+              <Route path="manage-admins" element={<AdminManagement />} />
+              <Route path="cs-management" element={<CsManagement />} />
+              <Route path="analysis" element={<Analysis />} />
+              <Route path="profile" element={<Profile />} />
+              <Route index element={<Admin />} />
             </Route>
           </Route>
           
-          {/* Public User Route */}
-          <Route path="/user-dashboard" element={<UserDashboard />} />
+          {/* Protected User Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['user']} />}>
+            <Route path="/dashboard" element={<UserDashboard />} />
+          </Route>
         </Routes>
       </Router>
     </AuthProvider>

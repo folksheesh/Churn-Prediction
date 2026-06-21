@@ -4,7 +4,7 @@ import api from '@/lib/api';
 interface AuthContextType {
   isAuthenticated: boolean;
   user: any;
-  login: (email: string, pass: string) => Promise<void>;
+  login: (email: string, pass: string) => Promise<any>;
   logout: () => void;
   updateUser: (updatedUser: any) => void;
   token: string | null;
@@ -36,6 +36,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setToken(data.access_token);
     setUser(data.user);
     setIsAuthenticated(true);
+    return data.user;
   };
 
   const logout = () => {
