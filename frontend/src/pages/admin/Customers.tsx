@@ -37,9 +37,26 @@ export default function Customers() {
   const [retentionModalCustomer, setRetentionModalCustomer] = useState<any | null>(null);
 
   const filteredCustomers = useMemo(() => {
-    if (filterRisk === 'All') return customers;
-    return customers.filter(c => c.churn_risk === filterRisk);
-  }, [customers, filterRisk]);
+    let result = customers;
+
+    // Client-side search filter (as a safety net on top of API search)
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      result = result.filter(c =>
+        (c.name && c.name.toLowerCase().includes(q)) ||
+        (c.id && c.id.toLowerCase().includes(q)) ||
+        (c.email && c.email.toLowerCase().includes(q)) ||
+        (c.phone_number && c.phone_number.toLowerCase().includes(q))
+      );
+    }
+
+    // Risk filter
+    if (filterRisk !== 'All') {
+      result = result.filter(c => c.churn_risk === filterRisk);
+    }
+
+    return result;
+  }, [customers, filterRisk, searchTerm]);
 
   const paginatedCustomers = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
