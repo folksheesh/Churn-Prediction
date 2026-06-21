@@ -155,64 +155,52 @@ export default function Landing() {
             {/* Feature 1: Image Left, Text Right */}
             <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
               <div className="order-2 md:order-1 flex justify-center">
-                <img src={feature1Img} alt="Live Risk Dashboard" className="w-full max-w-[500px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
+                <img src={feature1Img} alt="Live Risk Dashboard" className="w-full max-w-[320px] lg:max-w-[380px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
               </div>
-              <div className="order-1 md:order-2 space-y-6">
-                <div className="w-14 h-14 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center shadow-sm border border-brand-100">
-                  <Activity size={28} />
-                </div>
-                <h3 className="text-3xl font-black text-slate-900 font-outfit tracking-tight">Live Risk Dashboard</h3>
+              <div className="order-1 md:order-2 space-y-5">
+                <h3 className="text-3xl lg:text-4xl font-black text-slate-900 font-outfit tracking-tight">Live Risk Dashboard</h3>
                 <p className="text-slate-500 leading-relaxed text-lg">
-                  Monitor your entire customer base in real-time. Spot trends and overall health scores instantly with clear visual analytics to proactively keep your customers happy.
+                  Monitor your entire customer base in real-time. Spot trends and overall health scores instantly with clear visual analytics to proactively keep your customers happy. Our live risk dashboard aggregates millions of data points into a single pane of glass, allowing your retention team to understand exactly where to focus their efforts each day.
                 </p>
               </div>
             </motion.div>
 
             {/* Feature 2: Text Left, Image Right */}
             <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
-              <div className="space-y-6 md:pr-8">
-                <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center shadow-sm border border-rose-100">
-                  <ShieldAlert size={28} />
-                </div>
-                <h3 className="text-3xl font-black text-slate-900 font-outfit tracking-tight">Early Warning System</h3>
+              <div className="space-y-5 md:pr-8">
+                <h3 className="text-3xl lg:text-4xl font-black text-slate-900 font-outfit tracking-tight">Early Warning System</h3>
                 <p className="text-slate-500 leading-relaxed text-lg">
-                  Get alerted the moment behavior changes, allowing you to intervene with automated mitigation campaigns before it's too late. Stop churn before it happens.
+                  Get alerted the moment behavior changes, allowing you to intervene with automated mitigation campaigns before it's too late. Stop churn before it happens. By setting up custom triggers based on product usage drops or billing failures, you can automatically send targeted offers or schedule check-in calls with at-risk accounts.
                 </p>
               </div>
               <div className="flex justify-center">
-                <img src={feature2Img} alt="Early Warning System" className="w-full max-w-[500px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
+                <img src={feature2Img} alt="Early Warning System" className="w-full max-w-[320px] lg:max-w-[380px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
               </div>
             </motion.div>
 
             {/* Feature 3: Image Left, Text Right */}
             <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
               <div className="order-2 md:order-1 flex justify-center">
-                <img src={feature3Img} alt="Deep Analytics" className="w-full max-w-[500px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
+                <img src={feature3Img} alt="Deep Analytics" className="w-full max-w-[320px] lg:max-w-[380px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
               </div>
-              <div className="order-1 md:order-2 space-y-6">
-                <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shadow-sm border border-purple-100">
-                  <BarChart3 size={28} />
-                </div>
-                <h3 className="text-3xl font-black text-slate-900 font-outfit tracking-tight">Deep Analytics</h3>
+              <div className="order-1 md:order-2 space-y-5">
+                <h3 className="text-3xl lg:text-4xl font-black text-slate-900 font-outfit tracking-tight">Deep Analytics</h3>
                 <p className="text-slate-500 leading-relaxed text-lg">
-                  Understand the 'why' behind churn. Analyze geographical, behavioral, and engagement factors to optimize product flow and pinpoint the root cause.
+                  Understand the 'why' behind churn. Analyze geographical, behavioral, and engagement factors to optimize product flow and pinpoint the root cause. Dive deep into cohort analysis to see how different user segments perform over time, enabling data-driven decisions that fundamentally improve your core product experience.
                 </p>
               </div>
             </motion.div>
 
             {/* Feature 4: Text Left, Image Right */}
             <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
-              <div className="space-y-6 md:pr-8">
-                <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-sm border border-emerald-100">
-                  <Users size={28} />
-                </div>
-                <h3 className="text-3xl font-black text-slate-900 font-outfit tracking-tight">Smart Segmentation</h3>
+              <div className="space-y-5 md:pr-8">
+                <h3 className="text-3xl lg:text-4xl font-black text-slate-900 font-outfit tracking-tight">Smart Segmentation</h3>
                 <p className="text-slate-500 leading-relaxed text-lg">
-                  Automatically group users by risk level and MRR to prioritize your retention efforts effectively and maximize revenue saved dynamically.
+                  Automatically group users by risk level and MRR to prioritize your retention efforts effectively and maximize revenue saved dynamically. ChurnSense learns your customer profiles and automatically segments them into high, medium, and low risk buckets, ensuring your Customer Success Managers spend time where it matters most.
                 </p>
               </div>
               <div className="flex justify-center">
-                <img src={feature4Img} alt="Smart Segmentation" className="w-full max-w-[500px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
+                <img src={feature4Img} alt="Smart Segmentation" className="w-full max-w-[320px] lg:max-w-[380px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
               </div>
             </motion.div>
             
