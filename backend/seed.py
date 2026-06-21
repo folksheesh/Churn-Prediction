@@ -8,7 +8,7 @@ ROOT = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, ROOT)
 
 from backend.core.database import SessionLocal, engine
-from backend.core.models import Base, Customer, User
+from backend.core.models import Base, Customer, User, Campaign
 from backend.core.security import get_password_hash
 from backend.api.services.ml_service import run_batch_prediction
 
@@ -92,17 +92,59 @@ def seed_db():
         
     db.bulk_save_objects(customers_to_add)
     
-    # Seed default admin
-    print("Seeding default admin...")
-    hashed_pwd = get_password_hash("Admin#123")
-    default_admin = User(
-        email="admin@churnsense.com",
-        name="Super Admin",
-        hashed_password=hashed_pwd,
-        role="super_admin",
-        status="active"
-    )
-    db.add(default_admin)
+    # Seed admins
+    print("Seeding 3 admins...")
+    admin_pwd = get_password_hash("Admin#123")
+    admins = [
+        User(email="admin@churnsense.com", name="Super Admin", hashed_password=admin_pwd, role="super_admin", status="active"),
+        User(email="admin2@churnsense.com", name="Admin Two", hashed_password=admin_pwd, role="company_admin", status="active"),
+        User(email="admin3@churnsense.com", name="Admin Three", hashed_password=admin_pwd, role="company_admin", status="active")
+    ]
+    db.bulk_save_objects(admins)
+    
+    # Seed users
+    print("Seeding 3 users...")
+    user_pwd = get_password_hash("User#123")
+    users = [
+        User(email="user1@churnsense.com", name="User One", hashed_password=user_pwd, role="user", status="active"),
+        User(email="user2@churnsense.com", name="User Two", hashed_password=user_pwd, role="user", status="active"),
+        User(email="user3@churnsense.com", name="User Three", hashed_password=user_pwd, role="user", status="active")
+    ]
+    db.bulk_save_objects(users)
+
+    # Seed campaigns
+    print("Seeding 3 campaigns...")
+    campaigns = [
+        Campaign(
+            name="Win-back Campaign 2026",
+            type="custom",
+            description="Campaign to win back high-risk customers.",
+            subject="We miss you! Here is a special offer",
+            content="<p>Dear customer, come back and get 20% off!</p>",
+            status="active",
+            created_by="admin@churnsense.com"
+        ),
+        Campaign(
+            name="VIP Loyalty Program",
+            type="custom",
+            description="Reward program for enterprise customers.",
+            subject="Exclusive VIP Rewards Inside",
+            content="<p>Thank you for your loyalty. Enjoy these VIP perks.</p>",
+            status="draft",
+            created_by="admin@churnsense.com"
+        ),
+        Campaign(
+            name="Product Feedback Survey",
+            type="custom",
+            description="Gathering feedback from active users.",
+            subject="Help us improve our service",
+            content="<p>We value your opinion. Please take a short survey.</p>",
+            status="completed",
+            created_by="admin2@churnsense.com"
+        )
+    ]
+    db.bulk_save_objects(campaigns)
+
     db.commit()
     print("Database seeded successfully!")
 

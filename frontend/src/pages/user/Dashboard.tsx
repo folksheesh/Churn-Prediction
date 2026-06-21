@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
 import { useNavigate, Link } from "react-router-dom";
 import VisualAnalyticsTab from "./VisualAnalyticsTab";
+import CampaignManager from "../admin/CampaignManager";
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -38,7 +39,8 @@ import {
   Wand2,
   LogOut,
   Target,
-  User
+  User,
+  Megaphone
 } from "lucide-react";
 import Profile from '@/pages/admin/Profile';
 import RetentionActionCenter from '@/components/RetentionActionCenter';
@@ -62,7 +64,7 @@ import {
 
 export default function Home() {
   const { logout, isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis" | "profile">(() => {
+  const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis" | "campaigns" | "profile">(() => {
     return (localStorage.getItem("dashboard_active_tab") as any) || "dashboard";
   });
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -497,6 +499,18 @@ export default function Home() {
             <Activity className={`w-4 h-4 shrink-0 transition-colors ${activeTab === "analysis" ? "text-brand-600" : ""}`} />
             <span>Analysis</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab("campaigns")}
+            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+              activeTab === "campaigns"
+                ? "bg-white text-brand-700 shadow-sm border border-slate-200/60 ring-1 ring-slate-100/50"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent"
+            }`}
+          >
+            <Megaphone className={`w-4 h-4 shrink-0 transition-colors ${activeTab === "campaigns" ? "text-brand-600" : ""}`} />
+            <span>Campaigns</span>
+          </button>
         </div>
 
         {/* Right: Auth Action */}
@@ -600,6 +614,7 @@ export default function Home() {
               {activeTab === "customers" && "Directory"}
               {activeTab === "prediction" && "Calculator"}
               {activeTab === "analysis" && "Analytics"}
+              {activeTab === "campaigns" && "Campaigns"}
               {activeTab === "profile" && "Account"}
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-outfit">
@@ -607,6 +622,7 @@ export default function Home() {
               {activeTab === "customers" && "Customer Health Directory"}
               {activeTab === "prediction" && "Customer Insights Calculator"}
               {activeTab === "analysis" && "Visual Analytics"}
+              {activeTab === "campaigns" && "Campaign Manager"}
               {activeTab === "profile" && "Edit Profile"}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
@@ -614,6 +630,7 @@ export default function Home() {
               {activeTab === "customers" && "Real-time list of customers filterable by risk and location categories."}
               {activeTab === "prediction" && "Calculate simulated customer insights using pre-trained boundaries."}
               {activeTab === "analysis" && "These charts help you see patterns and trends in your customer data. Don't worry if you're not familiar with charts - each one includes a guide on how to read it!"}
+              {activeTab === "campaigns" && "View available campaigns and manually enroll customers."}
               {activeTab === "profile" && "Update your personal information and secure your account."}
             </p>
           </div>
@@ -1492,7 +1509,19 @@ export default function Home() {
           <VisualAnalyticsTab customerData={customerData} summary={summary} />
         )}
 
-        {/* VIEW F: PROFILE TAB */}
+        {/* CAMPAIGNS TAB */}
+        {activeTab === "campaigns" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-6"
+          >
+            <CampaignManager />
+          </motion.div>
+        )}
+
+        {/* PROFILE TAB */}
         {activeTab === "profile" && (
           <Profile />
         )}

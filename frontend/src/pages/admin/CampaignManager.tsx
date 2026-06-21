@@ -3,6 +3,7 @@ import { Plus, Tag, Search, ShieldCheck, Headphones, Star, PackageOpen, Sparkles
 import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CAMPAIGN_STYLES = [
   { icon: <Tag size={18} />, color: 'from-brand-50 to-indigo-50', textColor: 'text-brand-700', borderColor: 'border-brand-200/50', iconColor: 'text-brand-500', activeRing: 'ring-brand-500' },
@@ -14,6 +15,7 @@ const CAMPAIGN_STYLES = [
 
 export default function CampaignManager() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -146,17 +148,19 @@ export default function CampaignManager() {
         <div className="mb-10 w-full overflow-hidden">
           <div className="flex overflow-x-auto pb-6 -mb-6 snap-x snap-mandatory hide-scrollbar gap-4 md:gap-5 px-1 pt-2">
             
-            {/* Create Campaign Card */}
-            <div 
-              onClick={() => navigate('/admin/campaigns/new')}
-              className="group snap-start shrink-0 w-64 md:w-72 bg-white/50 border-2 border-dashed border-zinc-300 rounded-3xl p-5 cursor-pointer hover:bg-brand-50 hover:border-brand-300 transition-all flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-400 group-hover:bg-brand-100 group-hover:text-brand-600 flex items-center justify-center mb-3 transition-colors">
-                <Plus size={24} />
+            {/* Create Campaign Card - Only for admins */}
+            {user?.role !== 'user' && (
+              <div 
+                onClick={() => navigate('/admin/campaigns/new')}
+                className="group snap-start shrink-0 w-64 md:w-72 bg-white/50 border-2 border-dashed border-zinc-300 rounded-3xl p-5 cursor-pointer hover:bg-brand-50 hover:border-brand-300 transition-all flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-400 group-hover:bg-brand-100 group-hover:text-brand-600 flex items-center justify-center mb-3 transition-colors">
+                  <Plus size={24} />
+                </div>
+                <h3 className="text-sm font-bold text-zinc-600 group-hover:text-brand-700">Add New Campaign</h3>
+                <p className="text-xs text-zinc-400 mt-1">Create a custom email flow</p>
               </div>
-              <h3 className="text-sm font-bold text-zinc-600 group-hover:text-brand-700">Add New Campaign</h3>
-              <p className="text-xs text-zinc-400 mt-1">Create a custom email flow</p>
-            </div>
+            )}
 
             {campaigns.map((camp, index) => {
               const isActive = activeTab === camp.id;
@@ -196,15 +200,17 @@ export default function CampaignManager() {
                   {isActive && (
                     <div className="mt-6 flex items-center justify-between">
                       <div className={cn("h-1.5 w-12 rounded-full", `bg-gradient-to-r ${map.color}`)} />
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/admin/campaigns/${camp.id}`);
-                        }}
-                        className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 bg-brand-50 px-3 py-1.5 rounded-lg border border-brand-100 hover:bg-brand-100 transition-colors"
-                      >
-                        <Edit3 size={14} /> Custom Email
-                      </button>
+                      {user?.role !== 'user' && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/campaigns/${camp.id}`);
+                          }}
+                          className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 bg-brand-50 px-3 py-1.5 rounded-lg border border-brand-100 hover:bg-brand-100 transition-colors"
+                        >
+                          <Edit3 size={14} /> Custom Email
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

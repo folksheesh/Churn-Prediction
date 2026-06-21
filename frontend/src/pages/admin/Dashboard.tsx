@@ -288,7 +288,7 @@ export default function Dashboard() {
             )}
 
             {/* Live Activity Feed - Modernized */}
-            <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-200/80 flex-1 flex flex-col overflow-hidden min-h-[350px] max-h-[750px]">
+            <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-200/80 w-full flex flex-col overflow-hidden h-[420px]">
               <div className="px-6 py-5 border-b border-zinc-100 flex items-center gap-2 bg-white sticky top-0 z-10">
                 <div className="p-1.5 rounded-lg bg-zinc-100 text-zinc-600">
                   <BellRing size={16} />
