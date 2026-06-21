@@ -113,16 +113,20 @@ def delete_campaign(campaign_id: int, db: Session = Depends(get_db), current_adm
 @router.get("/{campaign_id}/recipients", response_model=List[CampaignRecipientResponse])
 def get_campaign_recipients(campaign_id: int, db: Session = Depends(get_db), current_admin: User = Depends(get_admin)):
     recipients = db.query(CampaignRecipient).filter(CampaignRecipient.campaign_id == campaign_id).all()
-    
     # Enrich with customer details
     results = []
     for r in recipients:
         customer = db.query(Customer).filter(Customer.id == r.customer_id).first()
-        res = CampaignRecipientResponse.from_orm(r)
-        if customer:
-            res.customer_name = customer.name
-            res.customer_email = customer.email
-            res.customer_risk = customer.churn_risk
+        res = {
+            "id": r.id,
+            "campaign_id": r.campaign_id,
+            "customer_id": r.customer_id,
+            "email_status": r.email_status,
+            "sent_at": r.sent_at,
+            "customer_name": customer.name if customer else None,
+            "customer_email": customer.email if customer else None,
+            "customer_risk": customer.churn_risk if customer else None
+        }
         results.append(res)
     return results
 
