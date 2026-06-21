@@ -82,33 +82,45 @@ async def get_feature_segments(db: Session = Depends(get_db)):
     results = {}
 
     # --- 1. Plan Tier ---
-    plan_tiers = db.query(
+    # Map plan tiers explicitly: Basic=High risk, Pro=Medium, Enterprise=Low
+    plan_tier_map = {
+        "Basic": ("High (Basic Plan)", "HIGH"),
+        "Pro": ("Medium (Pro Plan)", "MEDIUM"),
+        "Enterprise": ("Low (Enterprise Plan)", "LOW"),
+    }
+    plan_tiers_raw = db.query(
         Customer.plan_tier,
         sqlfunc.count(Customer.id).label("total"),
         sqlfunc.sum(case((Customer.churn_risk == "High", 1), else_=0)).label("high_risk"),
         sqlfunc.avg(Customer.churn_probability).label("avg_prob")
     ).filter(Customer.plan_tier.isnot(None)).group_by(Customer.plan_tier).all()
 
-    results["plan_tier"] = {
-        "feature": "Plan Tier",
-        "segments": sorted([{
-            "name": row.plan_tier or "Unknown",
+    plan_tier_segments = []
+    for row in plan_tiers_raw:
+        tier = row.plan_tier or "Unknown"
+        mapped_name, mapped_risk = plan_tier_map.get(tier, (f"Low ({tier})", "LOW"))
+        plan_tier_segments.append({
+            "name": mapped_name,
             "churn_rate": round((row.avg_prob or 0) * 100),
             "users": row.total,
-            "risk": "HIGH" if (row.avg_prob or 0) >= 0.6 else "MEDIUM" if (row.avg_prob or 0) >= 0.35 else "LOW" if (row.avg_prob or 0) >= 0.15 else "SAFE"
-        } for row in plan_tiers], key=lambda x: -x["churn_rate"]),
-        "insight": _generate_plan_insight(plan_tiers)
+            "risk": mapped_risk
+        })
+    plan_tier_segments.sort(key=lambda x: ["HIGH", "MEDIUM", "LOW"].index(x["risk"]))
+
+    results["plan_tier"] = {
+        "feature": "Plan Tier",
+        "segments": plan_tier_segments,
+        "insight": _generate_plan_insight(plan_tiers_raw)
     }
 
-    # --- 2. Points in Wallet ---
+    # --- 2. Points in Wallet (3 tiers) ---
     wallet_ranges = [
-        ("0 – 1,000", 0, 1000),
-        ("1,000 – 5,000", 1000, 5000),
-        ("5,000 – 15,000", 5000, 15000),
-        ("15,000+", 15000, 999999999),
+        ("High (0 – 5,000 pts)", 0, 5000, "HIGH"),
+        ("Medium (5,000 – 15,000 pts)", 5000, 15000, "MEDIUM"),
+        ("Low (15,000+ pts)", 15000, 999999999, "LOW"),
     ]
     wallet_segments = []
-    for label, lo, hi in wallet_ranges:
+    for label, lo, hi, risk in wallet_ranges:
         q = db.query(
             sqlfunc.count(Customer.id).label("total"),
             sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -117,10 +129,10 @@ async def get_feature_segments(db: Session = Depends(get_db)):
         if row and row.total and row.total > 0:
             rate = round((row.avg_prob or 0) * 100)
             wallet_segments.append({
-                "name": f"{label} pts",
+                "name": label,
                 "churn_rate": rate,
                 "users": row.total,
-                "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                "risk": risk
             })
     results["points_in_wallet"] = {
         "feature": "Points in Wallet",
@@ -128,15 +140,14 @@ async def get_feature_segments(db: Session = Depends(get_db)):
         "insight": "Customers with fewer loyalty points show significantly higher disengagement risk, suggesting reward programs are effective retention tools."
     }
 
-    # --- 3. API Usage (api_calls_90d) ---
+    # --- 3. API Usage (api_calls_90d) — 3 tiers ---
     api_ranges = [
-        ("0 – 5 calls", 0, 6),
-        ("5 – 20 calls", 6, 21),
-        ("20 – 100 calls", 21, 101),
-        ("100+ calls", 101, 999999999),
+        ("High (0 – 20 calls)", 0, 21, "HIGH"),
+        ("Medium (21 – 100 calls)", 21, 101, "MEDIUM"),
+        ("Low (101+ calls)", 101, 999999999, "LOW"),
     ]
     api_segments = []
-    for label, lo, hi in api_ranges:
+    for label, lo, hi, risk in api_ranges:
         q = db.query(
             sqlfunc.count(Customer.id).label("total"),
             sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -148,7 +159,7 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                 "name": label,
                 "churn_rate": rate,
                 "users": row.total,
-                "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                "risk": risk
             })
     results["api_calls_90d"] = {
         "feature": "System Usage (API Calls)",
@@ -156,16 +167,14 @@ async def get_feature_segments(db: Session = Depends(get_db)):
         "insight": "Low-engagement users with minimal API interaction show significantly higher churn probability, indicating product stickiness is a key retention driver."
     }
 
-    # --- 4. Days Since Active ---
+    # --- 4. Days Since Active — 3 tiers ---
     active_ranges = [
-        ("0 – 3 days", 0, 4),
-        ("4 – 7 days", 4, 8),
-        ("8 – 14 days", 8, 15),
-        ("15 – 30 days", 15, 31),
-        ("30+ days", 31, 999999999),
+        ("High (16+ days)", 16, 999999999, "HIGH"),
+        ("Medium (8 – 15 days)", 8, 16, "MEDIUM"),
+        ("Low (0 – 7 days)", 0, 8, "LOW"),
     ]
     active_segments = []
-    for label, lo, hi in active_ranges:
+    for label, lo, hi, risk in active_ranges:
         q = db.query(
             sqlfunc.count(Customer.id).label("total"),
             sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -177,23 +186,22 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                 "name": label,
                 "churn_rate": rate,
                 "users": row.total,
-                "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                "risk": risk
             })
     results["days_since_active"] = {
         "feature": "Days Since Last Active",
         "segments": active_segments,
-        "insight": "Customer inactivity is one of the strongest churn predictors — users inactive for 15+ days require immediate re-engagement outreach."
+        "insight": "Customer inactivity is one of the strongest churn predictors — users inactive for 16+ days require immediate re-engagement outreach."
     }
 
-    # --- 5. Login Frequency (logins_90d) ---
+    # --- 5. Login Frequency (logins_90d) — 3 tiers ---
     login_ranges = [
-        ("0 – 5 logins", 0, 6),
-        ("5 – 15 logins", 6, 16),
-        ("15 – 30 logins", 16, 31),
-        ("30+ logins", 31, 999999999),
+        ("High (0 – 10 logins)", 0, 11, "HIGH"),
+        ("Medium (11 – 30 logins)", 11, 31, "MEDIUM"),
+        ("Low (31+ logins)", 31, 999999999, "LOW"),
     ]
     login_segments = []
-    for label, lo, hi in login_ranges:
+    for label, lo, hi, risk in login_ranges:
         q = db.query(
             sqlfunc.count(Customer.id).label("total"),
             sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -205,23 +213,22 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                 "name": label,
                 "churn_rate": rate,
                 "users": row.total,
-                "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                "risk": risk
             })
     results["logins_90d"] = {
         "feature": "Recent Login Frequency",
         "segments": login_segments,
-        "insight": "Consistent login behavior is a strong retention signal. Users with fewer than 5 logins in 90 days are at critical risk."
+        "insight": "Consistent login behavior is a strong retention signal. Users with fewer than 10 logins in 90 days are at critical risk."
     }
 
-    # --- 6. Tickets Opened ---
+    # --- 6. Tickets Opened — 3 tiers ---
     ticket_ranges = [
-        ("0 tickets", 0, 1),
-        ("1 – 2 tickets", 1, 3),
-        ("3 – 5 tickets", 3, 6),
-        ("6+ tickets", 6, 999999999),
+        ("High (6+ tickets)", 6, 999999999, "HIGH"),
+        ("Medium (2 – 5 tickets)", 2, 6, "MEDIUM"),
+        ("Low (0 – 1 ticket)", 0, 2, "LOW"),
     ]
     ticket_segments = []
-    for label, lo, hi in ticket_ranges:
+    for label, lo, hi, risk in ticket_ranges:
         q = db.query(
             sqlfunc.count(Customer.id).label("total"),
             sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -233,7 +240,7 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                 "name": label,
                 "churn_rate": rate,
                 "users": row.total,
-                "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                "risk": risk
             })
     results["tickets_opened_90d"] = {
         "feature": "Support Tickets Opened",
@@ -241,16 +248,14 @@ async def get_feature_segments(db: Session = Depends(get_db)):
         "insight": "Higher support ticket volume often correlates with friction and dissatisfaction, driving churn behavior."
     }
 
-    # --- 7. Customer Tenure ---
+    # --- 7. Customer Tenure — 3 tiers ---
     tenure_ranges = [
-        ("0 – 90 days", 0, 91),
-        ("3 – 6 months", 91, 181),
-        ("6 – 12 months", 181, 366),
-        ("1 – 2 years", 366, 731),
-        ("2+ years", 731, 999999999),
+        ("High (0 – 6 months)", 0, 181, "HIGH"),
+        ("Medium (6 – 12 months)", 181, 366, "MEDIUM"),
+        ("Low (1+ years)", 366, 999999999, "LOW"),
     ]
     tenure_segments = []
-    for label, lo, hi in tenure_ranges:
+    for label, lo, hi, risk in tenure_ranges:
         q = db.query(
             sqlfunc.count(Customer.id).label("total"),
             sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -262,23 +267,22 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                 "name": label,
                 "churn_rate": rate,
                 "users": row.total,
-                "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                "risk": risk
             })
     results["days_since_joined"] = {
         "feature": "Customer Tenure",
         "segments": tenure_segments,
-        "insight": "New customers (< 90 days) are in the critical onboarding window. Strong early engagement is essential to long-term retention."
+        "insight": "New customers (0 – 6 months) are in the critical onboarding window. Strong early engagement is essential to long-term retention."
     }
 
-    # --- 8. Avg Transaction Value ---
+    # --- 8. Avg Transaction Value — 3 tiers ---
     txn_ranges = [
-        ("$0 – $10", 0, 10),
-        ("$10 – $30", 10, 30),
-        ("$30 – $60", 30, 60),
-        ("$60+", 60, 999999999),
+        ("High (< $30)", 0, 30, "HIGH"),
+        ("Medium ($30 – $60)", 30, 60, "MEDIUM"),
+        ("Low ($60+)", 60, 999999999, "LOW"),
     ]
     txn_segments = []
-    for label, lo, hi in txn_ranges:
+    for label, lo, hi, risk in txn_ranges:
         q = db.query(
             sqlfunc.count(Customer.id).label("total"),
             sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -290,7 +294,7 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                 "name": label,
                 "churn_rate": rate,
                 "users": row.total,
-                "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                "risk": risk
             })
     results["avg_transaction_value"] = {
         "feature": "Average Monthly Spend",
@@ -298,52 +302,74 @@ async def get_feature_segments(db: Session = Depends(get_db)):
         "insight": "Lower-spending customers are more price-sensitive and exhibit higher churn rates. Upsell opportunities can improve retention."
     }
 
-    # --- 9. Region Category ---
+    # --- 9. Region Category — 3 tiers (Village=High, Town=Medium, City=Low) ---
+    region_tier_map = {
+        "Village": ("High (Village)", "HIGH"),
+        "Town": ("Medium (Town)", "MEDIUM"),
+        "City": ("Low (City)", "LOW"),
+    }
     regions = db.query(
         Customer.region_category,
         sqlfunc.count(Customer.id).label("total"),
         sqlfunc.avg(Customer.churn_probability).label("avg_prob")
     ).filter(Customer.region_category.isnot(None)).group_by(Customer.region_category).all()
 
-    results["region_category"] = {
-        "feature": "Geographic Region",
-        "segments": sorted([{
-            "name": row.region_category or "Unknown",
+    region_segments = []
+    for row in regions:
+        region = row.region_category or "Unknown"
+        mapped_name, mapped_risk = region_tier_map.get(region, (f"Low ({region})", "LOW"))
+        region_segments.append({
+            "name": mapped_name,
             "churn_rate": round((row.avg_prob or 0) * 100),
             "users": row.total,
-            "risk": "HIGH" if (row.avg_prob or 0) >= 0.6 else "MEDIUM" if (row.avg_prob or 0) >= 0.35 else "LOW" if (row.avg_prob or 0) >= 0.15 else "SAFE"
-        } for row in regions], key=lambda x: -x["churn_rate"]),
+            "risk": mapped_risk
+        })
+    region_segments.sort(key=lambda x: ["HIGH", "MEDIUM", "LOW"].index(x["risk"]))
+
+    results["region_category"] = {
+        "feature": "Geographic Region",
+        "segments": region_segments,
         "insight": "Regional churn patterns reveal geographic hotspots where targeted local engagement strategies can significantly reduce customer loss."
     }
 
-    # --- 10. Gender ---
+    # --- 10. Gender — 3 tiers (Unknown=High, M=Medium, F=Low) ---
+    gender_tier_map = {
+        "Unknown": ("High (Unknown)", "HIGH"),
+        "M": ("Medium (Male)", "MEDIUM"),
+        "F": ("Low (Female)", "LOW"),
+    }
     genders = db.query(
         Customer.gender,
         sqlfunc.count(Customer.id).label("total"),
         sqlfunc.avg(Customer.churn_probability).label("avg_prob")
     ).filter(Customer.gender.isnot(None)).group_by(Customer.gender).all()
 
-    results["gender"] = {
-        "feature": "Gender",
-        "segments": sorted([{
-            "name": row.gender or "Unknown",
+    gender_segments = []
+    for row in genders:
+        g = row.gender or "Unknown"
+        mapped_name, mapped_risk = gender_tier_map.get(g, (f"Low ({g})", "LOW"))
+        gender_segments.append({
+            "name": mapped_name,
             "churn_rate": round((row.avg_prob or 0) * 100),
             "users": row.total,
-            "risk": "HIGH" if (row.avg_prob or 0) >= 0.6 else "MEDIUM" if (row.avg_prob or 0) >= 0.35 else "LOW" if (row.avg_prob or 0) >= 0.15 else "SAFE"
-        } for row in genders], key=lambda x: -x["churn_rate"]),
+            "risk": mapped_risk
+        })
+    gender_segments.sort(key=lambda x: ["HIGH", "MEDIUM", "LOW"].index(x["risk"]))
+
+    results["gender"] = {
+        "feature": "Gender",
+        "segments": gender_segments,
         "insight": "Gender-based churn analysis helps tailor communication and product offerings to different demographic segments."
     }
 
-    # --- 11. Age ---
+    # --- 11. Age — 3 tiers ---
     age_ranges = [
-        ("18 – 25", 18, 26),
-        ("26 – 35", 26, 36),
-        ("36 – 45", 36, 46),
-        ("46 – 55", 46, 56),
-        ("55+", 56, 999),
+        ("High (< 30 yrs)", 0, 30, "HIGH"),
+        ("Medium (30 – 45 yrs)", 30, 46, "MEDIUM"),
+        ("Low (45+ yrs)", 46, 999, "LOW"),
     ]
     age_segments = []
-    for label, lo, hi in age_ranges:
+    for label, lo, hi, risk in age_ranges:
         q = db.query(
             sqlfunc.count(Customer.id).label("total"),
             sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -355,7 +381,7 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                 "name": label,
                 "churn_rate": rate,
                 "users": row.total,
-                "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                "risk": risk
             })
     results["age"] = {
         "feature": "Customer Age",
@@ -363,18 +389,15 @@ async def get_feature_segments(db: Session = Depends(get_db)):
         "insight": "Age demographics influence product expectations and engagement patterns. Younger users may churn faster due to higher app-switching behavior."
     }
 
-    # --- 12. Sentiment Score (numeric 1-5) ---
-    # Note: sentiment_score may not exist as a DB column (computed during ML preprocessing)
+    # --- 12. Sentiment Score (numeric 1-5) — 3 tiers ---
     try:
         sentiment_ranges = [
-            ("Very Negative (1)", 0, 1.5),
-            ("Negative (2)", 1.5, 2.5),
-            ("Neutral (3)", 2.5, 3.5),
-            ("Positive (4)", 3.5, 4.5),
-            ("Very Positive (5)", 4.5, 6),
+            ("High (Negative: 1 – 2)", 0, 2.5, "HIGH"),
+            ("Medium (Neutral: 3)", 2.5, 3.5, "MEDIUM"),
+            ("Low (Positive: 4 – 5)", 3.5, 6, "LOW"),
         ]
         sentiment_segments = []
-        for label, lo, hi in sentiment_ranges:
+        for label, lo, hi, risk in sentiment_ranges:
             q = db.query(
                 sqlfunc.count(Customer.id).label("total"),
                 sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -386,7 +409,7 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                     "name": label,
                     "churn_rate": rate,
                     "users": row.total,
-                    "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                    "risk": risk
                 })
         results["sentiment_score"] = {
             "feature": "Sentiment Score",
@@ -414,7 +437,7 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                 "name": row.sentiment_kategori or "Unknown",
                 "churn_rate": round((row.avg_prob or 0) * 100),
                 "users": row.total,
-                "risk": "HIGH" if (row.avg_prob or 0) >= 0.6 else "MEDIUM" if (row.avg_prob or 0) >= 0.35 else "LOW" if (row.avg_prob or 0) >= 0.15 else "SAFE"
+                "risk": "HIGH" if (row.avg_prob or 0) >= 0.6 else "MEDIUM" if (row.avg_prob or 0) >= 0.35 else "LOW" if (row.avg_prob or 0) >= 0.15 else "LOW"
             } for row in sent_kats], key=lambda x: -x["churn_rate"]),
             "insight": "Sentiment categories from NLP analysis reveal emotional drivers behind churn. 'Sangat Kecewa' customers are at extreme risk."
         }
@@ -425,16 +448,14 @@ async def get_feature_segments(db: Session = Depends(get_db)):
             "insight": "Sentiment categories (Puas, Biasa, Kecewa, etc.) are derived from NLP analysis during model training."
         }
 
-    # --- 14. Avg Frequency Login Days ---
+    # --- 14. Avg Frequency Login Days — 3 tiers ---
     freq_ranges = [
-        ("Daily (0 – 3)", 0, 4),
-        ("Every few days (3 – 7)", 3, 8),
-        ("Weekly (7 – 14)", 7, 15),
-        ("Bi-weekly (14 – 30)", 14, 31),
-        ("Monthly+ (30+)", 30, 999999),
+        ("High (8+ days apart)", 8, 999999, "HIGH"),
+        ("Medium (3 – 7 days apart)", 3, 8, "MEDIUM"),
+        ("Low (0 – 2 days apart)", 0, 3, "LOW"),
     ]
     freq_segments = []
-    for label, lo, hi in freq_ranges:
+    for label, lo, hi, risk in freq_ranges:
         q = db.query(
             sqlfunc.count(Customer.id).label("total"),
             sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -446,24 +467,22 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                 "name": label,
                 "churn_rate": rate,
                 "users": row.total,
-                "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                "risk": risk
             })
     results["avg_frequency_login_days"] = {
         "feature": "Avg Login Frequency (Days)",
         "segments": freq_segments,
-        "insight": "Users who log in less frequently are increasingly disengaged. Automated re-engagement triggers at the 7-day mark can help."
+        "insight": "Users who log in less frequently are increasingly disengaged. Those logging in every 8+ days are at high churn risk."
     }
 
-    # --- 15. Days Since Last Login ---
+    # --- 15. Days Since Last Login — 3 tiers ---
     last_login_ranges = [
-        ("0 – 3 days", 0, 4),
-        ("4 – 7 days", 4, 8),
-        ("8 – 14 days", 8, 15),
-        ("15 – 30 days", 15, 31),
-        ("30+ days", 31, 999999999),
+        ("High (11+ days)", 11, 999999999, "HIGH"),
+        ("Medium (4 – 10 days)", 4, 11, "MEDIUM"),
+        ("Low (0 – 3 days)", 0, 4, "LOW"),
     ]
     last_login_segments = []
-    for label, lo, hi in last_login_ranges:
+    for label, lo, hi, risk in last_login_ranges:
         q = db.query(
             sqlfunc.count(Customer.id).label("total"),
             sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -475,24 +494,22 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                 "name": label,
                 "churn_rate": rate,
                 "users": row.total,
-                "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                "risk": risk
             })
     results["days_since_last_login"] = {
         "feature": "Days Since Last Login",
         "segments": last_login_segments,
-        "insight": "Login recency is a critical health signal. Users who haven't logged in for 15+ days should be flagged for immediate outreach."
+        "insight": "Login recency is a critical health signal. Users who haven't logged in for 11+ days should be flagged for immediate outreach."
     }
 
-    # --- 16. Avg Session Duration ---
+    # --- 16. Avg Session Duration — 3 tiers ---
     session_ranges = [
-        ("0 – 5 min", 0, 5),
-        ("5 – 15 min", 5, 15),
-        ("15 – 30 min", 15, 30),
-        ("30 – 60 min", 30, 60),
-        ("60+ min", 60, 999999),
+        ("High (0 – 5 min)", 0, 5, "HIGH"),
+        ("Medium (5 – 20 min)", 5, 20, "MEDIUM"),
+        ("Low (20+ min)", 20, 999999, "LOW"),
     ]
     session_segments = []
-    for label, lo, hi in session_ranges:
+    for label, lo, hi, risk in session_ranges:
         q = db.query(
             sqlfunc.count(Customer.id).label("total"),
             sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -504,7 +521,7 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                 "name": label,
                 "churn_rate": rate,
                 "users": row.total,
-                "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                "risk": risk
             })
     results["avg_session_duration"] = {
         "feature": "Avg Session Duration",
@@ -512,16 +529,14 @@ async def get_feature_segments(db: Session = Depends(get_db)):
         "insight": "Session depth indicates product engagement quality. Customers with very short sessions may not be finding value in the platform."
     }
 
-    # --- 17. Active Days (90d) ---
+    # --- 17. Active Days (90d) — 3 tiers ---
     active90_ranges = [
-        ("0 – 5 days", 0, 6),
-        ("5 – 15 days", 6, 16),
-        ("15 – 30 days", 16, 31),
-        ("30 – 60 days", 31, 61),
-        ("60+ days", 61, 999999),
+        ("High (0 – 15 days)", 0, 16, "HIGH"),
+        ("Medium (16 – 45 days)", 16, 46, "MEDIUM"),
+        ("Low (46+ days)", 46, 999999, "LOW"),
     ]
     active90_segments = []
-    for label, lo, hi in active90_ranges:
+    for label, lo, hi, risk in active90_ranges:
         q = db.query(
             sqlfunc.count(Customer.id).label("total"),
             sqlfunc.avg(Customer.churn_probability).label("avg_prob")
@@ -533,7 +548,7 @@ async def get_feature_segments(db: Session = Depends(get_db)):
                 "name": label,
                 "churn_rate": rate,
                 "users": row.total,
-                "risk": "HIGH" if rate >= 60 else "MEDIUM" if rate >= 35 else "LOW" if rate >= 15 else "SAFE"
+                "risk": risk
             })
     results["active_days_90d"] = {
         "feature": "Active Days (90d)",
