@@ -45,14 +45,14 @@ def process_dynamic_variables(text: str, customer: Customer, campaign: Campaign 
         text = text.replace("{{campaign_name}}", campaign.name or "Our Campaign")
     return text
 
-@router.get("/", response_model=List[CampaignResponse])
+@router.get("", response_model=List[CampaignResponse])
 def get_campaigns(db: Session = Depends(get_db), current_admin: User = Depends(get_admin)):
     campaigns = db.query(Campaign).order_by(Campaign.created_at.desc()).all()
     for c in campaigns:
         c.recipient_count = db.query(CampaignRecipient).filter(CampaignRecipient.campaign_id == c.id).count()
     return campaigns
 
-@router.post("/", response_model=CampaignResponse)
+@router.post("", response_model=CampaignResponse)
 def create_campaign(req: CampaignCreate, db: Session = Depends(get_db), current_admin: User = Depends(get_admin)):
     new_campaign = Campaign(
         name=req.name,
