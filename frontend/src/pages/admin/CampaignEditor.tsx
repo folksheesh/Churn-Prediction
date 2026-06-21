@@ -341,7 +341,6 @@ export default function CampaignEditor() {
               />
             </div>
           </div>
-          </div>
         </section>
 
         {/* Section 4: Recipients */}
