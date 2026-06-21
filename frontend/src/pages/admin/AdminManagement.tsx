@@ -16,6 +16,12 @@ const statusColors: Record<string, string> = {
   'inactive': 'bg-zinc-100 text-zinc-500',
 };
 
+const formatRoleLabel = (role: string) => {
+  if (role === 'super_admin') return 'Super Admin';
+  if (role === 'company_admin') return 'Company Admin';
+  return role;
+};
+
 export default function AdminManagement() {
   const { token, user } = useAuth();
   const [admins, setAdmins] = useState<any[]>([]);
@@ -224,7 +230,7 @@ export default function AdminManagement() {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold border ${roleBadgeColors[admin.role] || 'bg-zinc-100 text-zinc-600 border-zinc-200'}`}>
-                          {admin.role || 'company_admin'}
+                          {formatRoleLabel(admin.role || 'company_admin')}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -365,7 +371,7 @@ export default function AdminManagement() {
                           className="w-full text-sm px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
                         >
                           {ROLES.map(r => (
-                            <option key={r} value={r}>{r}</option>
+                            <option key={r} value={r}>{formatRoleLabel(r)}</option>
                           ))}
                         </select>
                       </div>
