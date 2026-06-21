@@ -245,7 +245,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Right Context Column (30%) */}
+          {/* Right Context Column (30% ) */}
           <div className="flex flex-col gap-8 animate-fade-up">
             
             {/* Goal Tracking - Modernized */}
