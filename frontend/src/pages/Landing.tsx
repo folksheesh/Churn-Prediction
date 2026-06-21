@@ -80,19 +80,7 @@ export default function Landing() {
             
             {/* Left Content (Text) */}
             <div className="lg:col-span-7 text-left flex flex-col items-start">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-600 text-xs font-bold tracking-wide mb-6"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
-                </span>
-                Enterprise Customer Retention
-              </motion.div>
-              
+              {/* Removed Enterprise Customer Retention badge */}
               <motion.h1 
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -126,17 +114,7 @@ export default function Landing() {
                 </Link>
               </motion.div>
 
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="flex flex-wrap gap-4 text-xs font-medium text-slate-400"
-              >
-                <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-500"/> No credit card required</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-500"/> Setup in minutes</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-500"/> 92% Prediction Accuracy</span>
-              </motion.div>
-            </div>
+              {/* Removed checkmark feature list */}            </div>
 
             {/* Right Content (Image) */}
             <motion.div 
