@@ -22,7 +22,6 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
     { name: 'Analysis', href: '/admin/analysis', icon: BarChart3 },
     { name: 'Customers', href: '/admin/customers', icon: Users },
     { name: 'Campaigns', href: '/admin/campaigns', icon: Target },
-    { name: 'Email History', href: '/admin/email-history', icon: Mail },
   ];
 
   const adminNavItems = [

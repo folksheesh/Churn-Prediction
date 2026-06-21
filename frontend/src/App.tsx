@@ -10,8 +10,6 @@ import Customers from '@/pages/admin/Customers';
 import Admin from '@/pages/admin/Admin';
 import CampaignManager from '@/pages/admin/CampaignManager';
 import CampaignEditor from '@/pages/admin/CampaignEditor';
-import EmailHistory from '@/pages/admin/EmailHistory';
-
 import Analysis from '@/pages/admin/Analysis';
 import Login from '@/pages/auth/Login';
 import ActivateAccount from '@/pages/auth/ActivateAccount';
@@ -47,7 +45,6 @@ export default function App() {
               <Route path="campaigns" element={<CampaignManager />} />
               <Route path="campaigns/new" element={<CampaignEditor />} />
               <Route path="campaigns/:id" element={<CampaignEditor />} />
-              <Route path="email-history" element={<EmailHistory />} />
               <Route path="manage-admins" element={<AdminManagement />} />
               <Route path="user-management" element={<UserManagement />} />
               <Route path="cs-management" element={<CsManagement />} />

@@ -87,7 +87,7 @@ export default function Admin() {
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-indigo-50/30 to-slate-50/50 overflow-y-auto">
+    <div className="flex-1 flex flex-col h-full bg-slate-50/50 overflow-y-auto">
       <header className="h-20 hidden md:flex items-center px-8 border-b border-slate-200/60 bg-white/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
         <h1 className="text-xl font-bold tracking-tight text-slate-900">Platform Administration</h1>
       </header>
@@ -96,24 +96,22 @@ export default function Admin() {
         
         {/* Top Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-4 mb-5">
-              <div className="p-3 bg-gradient-to-br from-emerald-400 to-emerald-500 text-white rounded-xl shadow-inner">
-                <Activity size={20} />
-              </div>
-              <h3 className="font-bold text-slate-900 text-base">Model Status</h3>
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col transition-all hover:shadow-md">
+            <div className="flex items-center gap-2 mb-6">
+              <Activity size={18} className="text-blue-600" />
+              <h2 className="font-semibold text-slate-900 text-base">Model Status</h2>
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-zinc-500">Current Pipeline</span>
-                <span className="font-medium text-zinc-900">SVM & XGBoost-v2.1</span>
+                <span className="text-slate-500">Current Pipeline</span>
+                <span className="font-medium text-slate-900">SVM & XGBoost-v2.1</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">User Feedback Insights</span>
-                <span className="font-medium text-zinc-900">Enabled</span>
+                <span className="text-slate-500">User Feedback Insights</span>
+                <span className="font-medium text-slate-900">Enabled</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-zinc-500">API Health</span>
+                <span className="text-slate-500">API Health</span>
                 <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-medium bg-emerald-50 px-2 py-0.5 rounded">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Online
                 </span>
@@ -122,24 +120,22 @@ export default function Admin() {
           </div>
 
           {/* Data Pipeline Card - Enhanced */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-4 mb-5">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 text-white rounded-xl shadow-inner">
-                <Database size={20} />
-              </div>
-              <h3 className="font-bold text-slate-900 text-base">Data Pipeline</h3>
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col transition-all hover:shadow-md">
+            <div className="flex items-center gap-2 mb-6">
+              <Database size={18} className="text-blue-600" />
+              <h2 className="font-semibold text-slate-900 text-base">Data Pipeline</h2>
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-zinc-500">Storage Backend</span>
-                <span className="font-medium text-zinc-900">SQLite (churn.db)</span>
+                <span className="text-slate-500">Storage Backend</span>
+                <span className="font-medium text-slate-900">SQLite (churn.db)</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">Total Records</span>
-                <span className="font-medium text-zinc-900">36,992</span>
+                <span className="text-slate-500">Total Records</span>
+                <span className="font-medium text-slate-900">36,992</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-zinc-500">Pipeline Status</span>
+                <span className="text-slate-500">Pipeline Status</span>
                 <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-medium bg-emerald-50 px-2 py-0.5 rounded">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> Healthy
                 </span>
@@ -148,17 +144,15 @@ export default function Admin() {
           </div>
           
           {/* System Security Card - Dynamic */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-4 mb-5">
-              <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-500 text-white rounded-xl shadow-inner">
-                <ShieldCheck size={20} />
-              </div>
-              <h3 className="font-bold text-slate-900 text-base">System Security</h3>
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col transition-all hover:shadow-md">
+            <div className="flex items-center gap-2 mb-6">
+              <ShieldCheck size={18} className="text-blue-600" />
+              <h2 className="font-semibold text-slate-900 text-base">System Security</h2>
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-zinc-500">Active Sessions</span>
-                <span className="font-medium text-zinc-900 flex items-center gap-1.5">
+                <span className="text-slate-500">Active Sessions</span>
+                <span className="font-medium text-slate-900 flex items-center gap-1.5">
                   {securityData.activeSessions}
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -167,8 +161,8 @@ export default function Admin() {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">Failed Logins (24h)</span>
-                <span className={cn("font-medium", securityData.failedLogins > 0 ? "text-rose-600" : "text-zinc-900")}>
+                <span className="text-slate-500">Failed Logins (24h)</span>
+                <span className={cn("font-medium", securityData.failedLogins > 0 ? "text-rose-600" : "text-slate-900")}>
                   {securityData.failedLogins}
                   {securityData.failedLogins > 3 && (
                     <span className="ml-1.5 text-[10px] bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded font-bold">⚠ Alert</span>
@@ -176,17 +170,17 @@ export default function Admin() {
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-zinc-500">Audit Logs</span>
+                <span className="text-slate-500">Audit Logs</span>
                 <button 
                   onClick={() => setShowAuditModal(true)}
-                  className="text-indigo-600 font-medium hover:underline flex items-center gap-1"
+                  className="text-blue-600 font-medium hover:underline flex items-center gap-1"
                 >
                   View logs <ChevronRight size={12} />
                 </button>
               </div>
-              <div className="flex justify-between items-center pt-1 border-t border-zinc-100">
-                <span className="text-zinc-400 text-xs">Last scan</span>
-                <span className="text-zinc-500 text-xs flex items-center gap-1">
+              <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                <span className="text-slate-400 text-xs">Last scan</span>
+                <span className="text-slate-500 text-xs flex items-center gap-1">
                   <Clock size={10} />
                   {new Date(securityData.lastSecurityScan).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
@@ -196,38 +190,38 @@ export default function Admin() {
         </div>
 
         {/* Data Pipeline Detail Section */}
-        <div className="bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Database size={16} className="text-zinc-500" />
-              <h2 className="text-sm font-semibold text-zinc-900">Data Pipeline Stages</h2>
-            </div>
-            <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded flex items-center gap-1">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+              <Database size={18} className="text-blue-600" />
+              Data Pipeline Stages
+            </h2>
+            <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded flex items-center gap-1 border border-emerald-100">
               <CheckCircle2 size={12} /> All stages healthy
             </span>
           </div>
-          <div className="p-6">
+          <div>
             <div className="relative">
               {/* Pipeline connector line */}
-              <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-zinc-100 z-0"></div>
+              <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-slate-100 z-0"></div>
               
               <div className="space-y-4">
                 {pipelineStages.map((stage, idx) => (
                   <div key={idx} className="flex items-start gap-4 relative z-10">
                     <div className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xs font-black shadow-sm",
-                      stage.status === 'completed' ? "bg-gradient-to-br from-emerald-400 to-emerald-500 text-white" :
-                      stage.status === 'running' ? "bg-gradient-to-br from-blue-400 to-blue-500 text-white animate-pulse" :
+                      "w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-xs font-bold shadow-sm z-10",
+                      stage.status === 'completed' ? "bg-emerald-500 text-white" :
+                      stage.status === 'running' ? "bg-blue-500 text-white animate-pulse" :
                       "bg-slate-100 text-slate-500"
                     )}>
                       {stage.status === 'completed' ? '✓' : idx + 1}
                     </div>
-                    <div className="flex-1 bg-zinc-50 rounded-lg p-3 border border-zinc-100">
+                    <div className="flex-1 bg-white border border-slate-100 rounded-lg p-3 shadow-sm">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold text-zinc-900">{stage.name}</h4>
-                        <span className="text-[10px] font-mono text-zinc-400">{stage.duration}</span>
+                        <h4 className="text-sm font-semibold text-slate-900">{stage.name}</h4>
+                        <span className="text-[10px] font-mono text-slate-400">{stage.duration}</span>
                       </div>
-                      <p className="text-xs text-zinc-500 mt-0.5">{stage.detail}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{stage.detail}</p>
                     </div>
                   </div>
                 ))}
@@ -237,19 +231,19 @@ export default function Admin() {
         </div>
 
         {/* Alerts Configuration Section */}
-        <div className="bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle size={16} className="text-amber-500" />
-              <h2 className="text-sm font-semibold text-zinc-900">Alert Rules & Monitoring</h2>
-            </div>
-            <span className="text-xs text-zinc-500 font-medium">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+              <AlertTriangle size={18} className="text-blue-600" />
+              Alert Rules & Monitoring
+            </h2>
+            <span className="text-xs text-slate-500 font-medium">
               {alertRules.filter(r => r.triggered > 0).length} triggered recently
             </span>
           </div>
-          <div className="divide-y divide-zinc-100">
+          <div className="divide-y divide-slate-100 border border-slate-100 rounded-lg">
             {alertRules.map((rule) => (
-              <div key={rule.id} className="px-6 py-4 hover:bg-zinc-50/50 transition-colors">
+              <div key={rule.id} className="p-4 hover:bg-slate-50/50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={cn(
@@ -257,8 +251,8 @@ export default function Admin() {
                       rule.severity === 'critical' ? "bg-rose-500" : "bg-amber-500"
                     )}></div>
                     <div>
-                      <h4 className="text-sm font-semibold text-zinc-900">{rule.name}</h4>
-                      <p className="text-xs text-zinc-500 mt-0.5">{rule.condition}</p>
+                      <h4 className="text-sm font-semibold text-slate-900">{rule.name}</h4>
+                      <p className="text-xs text-slate-500 mt-0.5">{rule.condition}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -286,12 +280,14 @@ export default function Admin() {
 
         {/* Notebook Insights Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm flex flex-col">
-            <div className="flex items-center gap-2 mb-4">
-              <PieChartIcon size={18} className="text-zinc-500" />
-              <h3 className="font-semibold text-zinc-900 text-sm">Distribusi Prediksi (SVM Model)</h3>
-            </div>
-            <p className="text-xs text-zinc-500 mb-4">Berdasarkan hasil analisis dari Churn_Prediction.ipynb (Akurasi: 85.68%)</p>
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col hover:shadow-md transition-shadow">
+            <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2 mb-2">
+              <PieChartIcon size={18} className="text-blue-600" />
+              Distribusi Prediksi (SVM Model)
+            </h2>
+            <p className="text-xs text-slate-500 mb-6 flex items-center gap-1">
+              <Eye size={12} /> Berdasarkan hasil analisis dari Churn_Prediction.ipynb (Akurasi: 85.68%)
+            </p>
             <div className="flex-1 min-h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -316,27 +312,29 @@ export default function Admin() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex justify-center gap-6 mt-2 text-xs">
-              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#f43f5e]"></div><span className="text-zinc-600">Churn (22,078)</span></div>
-              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#10b981]"></div><span className="text-zinc-600">Tidak Churn (14,914)</span></div>
+              <div className="flex justify-center gap-6 mt-2 text-xs">
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#f43f5e]"></div><span className="text-slate-600">Churn (22,078)</span></div>
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#10b981]"></div><span className="text-slate-600">Tidak Churn (14,914)</span></div>
             </div>
           </div>
 
-          <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm flex flex-col">
-            <div className="flex items-center gap-2 mb-4">
-              <MessageSquareWarning size={18} className="text-zinc-500" />
-              <h3 className="font-semibold text-zinc-900 text-sm">Feedback Impact on Churn</h3>
-            </div>
-            <p className="text-xs text-zinc-500 mb-4">Average churn probability based on customer complaints</p>
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col hover:shadow-md transition-shadow">
+            <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2 mb-2">
+              <MessageSquareWarning size={18} className="text-blue-600" />
+              Feedback Impact on Churn
+            </h2>
+            <p className="text-xs text-slate-500 mb-6 flex items-center gap-1">
+              <Eye size={12} /> Average churn probability based on customer complaints
+            </p>
             <div className="flex-1 min-h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={feedbackImpactData} layout="vertical" margin={{ top: 0, right: 30, left: 50, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f4f4f5" />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: '#71717a' }} axisLine={false} tickLine={false} unit="%" />
-                  <YAxis dataKey="feedback" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#3f3f46' }} width={120} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} unit="%" />
+                  <YAxis dataKey="feedback" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#334155' }} width={120} />
                   <RechartsTooltip 
-                    cursor={{ fill: '#f4f4f5' }}
-                    contentStyle={{ borderRadius: '8px', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                    cursor={{ fill: '#f8fafc' }}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
                     formatter={(value: any) => [`${value}%`, 'Risiko Churn']}
                   />
                   <Bar dataKey="churnProb" radius={[0, 4, 4, 0]} barSize={24}>
@@ -351,18 +349,18 @@ export default function Admin() {
         </div>
 
         {/* System Activity Log */}
-        <div className="bg-white border border-zinc-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
-          <div className="px-6 py-4 border-b border-zinc-100">
-            <h2 className="text-sm font-semibold text-zinc-900">Recent System Activity (Live)</h2>
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-900">Recent System Activity (Live)</h2>
           </div>
           
           {loading ? (
              <div className="h-40 flex items-center justify-center">
-               <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin"></div>
+               <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin"></div>
              </div>
           ) : (
             <table className="w-full text-sm text-left">
-              <thead className="text-[11px] text-zinc-500 bg-zinc-50 uppercase tracking-wider border-b border-zinc-100">
+              <thead className="text-[11px] text-slate-500 bg-slate-50 uppercase tracking-wider border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-3 font-medium">Timestamp</th>
                   <th className="px-6 py-3 font-medium">User / Process</th>
@@ -370,20 +368,20 @@ export default function Admin() {
                   <th className="px-6 py-3 font-medium">Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100">
+              <tbody className="divide-y divide-slate-100">
                 {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-zinc-50 transition-colors">
-                    <td className="px-6 py-3 text-zinc-500 text-xs">
+                  <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-3 text-slate-500 text-xs">
                       {new Date(log.timestamp).toLocaleString()}
                     </td>
-                    <td className="px-6 py-3 font-medium text-zinc-900">{log.user}</td>
-                    <td className="px-6 py-3 text-zinc-900 font-medium">{log.action}</td>
-                    <td className="px-6 py-3 text-zinc-600">{log.details}</td>
+                    <td className="px-6 py-3 font-medium text-slate-900">{log.user}</td>
+                    <td className="px-6 py-3 text-slate-900 font-medium">{log.action}</td>
+                    <td className="px-6 py-3 text-slate-600">{log.details}</td>
                   </tr>
                 ))}
                 {logs.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-zinc-500">
+                    <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
                       No activity logs found in the database.
                     </td>
                   </tr>
@@ -397,14 +395,14 @@ export default function Admin() {
 
       {/* Audit Log Modal */}
       {showAuditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <Shield size={16} className="text-indigo-500" />
-                <h3 className="text-sm font-semibold text-zinc-900">Security Audit Log</h3>
+                <Shield size={16} className="text-blue-500" />
+                <h3 className="text-sm font-semibold text-slate-900">Security Audit Log</h3>
               </div>
-              <button onClick={() => setShowAuditModal(false)} className="p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors">
+              <button onClick={() => setShowAuditModal(false)} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
                 <X size={16} />
               </button>
             </div>
@@ -412,24 +410,24 @@ export default function Admin() {
             <div className="p-6 space-y-4">
               {/* Security Summary */}
               <div className="grid grid-cols-3 gap-4">
-                <div className="bg-zinc-50 rounded-lg p-4 border border-zinc-100">
-                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Active Sessions</div>
-                  <div className="text-2xl font-bold text-zinc-900">{securityData.activeSessions}</div>
+                <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Active Sessions</div>
+                  <div className="text-2xl font-bold text-slate-900">{securityData.activeSessions}</div>
                 </div>
-                <div className="bg-zinc-50 rounded-lg p-4 border border-zinc-100">
-                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Failed Logins</div>
-                  <div className={cn("text-2xl font-bold", securityData.failedLogins > 0 ? "text-rose-600" : "text-zinc-900")}>{securityData.failedLogins}</div>
+                <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Failed Logins</div>
+                  <div className={cn("text-2xl font-bold", securityData.failedLogins > 0 ? "text-rose-600" : "text-slate-900")}>{securityData.failedLogins}</div>
                 </div>
-                <div className="bg-zinc-50 rounded-lg p-4 border border-zinc-100">
-                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Logins (24h)</div>
-                  <div className="text-2xl font-bold text-zinc-900">{securityData.totalLogins24h}</div>
+                <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Logins (24h)</div>
+                  <div className="text-2xl font-bold text-slate-900">{securityData.totalLogins24h}</div>
                 </div>
               </div>
 
               {/* Session Details */}
               <div>
-                <h4 className="text-xs font-semibold text-zinc-700 mb-3 flex items-center gap-1.5">
-                  <Globe size={12} className="text-zinc-400" />
+                <h4 className="text-xs font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
+                  <Globe size={12} className="text-slate-400" />
                   Recent Session Activity
                 </h4>
                 {securityData.sessionDetails.length > 0 ? (
@@ -437,7 +435,7 @@ export default function Admin() {
                     {securityData.sessionDetails.map((s, idx) => (
                       <div key={idx} className={cn(
                         "flex items-center justify-between p-3 rounded-lg border",
-                        s.status === 'failed' ? "bg-rose-50/50 border-rose-100" : "bg-zinc-50 border-zinc-100"
+                        s.status === 'failed' ? "bg-rose-50/50 border-rose-100" : "bg-slate-50 border-slate-100"
                       )}>
                         <div className="flex items-center gap-3">
                           <div className={cn(
@@ -447,8 +445,8 @@ export default function Admin() {
                             {s.status === 'failed' ? <Unlock size={12} className="text-rose-600" /> : <Lock size={12} className="text-emerald-600" />}
                           </div>
                           <div>
-                            <span className="text-xs font-semibold text-zinc-800">{s.user}</span>
-                            <span className="text-[10px] text-zinc-400 ml-2">{s.ip}</span>
+                            <span className="text-xs font-semibold text-slate-800">{s.user}</span>
+                            <span className="text-[10px] text-slate-400 ml-2">{s.ip}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -458,7 +456,7 @@ export default function Admin() {
                           )}>
                             {s.status === 'failed' ? 'FAILED' : 'SUCCESS'}
                           </span>
-                          <span className="text-[10px] text-zinc-400">
+                          <span className="text-[10px] text-slate-400">
                             {s.time ? new Date(s.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
                           </span>
                         </div>
@@ -466,29 +464,29 @@ export default function Admin() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-xs text-zinc-400">
-                    <Shield size={24} className="mx-auto mb-2 text-zinc-300" />
+                  <div className="text-center py-8 text-xs text-slate-400">
+                    <Shield size={24} className="mx-auto mb-2 text-slate-300" />
                     No suspicious activity detected.
                   </div>
                 )}
               </div>
 
               {/* Last Security Scan */}
-              <div className="bg-indigo-50/50 border border-indigo-100 rounded-lg p-4 flex items-center justify-between">
+              <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <RefreshCw size={14} className="text-indigo-500" />
-                  <span className="text-xs text-indigo-700 font-medium">
+                  <RefreshCw size={14} className="text-blue-500" />
+                  <span className="text-xs text-blue-700 font-medium">
                     Last security scan: {new Date(securityData.lastSecurityScan).toLocaleString()}
                   </span>
                 </div>
-                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold">Auto-scheduled</span>
+                <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold">Auto-scheduled</span>
               </div>
             </div>
 
-            <div className="px-6 py-3 border-t border-zinc-100 bg-zinc-50 flex justify-end">
+            <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex justify-end">
               <button 
                 onClick={() => setShowAuditModal(false)} 
-                className="px-4 py-2 text-xs font-semibold bg-zinc-900 text-white rounded-md hover:bg-zinc-800 transition-colors"
+                className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-md hover:bg-slate-800 transition-colors"
               >
                 Close
               </button>

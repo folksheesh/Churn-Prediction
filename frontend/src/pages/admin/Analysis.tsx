@@ -9,7 +9,11 @@ import {
   CartesianGrid, 
   Tooltip,
   AreaChart,
-  Area
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
 } from 'recharts';
 import api from '@/lib/api';
 import FeatureExplainability, { type FeatureData } from '@/components/FeatureExplainability';
@@ -18,6 +22,9 @@ export default function Analysis() {
   const [riskData, setRiskData] = useState<any[]>([]);
   const [trendData, setTrendData] = useState<any[]>([]);
   const [featureData, setFeatureData] = useState<FeatureData[]>([]);
+  const [nlpInsights, setNlpInsights] = useState<any>(null);
+  const [regionStats, setRegionStats] = useState<any[]>([]);
+  const [planStats, setPlanStats] = useState<any[]>([]);
   const [totalAnalyzed, setTotalAnalyzed] = useState(0);
   const [loading, setLoading] = useState(true);
   const [featuresLoading, setFeaturesLoading] = useState(true);
@@ -25,15 +32,32 @@ export default function Analysis() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [overviewRes, riskRes, trendRes, factorsRes, segmentsRes] = await Promise.all([
+        const [overviewRes, riskRes, trendRes, factorsRes, segmentsRes, nlpRes] = await Promise.all([
           api.get(`/analytics/overview`),
           api.get(`/analytics/risk-distribution`),
           api.get(`/analytics/historical-trend`),
           api.get(`/analytics/feature-importance`),
-          api.get(`/analytics/feature-segments`)
+          api.get(`/analytics/feature-segments`),
+          api.get(`/analytics/nlp-insights`)
         ]);
 
         setTotalAnalyzed(overviewRes.data.total_customers);
+        setNlpInsights(nlpRes.data);
+
+        const segments = segmentsRes.data;
+        if (segments['region_category']) {
+            setRegionStats(segments['region_category'].segments.map((s: any) => ({
+                region: s.name,
+                riskPct: s.churn_rate
+            })));
+        }
+
+        if (segments['plan_tier']) {
+            setPlanStats(segments['plan_tier'].segments.map((s: any) => ({
+                name: s.name,
+                value: s.users
+            })));
+        }
 
         setRiskData([
           { name: 'Healthy', value: riskRes.data.low_risk, fill: '#10b981' },
@@ -72,7 +96,6 @@ export default function Analysis() {
         };
 
         // Merge feature importance with segment data
-        const segments = segmentsRes.data;
         const factors = factorsRes.data.slice(0, 8);
         
         const mergedFeatures: FeatureData[] = factors.map((f: any) => {
@@ -174,6 +197,118 @@ export default function Analysis() {
                 <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }} />
                 <Area type="monotone" dataKey="churnRate" name="Drop-off Rate" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorChurn)" activeDot={{ r: 6 }} />
               </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Customer Feedback Sentiment (NLP) */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-base font-semibold text-slate-900">Customer Feedback Sentiment</h2>
+          </div>
+          <p className="text-xs text-slate-500 mb-6 flex items-center gap-1">
+            <Info size={12} /> NLP-powered analysis of customer feedback.
+          </p>
+          {nlpInsights ? (() => {
+            const sentimentData = [
+              { name: 'Positive', value: nlpInsights.positive, fill: '#10b981' },
+              { name: 'Negative', value: nlpInsights.negative, fill: '#f43f5e' },
+            ];
+            const totalSentiment = (nlpInsights.positive + nlpInsights.negative) || 1;
+            return (
+              <div className="w-full flex items-center justify-center py-1">
+                <div className="flex-shrink-0" style={{ width: '220px', height: '220px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={sentimentData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={3}
+                        dataKey="value"
+                        label={false}
+                        labelLine={false}
+                      >
+                        {sentimentData.map((entry, index) => (
+                          <Cell key={`sent-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: any, _name: any, props: any) => {
+                          const pct = totalSentiment > 0 ? ((Number(value) / totalSentiment) * 100).toFixed(1) : '0';
+                          return [`${Number(value).toLocaleString()} responses (${pct}%)`, props.payload?.name ?? ''];
+                        }}
+                        contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: 'bold' }}
+                      />
+                      <text x="50%" y="44%" textAnchor="middle" dominantBaseline="central" style={{ fontSize: '18px', fontWeight: 800, fill: '#0f172a' }}>
+                        {totalSentiment.toLocaleString()}
+                      </text>
+                      <text x="50%" y="57%" textAnchor="middle" dominantBaseline="central" style={{ fontSize: '9px', fontWeight: 600, fill: '#94a3b8' }}>
+                        Analyzed
+                      </text>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            );
+          })() : (
+            <div className="h-[220px] flex items-center justify-center text-slate-400">Loading data...</div>
+          )}
+        </div>
+
+        {/* Regional Customer Distribution */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-base font-semibold text-slate-900">Regional Customer Risk</h2>
+          </div>
+          <p className="text-xs text-slate-500 mb-6 flex items-center gap-1">
+            <Info size={12} /> Risk spread across different geographic regions.
+          </p>
+          <div className="h-[220px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={regionStats.slice(0, 5)} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="region" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} unit="%" />
+                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: 'bold' }} cursor={{fill: '#f8fafc'}} />
+                <Bar dataKey="riskPct" name="High Risk %" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={32} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Customer Plan Distribution */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-base font-semibold text-slate-900">Customer Plan Distribution</h2>
+          </div>
+          <p className="text-xs text-slate-500 mb-6 flex items-center gap-1">
+            <Info size={12} /> Breakdown of active customer subscription plans.
+          </p>
+          <div className="h-[220px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={planStats}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {planStats.map((entry, index) => {
+                    const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'];
+                    return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                  })}
+                </Pie>
+                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: 'bold' }} />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#64748b' }} />
+              </PieChart>
             </ResponsiveContainer>
           </div>
         </div>

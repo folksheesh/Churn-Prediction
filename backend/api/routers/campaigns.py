@@ -113,10 +113,15 @@ def delete_campaign(campaign_id: int, db: Session = Depends(get_db), current_adm
 @router.get("/{campaign_id}/recipients", response_model=List[CampaignRecipientResponse])
 def get_campaign_recipients(campaign_id: int, db: Session = Depends(get_db), current_admin: User = Depends(get_admin)):
     recipients = db.query(CampaignRecipient).filter(CampaignRecipient.campaign_id == campaign_id).all()
-    # Enrich with customer details
+    
+    # Bulk fetch customers to avoid N+1 query problem
+    customer_ids = [r.customer_id for r in recipients]
+    customers = db.query(Customer).filter(Customer.id.in_(customer_ids)).all() if customer_ids else []
+    customer_map = {c.id: c for c in customers}
+    
     results = []
     for r in recipients:
-        customer = db.query(Customer).filter(Customer.id == r.customer_id).first()
+        customer = customer_map.get(r.customer_id)
         res = {
             "id": r.id,
             "campaign_id": r.campaign_id,

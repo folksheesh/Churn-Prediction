@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Plus, MoreHorizontal, UserX, UserCheck, X, Lightbulb, AlertTriangle, MessageSquare, TrendingDown, TrendingUp, BarChart2, Activity, UploadCloud, Download, CheckCircle2, XCircle, AlertCircle, Upload, Info, FileText, ArrowLeft, Loader2, Sparkles, Shield, Tag } from 'lucide-react';
+import { Search, Filter, Plus, MoreHorizontal, UserX, UserCheck, X, Lightbulb, AlertTriangle, MessageSquare, TrendingDown, TrendingUp, BarChart2, Activity, UploadCloud, Download, CheckCircle2, XCircle, AlertCircle, Upload, Info, FileText, ArrowLeft, Loader2, Sparkles, Shield, Tag, UserPlus } from 'lucide-react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 import RetentionActionCenter from '@/components/RetentionActionCenter';
@@ -22,12 +22,23 @@ export default function Customers() {
   useEffect(() => {
     localStorage.setItem("admin_customers_tab", activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (selectedCustomer) setSelectedCustomer(null);
+        if (isAddDrawerOpen) setIsAddDrawerOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedCustomer, isAddDrawerOpen]);
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadHistory, setUploadHistory] = useState<any[]>([]);
   const itemsPerPage = 50;
 
   const [formData, setFormData] = useState({
-    id: '', name: '', email: '', phone_number: '', age: '', gender: 'Male', plan_tier: 'Starter', 
+    id: '', name: '', email: '', phone_number: '', age: '', gender: 'Male', plan_tier: 'Basic', 
     api_calls_90d: '', logins_90d: '', days_since_active: '',
     points_in_wallet: '', avg_transaction_value: '', avg_session_duration: ''
   });
@@ -593,32 +604,34 @@ export default function Customers() {
                   </div>
                 </div>
               ) : !uploadStatus?.success && (
-                <form onSubmit={handleImportCSV} className="bg-zinc-50 border-2 border-dashed border-zinc-300 hover:border-zinc-400 hover:bg-white rounded-md p-8 flex flex-col items-center justify-center min-h-[300px] transition-all cursor-pointer relative group animate-fadeIn">
+                <form onSubmit={handleImportCSV} className="bg-gradient-to-br from-indigo-50/50 to-purple-50/50 border-2 border-dashed border-indigo-200 hover:border-indigo-400 hover:from-indigo-50 hover:to-purple-50 rounded-2xl p-10 flex flex-col items-center justify-center min-h-[350px] transition-all duration-300 cursor-pointer relative group animate-fadeIn shadow-sm hover:shadow-md">
                   <input
                     type="file"
                     accept=".csv, .xlsx"
                     onChange={(e) => setImportFile(e.target.files?.[0] || null)}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
-                  <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <Upload className="w-8 h-8 text-zinc-500" />
+                  <div className="w-20 h-20 bg-white shadow-lg shadow-indigo-100 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 relative">
+                    <div className="absolute inset-0 bg-indigo-400 rounded-full animate-ping opacity-20"></div>
+                    <Upload className="w-10 h-10 text-indigo-500 relative z-10" />
                   </div>
-                  <h3 className="text-lg font-extrabold text-zinc-900 mb-2">Drop your XLSX/CSV file here</h3>
-                  <p className="text-sm text-zinc-500 mb-6">or click to select a file</p>
+                  <h3 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-900 to-purple-900 mb-2">Drop your XLSX/CSV file here</h3>
+                  <p className="text-sm font-medium text-indigo-400 mb-8">or click to browse from your computer</p>
                   
                   {importFile ? (
-                    <div className="text-center z-20 relative">
-                      <p className="text-sm font-bold text-zinc-800">{importFile.name}</p>
+                    <div className="text-center z-20 relative bg-white/80 backdrop-blur-sm px-6 py-4 rounded-xl border border-indigo-100 shadow-sm">
+                      <p className="text-sm font-bold text-indigo-900 mb-4">{importFile.name}</p>
                       <button
                         type="submit"
                         disabled={isImporting}
-                        className="mt-4 px-4 py-1.5 text-[13px] bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-300 text-white font-bold rounded-md transition-colors shadow-sm cursor-pointer z-30 relative"
+                        className="w-full px-6 py-2.5 text-[13px] bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-zinc-300 disabled:to-zinc-400 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 z-30 relative flex items-center justify-center gap-2"
                       >
-                        {isImporting ? "Analyzing..." : "Analyze"}
+                        {isImporting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                        {isImporting ? "Analyzing..." : "Analyze Customers"}
                       </button>
                     </div>
                   ) : (
-                    <div className="px-4 py-1.5 text-[13px] bg-zinc-900 text-white font-bold rounded-md relative z-20 pointer-events-none">
+                    <div className="px-6 py-2.5 text-[13px] bg-white text-indigo-700 font-bold rounded-xl border border-indigo-100 shadow-sm relative z-20 pointer-events-none group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
                       Select File
                     </div>
                   )}
@@ -723,28 +736,37 @@ export default function Customers() {
               )}
 
               {/* Upload History */}
-              <div className="bg-white border border-zinc-200/80 shadow-[0_2px_8px_rgb(0,0,0,0.04)] rounded-md p-6 mt-6">
-                <h4 className="text-[13px] font-semibold text-zinc-900 mb-4">Upload History</h4>
+              <div className="bg-white border border-zinc-200/80 shadow-sm rounded-2xl p-7 mt-6">
+                <h4 className="text-[15px] font-black text-zinc-900 mb-5 flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <FileText size={14} />
+                  </div>
+                  Upload History
+                </h4>
                 {uploadHistory.length > 0 ? (
                   <div className="space-y-3">
                     {uploadHistory.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between bg-zinc-50 hover:bg-zinc-100 p-4 rounded-md border border-zinc-100 transition-colors cursor-pointer group">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-zinc-400 group-hover:text-zinc-500 transition-colors" />
+                      <div key={i} className="flex items-center justify-between bg-zinc-50 hover:bg-white p-4 rounded-xl border border-zinc-100 hover:border-indigo-100 hover:shadow-sm transition-all cursor-pointer group">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-transform">
+                            <FileText size={18} />
+                          </div>
                           <div>
-                            <p className="text-sm font-bold text-zinc-800">{item.count} customers</p>
-                            <p className="text-xs text-zinc-400 mt-0.5">{item.date}</p>
+                            <p className="text-sm font-bold text-zinc-800">{item.count} customers imported</p>
+                            <p className="text-[11px] font-medium text-zinc-400 mt-0.5">{item.date}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-xs font-bold text-emerald-600">Completed</span>
-                          <Download className="w-4 h-4 text-zinc-400 group-hover:text-zinc-600" />
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">Completed</span>
+                          <Download className="w-4 h-4 text-zinc-400 group-hover:text-indigo-600 transition-colors" />
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-500 italic">No upload history yet.</p>
+                  <div className="text-center py-8 bg-zinc-50/50 rounded-xl border border-zinc-100 border-dashed">
+                    <p className="text-sm font-medium text-zinc-400">No upload history yet.</p>
+                  </div>
                 )}
               </div>
 
@@ -754,45 +776,51 @@ export default function Customers() {
             <div className="space-y-6">
               
               {/* How to Use Card */}
-              <div className="bg-white border border-zinc-200/80 shadow-[0_2px_8px_rgb(0,0,0,0.04)] rounded-md p-6">
-                <h4 className="text-base font-extrabold text-zinc-900  mb-6">How to Use</h4>
+              <div className="bg-white border border-zinc-200/80 shadow-sm rounded-2xl p-7">
+                <h4 className="text-[15px] font-black text-zinc-900 mb-6 flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <Info size={14} />
+                  </div>
+                  How to Use
+                </h4>
                 
-                <div className="space-y-6 relative">
+                <div className="space-y-6 relative ml-2">
                   {/* Vertical Line */}
-                  <div className="absolute top-2 bottom-2 left-[11px] w-0.5 bg-zinc-100 z-0"></div>
+                  <div className="absolute top-2 bottom-2 left-[11px] w-0.5 bg-gradient-to-b from-indigo-200 to-emerald-200 z-0"></div>
                   
-                  <div className="flex gap-4 relative z-10">
-                    <div className="w-6 h-6 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm shadow-zinc-200 border-2 border-white">
+                  <div className="flex gap-5 relative z-10 group">
+                    <div className="w-6 h-6 rounded-full bg-white text-indigo-600 flex items-center justify-center font-black text-[11px] shrink-0 shadow-md shadow-indigo-100 border-2 border-indigo-200 group-hover:scale-110 group-hover:border-indigo-400 transition-all">
                       1
                     </div>
-                    <div>
-                      <h5 className="text-sm font-bold text-zinc-800">Prepare your XLSX file</h5>
-                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Download the template and fill in customer data</p>
+                    <div className="pt-0.5">
+                      <h5 className="text-[13px] font-bold text-zinc-800 group-hover:text-indigo-700 transition-colors">Prepare your XLSX file</h5>
+                      <p className="text-[11px] font-medium text-zinc-500 mt-1 leading-relaxed">Download the template and fill in your customer data properly.</p>
                     </div>
                   </div>
                   
-                  <div className="flex gap-4 relative z-10">
-                    <div className="w-6 h-6 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm shadow-zinc-200 border-2 border-white">
+                  <div className="flex gap-5 relative z-10 group">
+                    <div className="w-6 h-6 rounded-full bg-white text-purple-600 flex items-center justify-center font-black text-[11px] shrink-0 shadow-md shadow-purple-100 border-2 border-purple-200 group-hover:scale-110 group-hover:border-purple-400 transition-all">
                       2
                     </div>
-                    <div>
-                      <h5 className="text-sm font-bold text-zinc-800">Upload your file</h5>
-                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Drag and drop or click to select your XLSX/CSV file</p>
+                    <div className="pt-0.5">
+                      <h5 className="text-[13px] font-bold text-zinc-800 group-hover:text-purple-700 transition-colors">Upload your file</h5>
+                      <p className="text-[11px] font-medium text-zinc-500 mt-1 leading-relaxed">Drag and drop or click to select your filled XLSX/CSV file.</p>
                     </div>
                   </div>
                   
-                  <div className="flex gap-4 relative z-10">
-                    <div className="w-6 h-6 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm shadow-zinc-200 border-2 border-white">
+                  <div className="flex gap-5 relative z-10 group">
+                    <div className="w-6 h-6 rounded-full bg-white text-emerald-600 flex items-center justify-center font-black text-[11px] shrink-0 shadow-md shadow-emerald-100 border-2 border-emerald-200 group-hover:scale-110 group-hover:border-emerald-400 transition-all">
                       3
                     </div>
-                    <div>
-                      <h5 className="text-sm font-bold text-zinc-800">Get predictions</h5>
-                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">View results with churn probability analysis</p>
+                    <div className="pt-0.5">
+                      <h5 className="text-[13px] font-bold text-zinc-800 group-hover:text-emerald-700 transition-colors">Get predictions</h5>
+                      <p className="text-[11px] font-medium text-zinc-500 mt-1 leading-relaxed">View results instantly with AI-powered churn probability analysis.</p>
                     </div>
                   </div>
                 </div>
 
-                <button onClick={handleDownloadTemplate} className="block text-center w-full mt-8 py-2.5 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 font-bold rounded-md border border-zinc-200 transition-colors text-xs">
+                <button onClick={handleDownloadTemplate} className="block text-center w-full mt-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-xl shadow-md shadow-emerald-200 transition-all active:scale-95 text-[13px] flex items-center justify-center gap-2">
+                  <Download size={16} />
                   Download Template
                 </button>
               </div>
@@ -808,91 +836,108 @@ export default function Customers() {
 
       {/* Add Customer Drawer */}
       {isAddDrawerOpen && (
-        <div className="fixed inset-0 bg-zinc-950/30 backdrop-blur-sm z-50 flex justify-end animate-fade-in">
-          <div className="w-[400px] bg-white h-full shadow-2xl animate-slide-in-right flex flex-col border-l border-zinc-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
-              <h2 className="saas-heading">Add New Customer</h2>
-              <button onClick={() => setIsAddDrawerOpen(false)} className="text-zinc-400 hover:text-zinc-700 transition-colors">
+        <div 
+          className="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 flex justify-end animate-fade-in"
+          onClick={() => setIsAddDrawerOpen(false)}
+        >
+          <div 
+            className="w-[450px] bg-white h-full shadow-[0_0_40px_rgba(0,0,0,0.1)] animate-slide-in-right flex flex-col border-l border-zinc-200/80 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-8 py-6 border-b border-zinc-100 bg-white relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-brand-50 rounded-xl text-brand-600">
+                  <UserPlus size={20} />
+                </div>
+                <h2 className="text-xl font-bold text-zinc-900 tracking-tight">Add New Customer</h2>
+              </div>
+              <button onClick={() => setIsAddDrawerOpen(false)} className="w-8 h-8 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all border border-transparent">
                 <X size={16} />
               </button>
             </div>
             
-            <form onSubmit={handleAddCustomer} className="flex flex-col flex-1 overflow-hidden">
-              <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+            <form onSubmit={handleAddCustomer} className="flex flex-col flex-1 overflow-hidden relative z-10">
+              <div className="p-8 space-y-5 flex-1 overflow-y-auto custom-scrollbar">
                 {addCustomerStatus && (
-                  <div className={`p-3 text-xs rounded border ${addCustomerStatus.type === 'error' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                  <div className={`p-4 text-sm font-semibold rounded-xl border flex items-center gap-2 shadow-sm ${addCustomerStatus.type === 'error' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                    {addCustomerStatus.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
                     {addCustomerStatus.msg}
                   </div>
                 )}
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">Customer ID</label>
-                  <input required type="text" placeholder="e.g. CUST-123" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-bold text-zinc-700">Customer ID</label>
+                  <input required type="text" placeholder="e.g. CUST-123" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400" />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">Full Name</label>
-                  <input required type="text" placeholder="Jane Doe" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-bold text-zinc-700">Full Name</label>
+                  <input required type="text" placeholder="Jane Doe" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400" />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">Email Address</label>
-                  <input type="email" placeholder="jane.doe@example.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-bold text-zinc-700">Email Address</label>
+                  <input type="email" placeholder="jane.doe@example.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400" />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-700">Phone Number</label>
-                  <input type="text" placeholder="08123456789" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-bold text-zinc-700">Phone Number</label>
+                  <input type="text" placeholder="08123456789" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-zinc-700">Plan Tier</label>
-                    <select value={formData.plan_tier} onChange={e => setFormData({...formData, plan_tier: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400">
-                      <option>Starter</option>
+                
+                <div className="pt-2 pb-1">
+                  <div className="h-px w-full bg-gradient-to-r from-transparent via-indigo-100 to-transparent"></div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-zinc-700">Plan Tier</label>
+                    <select value={formData.plan_tier} onChange={e => setFormData({...formData, plan_tier: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white cursor-pointer appearance-none">
+                      <option>Basic</option>
                       <option>Pro</option>
                       <option>Enterprise</option>
                     </select>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-zinc-700">Gender</label>
-                    <select value={formData.gender} onChange={e => setFormData({...formData, gender: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-zinc-700">Gender</label>
+                    <select value={formData.gender} onChange={e => setFormData({...formData, gender: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white cursor-pointer appearance-none">
                       <option>Male</option>
                       <option>Female</option>
                       <option>Other</option>
                     </select>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-zinc-700">Age</label>
-                    <input type="number" required placeholder="30" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-zinc-700">Age</label>
+                    <input type="number" required placeholder="30" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-zinc-700">Days Since Active</label>
-                    <input type="number" min="0" required placeholder="0" value={formData.days_since_active} onChange={e => setFormData({...formData, days_since_active: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-zinc-700">Days Since Active</label>
+                    <input type="number" min="0" required placeholder="0" value={formData.days_since_active} onChange={e => setFormData({...formData, days_since_active: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-zinc-700">Logins (90 Days)</label>
-                    <input type="number" min="0" required placeholder="0" value={formData.logins_90d} onChange={e => setFormData({...formData, logins_90d: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-zinc-700">Logins (90 Days)</label>
+                    <input type="number" min="0" required placeholder="0" value={formData.logins_90d} onChange={e => setFormData({...formData, logins_90d: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-zinc-700">API Calls (90 Days)</label>
-                    <input type="number" min="0" required placeholder="0" value={formData.api_calls_90d} onChange={e => setFormData({...formData, api_calls_90d: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-zinc-700">API Calls (90 Days)</label>
+                    <input type="number" min="0" required placeholder="0" value={formData.api_calls_90d} onChange={e => setFormData({...formData, api_calls_90d: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-zinc-700">Points in Wallet</label>
-                    <input type="number" min="0" step="any" required placeholder="0" value={formData.points_in_wallet} onChange={e => setFormData({...formData, points_in_wallet: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-zinc-700">Points in Wallet</label>
+                    <input type="number" min="0" step="any" required placeholder="0" value={formData.points_in_wallet} onChange={e => setFormData({...formData, points_in_wallet: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-zinc-700">Avg Transaction Value</label>
-                    <input type="number" min="0" step="any" required placeholder="0" value={formData.avg_transaction_value} onChange={e => setFormData({...formData, avg_transaction_value: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-zinc-700">Avg Transaction</label>
+                    <input type="number" min="0" step="any" required placeholder="0" value={formData.avg_transaction_value} onChange={e => setFormData({...formData, avg_transaction_value: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-zinc-700">Avg Session (Mins)</label>
-                    <input type="number" min="0" step="any" required placeholder="0" value={formData.avg_session_duration} onChange={e => setFormData({...formData, avg_session_duration: e.target.value})} className="w-full border border-zinc-200 rounded px-3 py-1.5 text-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400" />
+                  <div className="space-y-1.5 col-span-2">
+                    <label className="text-[13px] font-bold text-zinc-700">Avg Session (Mins)</label>
+                    <input type="number" min="0" step="any" required placeholder="0" value={formData.avg_session_duration} onChange={e => setFormData({...formData, avg_session_duration: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400" />
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 border-t border-zinc-100 flex justify-end gap-3 bg-zinc-50/50">
-                <button type="button" onClick={() => setIsAddDrawerOpen(false)} className="px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 rounded border border-zinc-200 transition-colors shadow-sm">
+              <div className="p-6 border-t border-zinc-100 flex justify-end gap-3 bg-white">
+                <button type="button" onClick={() => setIsAddDrawerOpen(false)} className="px-5 py-2.5 text-[13px] font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl border border-transparent hover:border-zinc-200 transition-all">
                   Cancel
                 </button>
-                <button type="submit" className="px-3 py-1.5 text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 rounded transition-colors shadow-sm">
+                <button type="submit" className="px-6 py-2.5 text-[13px] font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-all shadow-sm flex items-center gap-2">
                   Save Customer
                 </button>
               </div>
@@ -903,35 +948,53 @@ export default function Customers() {
 
       {/* Customer Intelligence Drawer (Slide-over) */}
       {selectedCustomer && (
-        <div className="fixed inset-0 bg-zinc-950/30 backdrop-blur-sm z-50 flex justify-end animate-fade-in">
-          <div className="w-[500px] bg-white h-full shadow-2xl animate-slide-in-right flex flex-col border-l border-zinc-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                <h2 className="saas-heading">Customer Intelligence Profile</h2>
+        <div 
+          className="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 flex justify-end animate-fade-in"
+          onClick={() => setSelectedCustomer(null)}
+        >
+          <div 
+            className="w-[500px] bg-white h-full shadow-[0_0_40px_rgba(0,0,0,0.1)] animate-slide-in-right flex flex-col border-l border-zinc-200/80 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Colorful Background Elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100/50 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+            <div className="absolute top-40 left-0 w-48 h-48 bg-purple-100/50 rounded-full blur-3xl -ml-20 pointer-events-none"></div>
+
+            <div className="flex items-center justify-between px-7 py-5 border-b border-indigo-50/80 bg-white/60 backdrop-blur-xl sticky top-0 z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 shadow-sm shadow-indigo-200"></div>
+                <h2 className="text-base font-black text-zinc-900 tracking-tight">Customer Intelligence Profile</h2>
               </div>
-              <button onClick={() => setSelectedCustomer(null)} className="text-zinc-400 hover:text-zinc-700 transition-colors">
+              <button onClick={() => setSelectedCustomer(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:bg-rose-100 hover:text-rose-600 transition-colors">
                 <X size={16} />
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-6 border-b border-zinc-100 bg-zinc-50/30">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center font-bold text-zinc-600 text-lg">
+            <div className="flex-1 overflow-y-auto z-10 relative">
+              <div className="p-7 border-b border-zinc-100 bg-gradient-to-b from-indigo-50/40 to-white relative overflow-hidden">
+                <div className="flex items-start gap-4 relative z-10">
+                  <div className="w-12 h-12 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center font-bold text-lg shrink-0">
                     {selectedCustomer.name?.substring(0,2).toUpperCase() || 'NA'}
                   </div>
                   <div className="flex-1">
                     <h1 className="text-lg font-bold text-zinc-900 leading-tight">{selectedCustomer.name}</h1>
-                    <div className="text-xs font-medium text-zinc-500 mt-0.5">{selectedCustomer.id} • {selectedCustomer.plan_tier} Plan</div>
-                    <div className="text-[11px] font-medium text-zinc-400 mt-0.5">{selectedCustomer.email || 'No email'} • {selectedCustomer.phone_number || 'No phone'}</div>
-                    <div className="mt-3 flex gap-2">
-                      <span className="saas-badge bg-white text-zinc-600">{selectedCustomer.age} Yrs</span>
-                      <span className="saas-badge bg-white text-zinc-600">{selectedCustomer.gender}</span>
+                    <div className="text-xs font-medium text-zinc-500 mt-0.5">
+                      {selectedCustomer.id} • {selectedCustomer.plan_tier} Plan
+                    </div>
+                    <div className="text-[11px] font-medium text-zinc-400 mt-1 flex items-center gap-1.5">
+                      <span>{selectedCustomer.email || 'No email'}</span>
+                      <span className="text-zinc-300">•</span>
+                      <span>{selectedCustomer.phone_number || 'No phone'}</span>
+                    </div>
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-zinc-100 text-zinc-600">{selectedCustomer.age} Years</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-zinc-100 text-zinc-600">
+                        {selectedCustomer.gender === 'M' ? 'Male' : selectedCustomer.gender === 'F' ? 'Female' : selectedCustomer.gender}
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">Health Score</div>
+                  <div className="text-right flex flex-col items-end">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-0.5">Health Score</div>
                     <div className={cn("text-2xl font-black tracking-tight", 
                       selectedCustomer.churn_risk === 'High' ? "text-rose-600" :
                       selectedCustomer.churn_risk === 'Medium' ? "text-amber-600" : "text-emerald-600"
@@ -942,24 +1005,28 @@ export default function Customers() {
                 </div>
               </div>
 
-              <div className="p-6 space-y-6">
+              <div className="p-7 space-y-7">
                 
                 {/* Risk Section */}
-                <div className={cn("p-4 rounded-lg border", selectedCustomer.churn_risk === 'High' ? "bg-rose-50/50 border-rose-200/50" : "bg-zinc-50 border-zinc-200")}>
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <AlertTriangle size={14} className={selectedCustomer.churn_risk === 'High' ? "text-rose-600" : "text-zinc-500"} />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900">Risk Assessment</h3>
+                <div className={cn("p-5 rounded-2xl border relative overflow-hidden shadow-sm", selectedCustomer.churn_risk === 'High' ? "bg-gradient-to-br from-rose-50 to-orange-50 border-rose-200" : "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100")}>
+                  {selectedCustomer.churn_risk === 'High' && <div className="absolute top-0 right-0 w-24 h-24 bg-rose-200/40 rounded-full blur-xl -mr-10 -mt-10 pointer-events-none"></div>}
+                  
+                  <div className="flex items-center gap-2 mb-3 relative z-10">
+                    <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shadow-sm", selectedCustomer.churn_risk === 'High' ? "bg-rose-100 text-rose-600" : "bg-emerald-100 text-emerald-600")}>
+                      <AlertTriangle size={14} />
+                    </div>
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-800">Risk Assessment</h3>
                   </div>
-                  <div className="text-sm font-medium text-zinc-700 leading-relaxed mb-3">
+                  <div className="text-[13px] font-medium text-zinc-700 leading-relaxed mb-4 relative z-10">
                     {selectedCustomer.churn_risk === 'High' 
                       ? "Critical churn probability detected based on recent behavioral drops and negative sentiment."
                       : "Customer exhibits normal usage patterns and stable sentiment."}
                   </div>
                   
                   {selectedCustomer.churn_risk === 'High' && (
-                    <div className="bg-white rounded border border-rose-100 p-3 shadow-sm">
-                      <h4 className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-1 flex items-center gap-1"><Sparkles size={12}/> AI Recommended Action</h4>
-                      <p className="text-[13px] font-medium text-zinc-800">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-rose-100 p-4 shadow-sm relative z-10">
+                      <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><Sparkles size={12} className="text-indigo-500 animate-pulse"/> AI Recommended Action</h4>
+                      <p className="text-[12px] font-semibold text-zinc-800 leading-snug">
                         Open the Retention Action Center to assign an AI-recommended campaign strategy for this customer.
                       </p>
                     </div>
@@ -968,18 +1035,18 @@ export default function Customers() {
 
                 {/* Retention Campaign Card */}
                 <div>
-                  <h3 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Retention Campaign</h3>
-                  <div className="saas-card p-4">
-                    <div className="space-y-3">
+                  <h3 className="text-[11px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2"><div className="w-1 h-3 rounded-full bg-indigo-400"></div> Retention Campaign</h3>
+                  <div className="bg-white rounded-2xl border border-zinc-200 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 hover:border-indigo-200 hover:shadow-md transition-all">
+                    <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-zinc-500">Campaign Name</span>
-                        <span className="text-[13px] font-semibold text-zinc-900">
+                        <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Campaign Name</span>
+                        <span className="text-[13px] font-black text-zinc-900 bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-100">
                           {selectedCustomer.retention_campaign || '—'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-zinc-500">Assigned Date</span>
-                        <span className="text-[13px] font-medium text-zinc-700">
+                        <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Assigned Date</span>
+                        <span className="text-[12px] font-bold text-zinc-600 bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-100">
                           {selectedCustomer.campaign_assigned_date 
                             ? new Date(selectedCustomer.campaign_assigned_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                             : '—'
@@ -987,13 +1054,13 @@ export default function Customers() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-zinc-500">Status</span>
+                        <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Status</span>
                         {selectedCustomer.retention_campaign ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <CheckCircle2 size={10} /> Assigned
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm">
+                            <CheckCircle2 size={12} /> Assigned
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold bg-zinc-100 text-zinc-500 border border-zinc-200">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-zinc-100 text-zinc-500 border border-zinc-200 shadow-sm">
                             Not Assigned
                           </span>
                         )}
@@ -1004,28 +1071,31 @@ export default function Customers() {
 
                 {/* Behavioral Metrics */}
                 <div>
-                  <h3 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Behavioral Telemetry (90d)</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="saas-card p-3">
-                      <div className="text-[10px] font-semibold text-zinc-500 mb-1">API Calls</div>
-                      <div className="text-lg font-bold text-zinc-900">{selectedCustomer.api_calls_90d?.toLocaleString() || 0}</div>
+                  <h3 className="text-[11px] font-black text-purple-400 uppercase tracking-widest mb-3 flex items-center gap-2"><div className="w-1 h-3 rounded-full bg-purple-400"></div> Behavioral Telemetry (90d)</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gradient-to-br from-white to-zinc-50 rounded-2xl border border-zinc-200 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-4 flex flex-col items-center justify-center text-center hover:border-purple-200 transition-colors">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">API Calls</div>
+                      <div className="text-2xl font-black text-purple-900">{selectedCustomer.api_calls_90d?.toLocaleString() || 0}</div>
                     </div>
-                    <div className="saas-card p-3">
-                      <div className="text-[10px] font-semibold text-zinc-500 mb-1">Session Logins</div>
-                      <div className="text-lg font-bold text-zinc-900">{selectedCustomer.logins_90d?.toLocaleString() || 0}</div>
+                    <div className="bg-gradient-to-br from-white to-zinc-50 rounded-2xl border border-zinc-200 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-4 flex flex-col items-center justify-center text-center hover:border-indigo-200 transition-colors">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Session Logins</div>
+                      <div className="text-2xl font-black text-indigo-900">{selectedCustomer.logins_90d?.toLocaleString() || 0}</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Feedback */}
                 <div>
-                  <h3 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Recent Feedback</h3>
+                  <h3 className="text-[11px] font-black text-rose-400 uppercase tracking-widest mb-3 flex items-center gap-2"><div className="w-1 h-3 rounded-full bg-rose-400"></div> Recent Feedback</h3>
                   {selectedCustomer.feedback ? (
-                    <div className="bg-zinc-50 border border-zinc-200 rounded p-4 text-[13px] text-zinc-700 italic">
-                      "{selectedCustomer.feedback}"
+                    <div className="bg-gradient-to-r from-rose-50/50 to-transparent border-l-4 border-rose-400 rounded-r-2xl p-5 text-[13px] font-medium text-zinc-700 italic shadow-sm relative">
+                      <span className="text-3xl text-rose-200 absolute top-2 left-2 font-serif opacity-50">"</span>
+                      <span className="relative z-10">{selectedCustomer.feedback}</span>
                     </div>
                   ) : (
-                    <div className="text-[13px] text-zinc-500">No recorded feedback.</div>
+                    <div className="bg-zinc-50 border border-zinc-200 border-dashed rounded-2xl p-5 text-[13px] font-medium text-zinc-500 text-center">
+                      No recorded feedback.
+                    </div>
                   )}
                 </div>
 
@@ -1033,14 +1103,14 @@ export default function Customers() {
             </div>
 
             {/* Mitigate Customer Button */}
-            <div className="p-4 border-t border-zinc-100 bg-zinc-50">
+            <div className="p-5 border-t border-indigo-50 bg-white/80 backdrop-blur-xl relative z-20">
               <button 
                 onClick={() => {
                   setRetentionModalCustomer(selectedCustomer);
                 }}
-                className="w-full px-4 py-2.5 text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg transition-all active:scale-[0.98] shadow-sm hover:shadow flex items-center justify-center gap-2"
+                className="w-full px-4 py-3.5 text-[13px] font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl transition-all shadow-lg shadow-indigo-200 hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2"
               >
-                <Shield size={14} /> Mitigate Customer
+                <Shield size={16} /> Mitigate Customer
               </button>
             </div>
           </div>

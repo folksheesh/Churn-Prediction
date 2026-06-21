@@ -16,7 +16,7 @@ const CAMPAIGN_TYPES = [
 export default function CampaignEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const isNew = !id;
+  const isNew = !id || id === 'new';
 
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
@@ -27,7 +27,7 @@ export default function CampaignEditor() {
     subject: '',
     content: '',
     banner_image: '',
-    status: 'draft'
+    status: 'active'
   });
 
   const [recipients, setRecipients] = useState<any[]>([]);
@@ -81,8 +81,8 @@ export default function CampaignEditor() {
     setSaving(true);
     try {
       if (isNew) {
-        const res = await api.post('/campaigns', campaign);
-        navigate(`/admin/campaigns/${res.data.id}`);
+        await api.post('/campaigns', campaign);
+        navigate(`/admin/campaigns`);
       } else {
         await api.put(`/campaigns/${id}`, campaign);
         showToast('Campaign saved successfully', 'success');
@@ -172,7 +172,7 @@ export default function CampaignEditor() {
 
   if (loading) return <div className="p-8 text-center text-zinc-500">Loading campaign...</div>;
 
-  const isReadOnly = campaign.status !== 'draft';
+  const isReadOnly = !isNew && campaign.status !== 'draft' && campaign.status !== 'active';
 
   return (
     <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-indigo-50/30 to-slate-50/50 overflow-y-auto">
@@ -198,9 +198,9 @@ export default function CampaignEditor() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95"
+                className="px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95"
               >
-                {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save Draft
+                {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} {isNew ? 'Create Campaign' : 'Save Changes'}
               </button>
               {!isNew && recipients.length > 0 && (
                 <button
@@ -343,71 +343,7 @@ export default function CampaignEditor() {
           </div>
         </section>
 
-        {/* Section 4: Recipients */}
-        {!isNew && (
-          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-black text-slate-900 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white text-sm flex items-center justify-center shadow-inner">4</span>
-                Recipients ({recipients.length})
-              </h2>
-              {!isReadOnly && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-zinc-500 mr-2">Quick Add:</span>
-                  <button onClick={() => addRecipientsByRisk('High')} className="px-3 py-1.5 bg-rose-50 text-rose-700 text-xs font-bold rounded-lg border border-rose-100 hover:bg-rose-100">High Risk</button>
-                  <button onClick={() => addRecipientsByRisk('Medium')} className="px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-lg border border-amber-100 hover:bg-amber-100">Medium Risk</button>
-                  <button onClick={() => addRecipientsByRisk('Low')} className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-100 hover:bg-emerald-100">Low Risk</button>
-                </div>
-              )}
-            </div>
-            
-            <div className="border border-zinc-200 rounded-xl overflow-hidden max-h-80 overflow-y-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="text-[11px] text-zinc-500 bg-zinc-50 uppercase tracking-wider sticky top-0 border-b border-zinc-200">
-                  <tr>
-                    <th className="px-4 py-3 font-bold">Customer Name</th>
-                    <th className="px-4 py-3 font-bold">Email</th>
-                    <th className="px-4 py-3 font-bold">Risk</th>
-                    <th className="px-4 py-3 font-bold">Status</th>
-                    {!isReadOnly && <th className="px-4 py-3 font-bold text-right">Action</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100">
-                  {recipients.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-zinc-400">No recipients added yet</td>
-                    </tr>
-                  ) : (
-                    recipients.map(r => (
-                      <tr key={r.id}>
-                        <td className="px-4 py-2 font-medium text-zinc-900">{r.customer_name}</td>
-                        <td className="px-4 py-2 text-zinc-500">{r.customer_email || 'N/A'}</td>
-                        <td className="px-4 py-2">
-                          <span className={cn(
-                            "text-[10px] font-bold px-2 py-0.5 rounded border uppercase",
-                            r.customer_risk === 'High' ? "bg-rose-50 text-rose-700 border-rose-100" :
-                            r.customer_risk === 'Medium' ? "bg-amber-50 text-amber-700 border-amber-100" :
-                            "bg-emerald-50 text-emerald-700 border-emerald-100"
-                          )}>
-                            {r.customer_risk}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2">
-                          <span className="text-[11px] font-semibold text-zinc-500 uppercase">{r.email_status}</span>
-                        </td>
-                        {!isReadOnly && (
-                          <td className="px-4 py-2 text-right">
-                            <button onClick={() => removeRecipient(r.customer_id)} className="text-rose-500 hover:text-rose-700 text-xs font-semibold">Remove</button>
-                          </td>
-                        )}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
+
 
       </div>
 

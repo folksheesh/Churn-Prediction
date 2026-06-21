@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Tag, Search, ShieldCheck, Headphones, Star, PackageOpen, Sparkles, Send, Edit3, CheckCircle, AlertTriangle, X } from 'lucide-react';
+import { Plus, Tag, Search, ShieldCheck, Headphones, Star, PackageOpen, Sparkles, Send, Edit3, CheckCircle, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,8 @@ export default function CampaignManager() {
   const [recipients, setRecipients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{show: boolean, message: string, type: 'success'|'error'}>({ show: false, message: '', type: 'success' });
+  const [successModalData, setSuccessModalData] = useState<{show: boolean, count: number, campaignName: string} | null>(null);
+  const [confirmModalData, setConfirmModalData] = useState<{show: boolean, count: number, campaignName: string} | null>(null);
 
   const showToast = (message: string, type: 'success'|'error' = 'error') => {
     setToast({ show: true, message, type });
@@ -85,17 +87,21 @@ export default function CampaignManager() {
     }
   };
 
-  const handleSend = async () => {
+  const triggerSendConfirm = () => {
     if (activeTab === null) return;
     if (recipients.length === 0) {
       showToast("Please add recipients first.", 'error');
       return;
     }
-    if (!window.confirm(`Are you sure you want to send this campaign to ${recipients.length} recipients?`)) return;
-    
+    setConfirmModalData({ show: true, count: recipients.length, campaignName: activeCampaign?.name || 'Campaign' });
+  };
+
+  const handleSendConfirmed = async () => {
+    if (activeTab === null) return;
+    setConfirmModalData(null);
     try {
       await api.post(`/campaigns/${activeTab}/send`);
-      showToast('Campaign sending started!', 'success');
+      setSuccessModalData({ show: true, count: recipients.length, campaignName: activeCampaign?.name || 'Campaign' });
       fetchCampaigns();
       fetchRecipients(activeTab);
     } catch (err: any) {
@@ -132,7 +138,7 @@ export default function CampaignManager() {
 
         {/* Swipeable Tabs Row */}
         <div className="mb-10 w-full overflow-hidden">
-          <div className="flex overflow-x-auto pb-6 -mb-6 snap-x snap-mandatory hide-scrollbar gap-4 md:gap-5 px-1 pt-1">
+          <div className="flex overflow-x-auto pb-6 -mb-6 snap-x snap-mandatory hide-scrollbar gap-4 md:gap-5 px-1 pt-2">
             
             {/* Create Campaign Card */}
             <div 
@@ -228,7 +234,7 @@ export default function CampaignManager() {
 
               {recipients.length > 0 && activeCampaign?.status === 'draft' && (
                 <button
-                  onClick={handleSend}
+                  onClick={triggerSendConfirm}
                   className="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-sm font-bold rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95"
                 >
                   <Send size={16} /> Send Now
@@ -340,6 +346,67 @@ export default function CampaignManager() {
           <button onClick={() => setToast(prev => ({...prev, show: false}))} className={`ml-3 p-1 rounded-md transition-colors ${toast.type === 'success' ? 'text-emerald-600 hover:bg-emerald-100' : 'text-rose-600 hover:bg-rose-100'}`}>
             <X size={16} />
           </button>
+        </div>
+      )}
+
+      {/* Confirm Send Modal */}
+      {confirmModalData?.show && (
+        <div className="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in px-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full animate-in zoom-in-95 duration-300 border border-zinc-100 flex flex-col items-center text-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-100/50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+            
+            <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6 relative z-10 border border-indigo-100 shadow-inner">
+              <Send size={32} className="text-indigo-500 ml-1" />
+            </div>
+            
+            <h3 className="text-2xl font-black text-zinc-900 mb-2 relative z-10 tracking-tight">Confirm Dispatch</h3>
+            <p className="text-sm text-zinc-500 mb-8 relative z-10 leading-relaxed">
+              Are you sure you want to send <strong className="text-zinc-800">{confirmModalData.campaignName}</strong> to <strong className="text-brand-600 font-bold">{confirmModalData.count} recipient{confirmModalData.count !== 1 ? 's' : ''}</strong>? This action cannot be undone.
+            </p>
+            
+            <div className="flex gap-3 w-full relative z-10">
+              <button 
+                onClick={() => setConfirmModalData(null)}
+                className="flex-1 py-3 text-[13px] font-bold text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSendConfirmed}
+                className="flex-1 py-3 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-[13px] font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                <Send size={16} /> Yes, Send Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {successModalData?.show && (
+        <div className="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in px-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full animate-in zoom-in-95 duration-300 border border-zinc-100 flex flex-col items-center text-center relative overflow-hidden">
+            {/* Background elements */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-100/50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-teal-100/50 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
+            
+            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6 relative z-10 border border-emerald-100 shadow-inner">
+              <div className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-20"></div>
+              <CheckCircle2 size={40} className="text-emerald-500" />
+            </div>
+            
+            <h3 className="text-2xl font-black text-zinc-900 mb-2 relative z-10 tracking-tight">Emails Successfully Sent!</h3>
+            <p className="text-sm text-zinc-500 mb-8 relative z-10 leading-relaxed">
+              Your <strong className="text-zinc-800">{successModalData.campaignName}</strong> has been successfully dispatched to <strong className="text-brand-600 font-bold">{successModalData.count} recipient{successModalData.count !== 1 ? 's' : ''}</strong>. They should receive it shortly.
+            </p>
+            
+            <button 
+              onClick={() => setSuccessModalData(null)}
+              className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-[0.98] relative z-10"
+            >
+              Continue
+            </button>
+          </div>
         </div>
       )}
     </div>
