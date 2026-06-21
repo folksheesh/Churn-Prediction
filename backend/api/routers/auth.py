@@ -475,6 +475,9 @@ def update_user_status(
     
     if target.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot change your own status.")
+        
+    if target.role in (ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN) and current_user.role != ROLE_SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Only Super Admins can manage other admins.")
     
     target.status = data.status
     
@@ -506,6 +509,9 @@ def delete_user(
     
     if target.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot delete your own account.")
+        
+    if target.role in (ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN) and current_user.role != ROLE_SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Only Super Admins can delete other admins.")
     
     db.delete(target)
     
@@ -522,7 +528,7 @@ def delete_user(
 # ── Admin CRUD (kept for backward compatibility) ─────────────────────────────
 
 @router.get("/admins")
-def get_admins(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_admins(current_user: User = Depends(require_role(ROLE_SUPER_ADMIN)), db: Session = Depends(get_db)):
     admins = db.query(User).filter(User.role.in_([ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN])).all()
     return [_admin_to_response(a) for a in admins]
 
@@ -560,7 +566,7 @@ def create_admin(admin_data: AdminCreate, current_user: User = Depends(require_r
     return _admin_to_response(new_admin)
 
 @router.put("/admins/{admin_id}")
-def update_admin(admin_id: int, admin_data: AdminUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_admin(admin_id: int, admin_data: AdminUpdate, current_user: User = Depends(require_role(ROLE_SUPER_ADMIN)), db: Session = Depends(get_db)):
     admin = db.query(User).filter(User.id == admin_id).first()
     if not admin:
         raise HTTPException(status_code=404, detail="User not found")
@@ -622,7 +628,7 @@ def change_password(data: ChangePassword, current_user: User = Depends(get_curre
     return {"message": "Password changed successfully"}
 
 @router.delete("/admins/{admin_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_admin(admin_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def delete_admin(admin_id: int, current_user: User = Depends(require_role(ROLE_SUPER_ADMIN)), db: Session = Depends(get_db)):
     admin = db.query(User).filter(User.id == admin_id).first()
     if not admin:
         raise HTTPException(status_code=404, detail="User not found")
