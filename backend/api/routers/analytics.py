@@ -597,7 +597,7 @@ async def get_activity_logs(limit: int = 10, db: Session = Depends(get_db)):
 
 @router.get("/critical-alerts")
 @cache(expire=120)
-async def get_critical_alerts(limit: int = 5, db: Session = Depends(get_db)):
+async def get_critical_alerts(limit: int = 15, db: Session = Depends(get_db)):
     from sqlalchemy import or_
     customers = db.query(Customer).filter(
         Customer.status == "Active",
@@ -656,7 +656,7 @@ async def get_dashboard_bundle(db: Session = Depends(get_db)):
         Customer.status == "Active",
         Customer.churn_risk == "High",
         or_(Customer.mitigation_status.is_(None), Customer.mitigation_status.notin_(["Assigned", "Resolved"]))
-    ).order_by(Customer.churn_probability.desc()).limit(6).all()
+    ).order_by(Customer.churn_probability.desc()).limit(15).all()
     
     alerts = [{
         "id": c.id,

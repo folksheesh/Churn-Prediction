@@ -168,8 +168,8 @@ export default function CampaignEditor() {
   const isReadOnly = campaign.status !== 'draft';
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#fcfcfd] overflow-y-auto">
-      <header className="h-16 flex items-center justify-between px-8 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
+    <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-indigo-50/30 to-slate-50/50 overflow-y-auto">
+      <header className="h-20 flex items-center justify-between px-8 border-b border-slate-200/60 bg-white/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/admin/campaigns')} className="p-2 -ml-2 text-zinc-400 hover:bg-zinc-100 rounded-lg transition-colors">
             <ArrowLeft size={18} />
@@ -191,14 +191,14 @@ export default function CampaignEditor() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 text-sm font-semibold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+                className="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95"
               >
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save Draft
               </button>
               {!isNew && (
                 <button
                   onClick={handleSend}
-                  className="px-4 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+                  className="px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 rounded-xl flex items-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-95"
                 >
                   <Send size={16} /> Send Campaign
                 </button>
@@ -211,9 +211,9 @@ export default function CampaignEditor() {
       <div className="p-8 max-w-5xl mx-auto w-full space-y-8">
         
         {/* Section 1: Info */}
-        <section className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
-          <h2 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-zinc-100 text-xs flex items-center justify-center font-bold text-zinc-500">1</span>
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+          <h2 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white text-sm flex items-center justify-center shadow-inner">1</span>
             Campaign Information
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -256,9 +256,9 @@ export default function CampaignEditor() {
         </section>
 
         {/* Section 2: Banner */}
-        <section className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
-          <h2 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-zinc-100 text-xs flex items-center justify-center font-bold text-zinc-500">2</span>
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+          <h2 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white text-sm flex items-center justify-center shadow-inner">2</span>
             Banner Image
           </h2>
           <div className="flex flex-col sm:flex-row gap-6 items-start">
@@ -292,9 +292,9 @@ export default function CampaignEditor() {
         </section>
 
         {/* Section 3: Editor */}
-        <section className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
-          <h2 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-zinc-100 text-xs flex items-center justify-center font-bold text-zinc-500">3</span>
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+          <h2 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white text-sm flex items-center justify-center shadow-inner">3</span>
             Email Content
           </h2>
           <div className="space-y-4">
@@ -338,10 +338,10 @@ export default function CampaignEditor() {
 
         {/* Section 4: Recipients */}
         {!isNew && (
-          <section className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-zinc-100 text-xs flex items-center justify-center font-bold text-zinc-500">4</span>
+          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white text-sm flex items-center justify-center shadow-inner">4</span>
                 Recipients ({recipients.length})
               </h2>
               {!isReadOnly && (

@@ -63,19 +63,19 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-zinc-50/50">
-        <Loader2 className="w-8 h-8 border-t-zinc-900 rounded-full animate-spin text-brand-600 mb-4" />
-        <p className="text-sm font-semibold text-zinc-500 animate-pulse">Loading Intelligence...</p>
+      <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-indigo-50/30 to-slate-50/50">
+        <Loader2 className="w-8 h-8 border-t-indigo-600 rounded-full animate-spin text-brand-600 mb-4" />
+        <p className="text-sm font-semibold text-slate-500 animate-pulse">Loading Intelligence...</p>
       </div>
     );
   }
 
   return (
-    <>
-      <header className="h-16 hidden md:flex items-center justify-between px-8 border-b border-zinc-200/60 bg-white/80 backdrop-blur-md sticky top-0 z-20 shrink-0 shadow-sm">
+    <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-indigo-50/30 to-slate-50/50 overflow-y-auto">
+      <header className="h-20 hidden md:flex items-center justify-between px-8 border-b border-slate-200/60 bg-white/80 backdrop-blur-md sticky top-0 z-20 shrink-0 shadow-sm">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-zinc-900">Operational Overview</h1>
-          <p className="text-[11px] font-medium text-zinc-500">Real-time churn intelligence & mitigation tracking</p>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Operational Overview</h1>
+          <p className="text-xs font-medium text-slate-500">Real-time churn intelligence & mitigation tracking</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-emerald-200 shadow-sm">
@@ -88,7 +88,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="p-8 w-full space-y-8 bg-zinc-50/30 min-h-screen">
+      <div className="p-8 w-full space-y-8 min-h-screen">
         
         {/* Top KPI Widgets - Premium Style */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-up">
@@ -341,33 +341,31 @@ export default function Dashboard() {
   );
 }
 
-function MetricCard({ title, value, trend, isPositive, icon, alert, gradient }: { title: string, value: string, trend: string, isPositive: boolean, icon: React.ReactNode, alert?: boolean, gradient: string }) {
+// Subcomponents
+
+function MetricCard({ title, value, trend, isPositive, icon, gradient, pulse = false }: any) {
   return (
-    <div className={cn(
-      "bg-white rounded-2xl p-6 relative overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 duration-300 border shadow-sm group",
-      alert ? "border-rose-200 ring-1 ring-rose-50" : "border-zinc-200/80"
-    )}>
-      {/* Background Gradient Splash */}
-      <div className={cn("absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-10 blur-2xl group-hover:opacity-20 transition-opacity bg-gradient-to-br", gradient)}></div>
-      
-      <div className="flex justify-between items-start mb-4 relative z-10">
-        <span className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase">{title}</span>
-        <div className={cn("p-2 rounded-xl text-white shadow-md bg-gradient-to-br", gradient)}>
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 flex flex-col hover:shadow-md transition-all group overflow-hidden relative">
+      <div className={`absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br ${gradient} rounded-full opacity-5 group-hover:scale-150 transition-transform duration-500`}></div>
+      <div className="flex items-start justify-between mb-4 relative">
+        <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient} text-white shadow-inner`}>
           {icon}
         </div>
-      </div>
-      
-      <div className="relative z-10 flex flex-col gap-2">
-        <span className="text-3xl font-black text-zinc-900 tracking-tight">{value}</span>
-        <div className="flex items-center gap-2">
-          <span className={cn(
-            "text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow-sm",
-            isPositive ? "text-emerald-700 bg-emerald-50 border border-emerald-100" : "text-rose-700 bg-rose-50 border border-rose-100"
-          )}>
-            {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-            {trend}
+        {pulse && (
+          <span className="flex h-3 w-3 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
           </span>
-          <span className="text-xs font-semibold text-zinc-400">vs last month</span>
+        )}
+      </div>
+      <div className="relative">
+        <h3 className="text-slate-500 text-sm font-semibold mb-1">{title}</h3>
+        <div className="flex items-end gap-3">
+          <div className="text-3xl font-black text-slate-900 tracking-tight">{value}</div>
+          <div className={cn("flex items-center text-xs font-bold mb-1.5 px-1.5 py-0.5 rounded", isPositive ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50")}>
+            {isPositive ? <ArrowUpRight size={14} className="mr-0.5" /> : <ArrowDownRight size={14} className="mr-0.5" />}
+            {trend}
+          </div>
         </div>
       </div>
     </div>

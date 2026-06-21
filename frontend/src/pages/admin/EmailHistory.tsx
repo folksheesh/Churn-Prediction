@@ -39,8 +39,8 @@ export default function EmailHistory() {
   });
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#fcfcfd]">
-      <header className="h-16 flex items-center justify-between px-8 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
+    <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-indigo-50/30 to-slate-50/50">
+      <header className="h-20 flex items-center justify-between px-8 bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-10 shrink-0">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-zinc-900">Email History</h1>
           <p className="text-xs text-zinc-500">Track delivery status of all campaign emails sent to customers.</p>

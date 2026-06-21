@@ -212,20 +212,24 @@ export default function Customers() {
 
   return (
     <>
-      <header className="h-14 hidden md:flex items-center justify-between px-6 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
-        <h1 className="text-sm font-semibold tracking-tight text-zinc-900">Customer Intelligence</h1>
-        <div className="flex gap-2">
+      <header className="h-16 hidden md:flex items-center justify-between px-6 border-b border-slate-200/60 bg-white/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
+        <h1 className="text-lg font-bold tracking-tight text-slate-900">Customer Intelligence</h1>
+        <div className="flex gap-3">
           <button 
             onClick={() => setActiveTab('import_xlsx')}
-            className={cn("flex items-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow", activeTab === 'import_xlsx' && "bg-zinc-100")}
+            className={cn("flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow-md active:scale-95", 
+              activeTab === 'import_xlsx' 
+                ? "bg-emerald-100 text-emerald-800 border border-emerald-200" 
+                : "bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-600 hover:to-emerald-500 text-white"
+            )}
           >
-            <UploadCloud size={14} /> Import XLSX
+            <UploadCloud size={16} /> Import XLSX
           </button>
           <button 
             onClick={() => setIsAddDrawerOpen(true)}
-            className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-[0.97] shadow-sm hover:shadow"
+            className="flex items-center gap-1.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-95"
           >
-            <Plus size={14} /> New Customer
+            <Plus size={16} /> New Customer
           </button>
         </div>
       </header>
@@ -306,11 +310,8 @@ export default function Customers() {
                 <thead className="text-[10px] font-black text-zinc-500 bg-zinc-50/80 uppercase tracking-widest border-b border-zinc-100">
                   <tr>
                     <th className="px-5 py-2.5">Customer</th>
-                    <th className="px-5 py-2.5">Plan Tier</th>
-                    <th className="px-5 py-2.5">Recent Feedback</th>
                     <th className="px-5 py-2.5">Churn Risk</th>
                     <th className="px-5 py-2.5">Retention Campaign</th>
-                    <th className="px-5 py-2.5">Activity</th>
                     <th className="px-5 py-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -327,18 +328,6 @@ export default function Customers() {
                             <span className="text-[11px] font-medium text-zinc-500 mt-0.5">{c.id}{c.email ? ` • ${c.email}` : ''}{c.phone_number ? ` • ${c.phone_number}` : ''}</span>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">{c.plan_tier || 'Unknown'}</span>
-                      </td>
-                      <td className="px-5 py-4">
-                        {c.feedback ? (
-                           <div className="flex flex-col">
-                             <span className="text-xs font-medium text-zinc-600 truncate max-w-[200px]">{c.feedback}</span>
-                           </div>
-                        ) : (
-                          <span className="text-[11px] text-zinc-400 italic">No feedback provided</span>
-                        )}
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex flex-col gap-1.5">
@@ -369,9 +358,6 @@ export default function Customers() {
                         ) : (
                           <span className="text-[11px] text-zinc-400 italic">Not Assigned</span>
                         )}
-                      </td>
-                      <td className="px-5 py-4 text-zinc-500 text-[13px] font-medium">
-                        {c.days_since_active ? `${c.days_since_active} days ago` : 'Unknown'}
                       </td>
                       <td className="px-5 py-2.5 text-right">
                         <button 

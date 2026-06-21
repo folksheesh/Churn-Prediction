@@ -55,17 +55,17 @@ export default function CampaignManager() {
   });
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#fcfcfd]">
-      <header className="h-16 flex items-center justify-between px-8 border-b border-zinc-200/60 bg-white sticky top-0 z-10 shrink-0">
+    <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-indigo-50/30 to-slate-50/50">
+      <header className="h-20 flex items-center justify-between px-8 bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-10 shrink-0">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-zinc-900">Campaign Management</h1>
           <p className="text-xs text-zinc-500">Manage and send retention campaigns to your customers.</p>
         </div>
         <Link
           to="/admin/campaigns/new"
-          className="bg-zinc-900 hover:bg-zinc-800 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors shadow-sm"
+          className="bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-95"
         >
-          <Plus size={16} />
+          <Plus size={18} />
           Create Campaign
         </Link>
       </header>
@@ -122,9 +122,20 @@ export default function CampaignManager() {
                 </tr>
               ) : filteredCampaigns.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-zinc-400">
-                    <p className="font-semibold text-zinc-600 mb-2">No campaigns found</p>
-                    <p className="text-xs">Create your first campaign to get started.</p>
+                  <td colSpan={6} className="px-6 py-20 text-center">
+                    <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
+                      <div className="w-16 h-16 bg-gradient-to-tr from-brand-100 to-indigo-50 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
+                        <Tag size={28} className="text-brand-600" />
+                      </div>
+                      <p className="font-bold text-slate-800 text-lg mb-1">No campaigns found</p>
+                      <p className="text-sm text-slate-500 mb-6">Create your first retention campaign to start engaging with your at-risk customers.</p>
+                      <Link
+                        to="/admin/campaigns/new"
+                        className="bg-white border border-slate-200 text-slate-700 hover:border-brand-300 hover:bg-brand-50 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm"
+                      >
+                        Create First Campaign
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -135,7 +146,7 @@ export default function CampaignManager() {
                       <div className="text-xs text-zinc-500 truncate max-w-[200px]">{c.description || 'No description'}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-[11px] font-semibold bg-zinc-100 text-zinc-600 px-2 py-1 rounded-md border border-zinc-200">
+                      <span className="text-[11px] font-bold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg border border-indigo-100/50">
                         {c.type.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                       </span>
                     </td>
@@ -144,10 +155,10 @@ export default function CampaignManager() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={cn(
-                        "text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider border",
-                        c.status === 'active' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                        c.status === 'completed' ? "bg-blue-50 text-blue-700 border-blue-200" :
-                        "bg-zinc-100 text-zinc-600 border-zinc-200"
+                        "text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-sm",
+                        c.status === 'active' ? "bg-gradient-to-r from-emerald-500 to-emerald-400 text-white" :
+                        c.status === 'completed' ? "bg-slate-100 text-slate-600 border border-slate-200" :
+                        "bg-gradient-to-r from-amber-400 to-amber-300 text-amber-900"
                       )}>
                         {c.status}
                       </span>

@@ -6,7 +6,7 @@ from typing import List
 
 from backend.core.database import get_db
 from backend.core.models import Campaign, CampaignRecipient, EmailLog, Customer, User, ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN
-from backend.core.security import require_role
+from backend.api.routers.auth import require_role
 from backend.api.schemas.campaign import (
     CampaignCreate, CampaignUpdate, CampaignResponse,
     CampaignRecipientAdd, CampaignRecipientResponse,

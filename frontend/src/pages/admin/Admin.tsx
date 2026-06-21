@@ -87,21 +87,21 @@ export default function Admin() {
   }, []);
 
   return (
-    <>
-      <header className="h-16 hidden md:flex items-center px-8 border-b border-zinc-200 bg-white sticky top-0 z-10 shrink-0">
-        <h1 className="text-lg font-semibold tracking-tight text-zinc-900">Platform Administration</h1>
+    <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-indigo-50/30 to-slate-50/50 overflow-y-auto">
+      <header className="h-20 hidden md:flex items-center px-8 border-b border-slate-200/60 bg-white/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
+        <h1 className="text-xl font-bold tracking-tight text-slate-900">Platform Administration</h1>
       </header>
 
       <div className="p-8 w-full space-y-6">
         
         {/* Top Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-emerald-100 text-emerald-700 rounded-md">
-                <Activity size={18} />
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-4 mb-5">
+              <div className="p-3 bg-gradient-to-br from-emerald-400 to-emerald-500 text-white rounded-xl shadow-inner">
+                <Activity size={20} />
               </div>
-              <h3 className="font-semibold text-zinc-900 text-sm">Model Status</h3>
+              <h3 className="font-bold text-slate-900 text-base">Model Status</h3>
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
@@ -122,12 +122,12 @@ export default function Admin() {
           </div>
 
           {/* Data Pipeline Card - Enhanced */}
-          <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-blue-100 text-blue-700 rounded-md">
-                <Database size={18} />
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-4 mb-5">
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 text-white rounded-xl shadow-inner">
+                <Database size={20} />
               </div>
-              <h3 className="font-semibold text-zinc-900 text-sm">Data Pipeline</h3>
+              <h3 className="font-bold text-slate-900 text-base">Data Pipeline</h3>
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
@@ -148,12 +148,12 @@ export default function Admin() {
           </div>
           
           {/* System Security Card - Dynamic */}
-          <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-indigo-100 text-indigo-700 rounded-md">
-                <ShieldCheck size={18} />
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-4 mb-5">
+              <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-500 text-white rounded-xl shadow-inner">
+                <ShieldCheck size={20} />
               </div>
-              <h3 className="font-semibold text-zinc-900 text-sm">System Security</h3>
+              <h3 className="font-bold text-slate-900 text-base">System Security</h3>
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
@@ -215,10 +215,10 @@ export default function Admin() {
                 {pipelineStages.map((stage, idx) => (
                   <div key={idx} className="flex items-start gap-4 relative z-10">
                     <div className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold border-2 border-white shadow-sm",
-                      stage.status === 'completed' ? "bg-emerald-100 text-emerald-700" :
-                      stage.status === 'running' ? "bg-blue-100 text-blue-700 animate-pulse" :
-                      "bg-zinc-100 text-zinc-500"
+                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xs font-black shadow-sm",
+                      stage.status === 'completed' ? "bg-gradient-to-br from-emerald-400 to-emerald-500 text-white" :
+                      stage.status === 'running' ? "bg-gradient-to-br from-blue-400 to-blue-500 text-white animate-pulse" :
+                      "bg-slate-100 text-slate-500"
                     )}>
                       {stage.status === 'completed' ? '✓' : idx + 1}
                     </div>
@@ -496,6 +496,7 @@ export default function Admin() {
           </div>
         </div>
       )}
-    </>
+      </div>
+    </div>
   );
 }
