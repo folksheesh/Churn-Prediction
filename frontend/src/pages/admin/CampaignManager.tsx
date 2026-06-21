@@ -145,24 +145,45 @@ export default function CampaignManager() {
       <div className="flex-1 overflow-y-auto px-4 md:px-10 py-8 z-10 scroll-smooth">
 
         {/* Swipeable Tabs Row */}
-        <div className="mb-10 w-full overflow-hidden">
-          <div className="flex overflow-x-auto pb-6 -mb-6 snap-x snap-mandatory hide-scrollbar gap-4 md:gap-5 px-1 pt-2">
-            
-            {/* Create Campaign Card - Only for admins */}
+        {campaigns.length === 0 ? (
+          <div className="bg-white/50 backdrop-blur-sm rounded-3xl border border-zinc-200 p-10 text-center text-zinc-500 mb-10 flex flex-col items-center justify-center">
+            <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mb-4">
+              <Sparkles size={24} className="text-zinc-400" />
+            </div>
+            <h3 className="text-lg font-bold text-zinc-700 mb-1">No campaigns available</h3>
+            <p className="text-sm">
+              {user?.role === 'user' 
+                ? "There are currently no active retention campaigns." 
+                : "Get started by creating your first retention campaign."}
+            </p>
             {user?.role !== 'user' && (
-              <div 
+              <button 
                 onClick={() => navigate('/admin/campaigns/new')}
-                className="group snap-start shrink-0 w-64 md:w-72 bg-white/50 border-2 border-dashed border-zinc-300 rounded-3xl p-5 cursor-pointer hover:bg-brand-50 hover:border-brand-300 transition-all flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md"
+                className="mt-6 px-5 py-2.5 bg-brand-600 text-white font-bold rounded-xl shadow-md hover:bg-brand-700 transition-colors"
               >
-                <div className="w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-400 group-hover:bg-brand-100 group-hover:text-brand-600 flex items-center justify-center mb-3 transition-colors">
-                  <Plus size={24} />
-                </div>
-                <h3 className="text-sm font-bold text-zinc-600 group-hover:text-brand-700">Add New Campaign</h3>
-                <p className="text-xs text-zinc-400 mt-1">Create a custom email flow</p>
-              </div>
+                Create Campaign
+              </button>
             )}
+          </div>
+        ) : (
+          <div className="mb-10 w-full overflow-hidden">
+            <div className="flex overflow-x-auto pb-6 -mb-6 snap-x snap-mandatory hide-scrollbar gap-4 md:gap-5 px-1 pt-2">
+              
+              {/* Create Campaign Card - Only for admins */}
+              {user?.role !== 'user' && (
+                <div 
+                  onClick={() => navigate('/admin/campaigns/new')}
+                  className="group snap-start shrink-0 w-64 md:w-72 bg-white/50 border-2 border-dashed border-zinc-300 rounded-3xl p-5 cursor-pointer hover:bg-brand-50 hover:border-brand-300 transition-all flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-400 group-hover:bg-brand-100 group-hover:text-brand-600 flex items-center justify-center mb-3 transition-colors">
+                    <Plus size={24} />
+                  </div>
+                  <h3 className="text-sm font-bold text-zinc-600 group-hover:text-brand-700">Add New Campaign</h3>
+                  <p className="text-xs text-zinc-400 mt-1">Create a custom email flow</p>
+                </div>
+              )}
 
-            {campaigns.map((camp, index) => {
+              {campaigns.map((camp, index) => {
               const isActive = activeTab === camp.id;
               const map = CAMPAIGN_STYLES[index % CAMPAIGN_STYLES.length];
               
@@ -218,6 +239,7 @@ export default function CampaignManager() {
             })}
           </div>
         </div>
+        )}
 
         {/* Content Area */}
         <div className="bg-white rounded-[2rem] border border-zinc-200 shadow-xl shadow-slate-200/40 overflow-hidden flex flex-col min-h-[500px]">
