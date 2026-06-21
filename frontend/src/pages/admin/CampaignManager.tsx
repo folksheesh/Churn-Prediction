@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Tag, Search, ShieldCheck, Headphones, Star, PackageOpen, Sparkles, Send, Edit3, CheckCircle, CheckCircle2, AlertTriangle, X } from 'lucide-react';
+import { Plus, Tag, Search, ShieldCheck, Headphones, Star, PackageOpen, Sparkles, Send, Edit3, CheckCircle, CheckCircle2, AlertTriangle, X, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -119,7 +119,14 @@ export default function CampaignManager() {
 
   const activeCampaign = campaigns.find(c => c.id === activeTab);
 
-  if (loading) return <div className="p-8 text-zinc-500">Loading campaigns...</div>;
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center h-full min-h-[400px]">
+        <Loader2 className="w-8 h-8 text-brand-500 animate-spin mb-4" />
+        <h3 className="text-lg font-bold text-zinc-700">Loading campaigns...</h3>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-indigo-50/30 to-slate-50/50 overflow-hidden relative">
@@ -351,31 +358,25 @@ export default function CampaignManager() {
 
       {/* Confirm Send Modal */}
       {confirmModalData?.show && (
-        <div className="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in px-4">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full animate-in zoom-in-95 duration-300 border border-zinc-100 flex flex-col items-center text-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-100/50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-            
-            <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6 relative z-10 border border-indigo-100 shadow-inner">
-              <Send size={32} className="text-indigo-500 ml-1" />
-            </div>
-            
-            <h3 className="text-2xl font-black text-zinc-900 mb-2 relative z-10 tracking-tight">Confirm Dispatch</h3>
-            <p className="text-sm text-zinc-500 mb-8 relative z-10 leading-relaxed">
-              Are you sure you want to send <strong className="text-zinc-800">{confirmModalData.campaignName}</strong> to <strong className="text-brand-600 font-bold">{confirmModalData.count} recipient{confirmModalData.count !== 1 ? 's' : ''}</strong>? This action cannot be undone.
+        <div className="fixed inset-0 bg-zinc-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full animate-in zoom-in-95 duration-200 border border-zinc-100 flex flex-col">
+            <h3 className="text-lg font-bold text-zinc-900 mb-2">Confirm Dispatch</h3>
+            <p className="text-sm text-zinc-500 mb-6">
+              Are you sure you want to send <strong className="text-zinc-800">{confirmModalData.campaignName}</strong> to <strong className="text-brand-600 font-bold">{confirmModalData.count} recipient{confirmModalData.count !== 1 ? 's' : ''}</strong>?
             </p>
             
-            <div className="flex gap-3 w-full relative z-10">
+            <div className="flex justify-end gap-3 w-full">
               <button 
                 onClick={() => setConfirmModalData(null)}
-                className="flex-1 py-3 text-[13px] font-bold text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 rounded-xl transition-all"
+                className="px-4 py-2 text-sm font-semibold text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSendConfirmed}
-                className="flex-1 py-3 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-[13px] font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2"
               >
-                <Send size={16} /> Yes, Send Now
+                Send Now
               </button>
             </div>
           </div>
@@ -384,27 +385,20 @@ export default function CampaignManager() {
 
       {/* Success Modal */}
       {successModalData?.show && (
-        <div className="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in px-4">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full animate-in zoom-in-95 duration-300 border border-zinc-100 flex flex-col items-center text-center relative overflow-hidden">
-            {/* Background elements */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-100/50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-teal-100/50 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
-            
-            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6 relative z-10 border border-emerald-100 shadow-inner">
-              <div className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-20"></div>
-              <CheckCircle2 size={40} className="text-emerald-500" />
+        <div className="fixed inset-0 bg-zinc-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full animate-in zoom-in-95 duration-200 border border-zinc-100 flex flex-col items-center text-center">
+            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 size={24} className="text-emerald-600" />
             </div>
-            
-            <h3 className="text-2xl font-black text-zinc-900 mb-2 relative z-10 tracking-tight">Emails Successfully Sent!</h3>
-            <p className="text-sm text-zinc-500 mb-8 relative z-10 leading-relaxed">
-              Your <strong className="text-zinc-800">{successModalData.campaignName}</strong> has been successfully dispatched to <strong className="text-brand-600 font-bold">{successModalData.count} recipient{successModalData.count !== 1 ? 's' : ''}</strong>. They should receive it shortly.
+            <h3 className="text-lg font-bold text-zinc-900 mb-2">Emails Sent</h3>
+            <p className="text-sm text-zinc-500 mb-6">
+              <strong className="text-zinc-800">{successModalData.campaignName}</strong> has been dispatched to <strong className="text-brand-600 font-bold">{successModalData.count} recipient{successModalData.count !== 1 ? 's' : ''}</strong>.
             </p>
-            
             <button 
               onClick={() => setSuccessModalData(null)}
-              className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-[0.98] relative z-10"
+              className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm transition-colors"
             >
-              Continue
+              Close
             </button>
           </div>
         </div>
