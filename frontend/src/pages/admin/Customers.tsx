@@ -231,14 +231,14 @@ export default function Customers() {
             className={cn("flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow-md active:scale-95", 
               activeTab === 'import_xlsx' 
                 ? "bg-emerald-100 text-emerald-800 border border-emerald-200" 
-                : "bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-600 hover:to-emerald-500 text-white"
+                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
             )}
           >
             <UploadCloud size={16} /> Import XLSX
           </button>
           <button 
             onClick={() => setIsAddDrawerOpen(true)}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-95"
+            className="flex items-center gap-1.5 bg-brand-50 text-brand-700 hover:bg-brand-100 border border-brand-200 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95"
           >
             <Plus size={16} /> New Customer
           </button>
@@ -374,7 +374,7 @@ export default function Customers() {
                         <button 
                           onClick={() => setSelectedCustomer(c)}
                           className={cn("inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 active:scale-95 overflow-hidden relative group/btn", 
-                            c.churn_risk === 'High' ? "bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20 hover:shadow-lg hover:shadow-rose-500/40 border border-rose-400" : "bg-white text-zinc-700 hover:bg-zinc-50 border border-zinc-200 hover:border-zinc-300 shadow-sm"
+                            c.churn_risk === 'High' ? "bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 shadow-sm" : "bg-white text-zinc-700 hover:bg-zinc-50 border border-zinc-200 hover:border-zinc-300 shadow-sm"
                           )}
                         >
                           {c.churn_risk === 'High' ? (
