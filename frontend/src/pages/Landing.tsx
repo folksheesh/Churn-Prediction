@@ -35,15 +35,20 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans overflow-x-hidden text-slate-900 selection:bg-brand-100 selection:text-brand-900 relative">
       
-      {/* Abstract Background Lines */}
+      {/* Abstract Background Shapes */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <svg className="absolute left-0 top-0 h-full w-full stroke-brand-600/10 [mask-image:linear-gradient(to_bottom,white_20%,transparent_80%)]" aria-hidden="true">
-          <defs>
-            <pattern id="grid-pattern" width="60" height="60" x="50%" y="-1" patternUnits="userSpaceOnUse">
-              <path d="M.5 60V.5H60" fill="none" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" strokeWidth="0" fill="url(#grid-pattern)" />
+        {/* Soft Glowing Orbs */}
+        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-brand-200/30 to-brand-400/20 blur-[100px]" />
+        <div className="absolute top-[30%] -left-64 w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-indigo-200/30 to-purple-300/20 blur-[120px]" />
+        <div className="absolute top-[70%] -right-40 w-[400px] h-[400px] rounded-full bg-gradient-to-bl from-rose-200/20 to-orange-200/10 blur-[90px]" />
+
+        {/* Abstract Curved Line Shapes (Blobs) */}
+        <svg className="absolute top-[15%] right-[5%] w-[500px] h-[500px] text-brand-600/5 opacity-60 animate-[spin_60s_linear_infinite]" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path fill="none" stroke="currentColor" strokeWidth="1.5" d="M42.7,-73.4C55.9,-67.5,67.6,-56.3,76.5,-42.6C85.4,-28.9,91.6,-12.7,89.5,2.6C87.4,17.9,77.1,32.3,65.8,44.4C54.5,56.5,42.2,66.2,28.2,73.1C14.2,80,-1.6,84.1,-17.1,81.4C-32.6,78.7,-47.9,69.2,-58.5,56C-69.1,42.8,-75,25.9,-77.2,8.9C-79.4,-8.1,-77.9,-25.2,-69.5,-39C-61.1,-52.8,-45.8,-63.3,-31.2,-68.2C-16.6,-73.1,-2.7,-72.4,12,-73.4C26.7,-74.4,42.7,-73.4,42.7,-73.4Z" transform="translate(100 100)" />
+        </svg>
+
+        <svg className="absolute top-[60%] -left-[5%] w-[400px] h-[400px] text-indigo-500/5 opacity-60 animate-[spin_40s_linear_infinite_reverse]" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path fill="none" stroke="currentColor" strokeWidth="1.5" d="M45.7,-76.3C58.9,-69.3,69.1,-55.3,77.2,-40.1C85.3,-24.9,91.3,-8.5,88.4,6.5C85.5,21.5,73.7,35.1,61.1,46.5C48.5,57.9,35.1,67.1,20.2,72.4C5.3,77.7,-11.1,79.1,-26.4,75.2C-41.7,71.3,-55.9,62.1,-66.6,49.5C-77.3,36.9,-84.5,20.9,-85.1,4.7C-85.7,-11.5,-79.7,-27.9,-69.7,-40.4C-59.7,-52.9,-45.7,-61.5,-31.6,-67.7C-17.5,-73.9,-3.3,-77.7,11.5,-77.6C26.3,-77.5,45.7,-76.3,45.7,-76.3Z" transform="translate(100 100)" />
         </svg>
       </div>
 
