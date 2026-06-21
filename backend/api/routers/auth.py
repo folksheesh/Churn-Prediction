@@ -166,7 +166,8 @@ def _admin_to_response(admin: User) -> dict:
 
 @router.post("/login", response_model=Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    admin = db.query(User).filter(User.email == form_data.username).first()
+    email = form_data.username.lower()
+    admin = db.query(User).filter(User.email == email).first()
     if not admin or not verify_password(form_data.password, admin.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -219,21 +220,22 @@ def invite_user(
     db: Session = Depends(get_db)
 ):
     """Admin invites a new user via email."""
+    email = data.email.lower()
     # Check if user already exists
-    existing = db.query(User).filter(User.email == data.email).first()
+    existing = db.query(User).filter(User.email == email).first()
     if existing:
         raise HTTPException(status_code=400, detail="A user with this email already exists.")
     
     # Invalidate any existing pending invitations for this email
     db.query(Invitation).filter(
-        Invitation.email == data.email,
+        Invitation.email == email,
         Invitation.status == "pending"
     ).update({"status": "expired"})
     
     # Create new invitation
     token = _generate_invitation_token()
     invitation = Invitation(
-        email=data.email,
+        email=email,
         invitation_token=token,
         invited_by=current_user.email,
         status="pending",
@@ -245,7 +247,7 @@ def invite_user(
     email_sent = False
     smtp_error = None
     try:
-        _send_invitation_email(data.email, token, current_user.name)
+        _send_invitation_email(email, token, current_user.name)
         email_sent = True
     except RuntimeError as e:
         smtp_error = str(e)
@@ -256,7 +258,7 @@ def invite_user(
     log = ActivityLog(
         action="User Invited",
         user=current_user.email,
-        details=f"Invited {data.email}" + (f" (email failed: {smtp_error})" if not email_sent else ""),
+        details=f"Invited {email}" + (f" (email failed: {smtp_error})" if not email_sent else ""),
         result="success" if email_sent else "email_failed"
     )
     db.add(log)
@@ -269,8 +271,8 @@ def invite_user(
         )
     
     return {
-        "message": f"Invitation sent to {data.email}",
-        "email": data.email,
+        "message": f"Invitation sent to {email}",
+        "email": email,
         "expires_in": "24 hours"
     }
 
@@ -281,21 +283,22 @@ def resend_invitation(
     db: Session = Depends(get_db)
 ):
     """Resend invitation email with a new token."""
+    email = data.email.lower()
     # Check if user already activated
-    existing_user = db.query(User).filter(User.email == data.email).first()
+    existing_user = db.query(User).filter(User.email == email).first()
     if existing_user and existing_user.status == "active":
         raise HTTPException(status_code=400, detail="This user is already active.")
     
     # Expire old invitations
     db.query(Invitation).filter(
-        Invitation.email == data.email,
+        Invitation.email == email,
         Invitation.status == "pending"
     ).update({"status": "expired"})
     
     # Create new invitation
     token = _generate_invitation_token()
     invitation = Invitation(
-        email=data.email,
+        email=email,
         invitation_token=token,
         invited_by=current_user.email,
         status="pending",
@@ -307,7 +310,7 @@ def resend_invitation(
     email_sent = False
     smtp_error = None
     try:
-        _send_invitation_email(data.email, token, current_user.name)
+        _send_invitation_email(email, token, current_user.name)
         email_sent = True
     except RuntimeError as e:
         smtp_error = str(e)
@@ -317,7 +320,7 @@ def resend_invitation(
     log = ActivityLog(
         action="Invitation Resent",
         user=current_user.email,
-        details=f"Resent invitation to {data.email}",
+        details=f"Resent invitation to {email}",
         result="success" if email_sent else "email_failed"
     )
     db.add(log)
@@ -326,7 +329,7 @@ def resend_invitation(
     if not email_sent:
         raise HTTPException(status_code=500, detail=f"Failed to send invitation email. Error: {smtp_error}")
     
-    return {"message": f"Invitation resent to {data.email}"}
+    return {"message": f"Invitation resent to {email}"}
 
 @router.get("/invite/validate")
 def validate_invitation(token: str, db: Session = Depends(get_db)):
@@ -526,7 +529,8 @@ def get_admins(current_user: User = Depends(get_current_user), db: Session = Dep
 @router.post("/admins", status_code=status.HTTP_201_CREATED)
 def create_admin(admin_data: AdminCreate, current_user: User = Depends(require_role(ROLE_SUPER_ADMIN)), db: Session = Depends(get_db)):
     """Only Super Admin can create Company Admins."""
-    if db.query(User).filter(User.email == admin_data.email).first():
+    email = admin_data.email.lower()
+    if db.query(User).filter(User.email == email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
     
     if admin_data.role not in [ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN]:
@@ -536,7 +540,7 @@ def create_admin(admin_data: AdminCreate, current_user: User = Depends(require_r
     
     hashed_password = get_password_hash(admin_data.password)
     new_admin = User(
-        email=admin_data.email,
+        email=email,
         name=admin_data.name,
         hashed_password=hashed_password,
         role=admin_data.role,
@@ -547,7 +551,7 @@ def create_admin(admin_data: AdminCreate, current_user: User = Depends(require_r
     log = ActivityLog(
         action="Admin Created",
         user=current_user.email,
-        details=f"Created admin {admin_data.email} with role {admin_data.role}",
+        details=f"Created admin {email} with role {admin_data.role}",
         result="success"
     )
     db.add(log)
@@ -561,12 +565,13 @@ def update_admin(admin_id: int, admin_data: AdminUpdate, current_user: User = De
     if not admin:
         raise HTTPException(status_code=404, detail="User not found")
         
-    if admin_data.email and admin_data.email != admin.email:
+    if admin_data.email and admin_data.email.lower() != admin.email:
+        new_email = admin_data.email.lower()
         if admin.email == "admin@churnsense.com":
             raise HTTPException(status_code=400, detail="Cannot change email of default admin")
-        if db.query(User).filter(User.email == admin_data.email).first():
+        if db.query(User).filter(User.email == new_email).first():
             raise HTTPException(status_code=400, detail="Email already registered")
-        admin.email = admin_data.email
+        admin.email = new_email
         
     if admin_data.name:
         admin.name = admin_data.name
@@ -848,16 +853,17 @@ class ResetPasswordRequest(BaseModel):
 @router.post("/forgot-password")
 def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Generate a 6-digit OTP and send it via email."""
-    admin = db.query(User).filter(User.email == data.email).first()
+    email = data.email.lower()
+    admin = db.query(User).filter(User.email == email).first()
     if not admin:
         raise HTTPException(status_code=404, detail="No account found with this email address.")
     
-    db.query(PasswordResetOTP).filter(PasswordResetOTP.email == data.email).delete()
+    db.query(PasswordResetOTP).filter(PasswordResetOTP.email == email).delete()
     
     otp_code = ''.join(random.choices(string.digits, k=6))
     
     otp_record = PasswordResetOTP(
-        email=data.email,
+        email=email,
         otp_code=otp_code,
         expires_at=datetime.utcnow() + timedelta(minutes=10)
     )
@@ -865,7 +871,7 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     
     smtp_error = None
     try:
-        send_otp_email(data.email, otp_code, admin.name)
+        send_otp_email(email, otp_code, admin.name)
         email_sent = True
     except RuntimeError as e:
         email_sent = False
@@ -876,8 +882,8 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     
     log = ActivityLog(
         action="Password Reset Requested",
-        user=data.email,
-        details=f"OTP generated for {data.email}" + (" (email sent)" if email_sent else f" (email failed: {smtp_error})"),
+        user=email,
+        details=f"OTP generated for {email}" + (" (email sent)" if email_sent else f" (email failed: {smtp_error})"),
         result="success" if email_sent else "email_failed"
     )
     db.add(log)
@@ -889,14 +895,15 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
             detail=f"Gagal kirim OTP. Error: {smtp_error}"
         )
     
-    return {"message": "OTP has been sent to your email address.", "email": data.email}
+    return {"message": "OTP has been sent to your email address.", "email": email}
 
 
 @router.post("/verify-otp")
 def verify_otp(data: VerifyOTPRequest, db: Session = Depends(get_db)):
     """Verify the OTP code for a given email."""
+    email = data.email.lower()
     otp_record = db.query(PasswordResetOTP).filter(
-        PasswordResetOTP.email == data.email,
+        PasswordResetOTP.email == email,
         PasswordResetOTP.otp_code == data.otp,
         PasswordResetOTP.is_verified == False
     ).first()
@@ -918,8 +925,9 @@ def verify_otp(data: VerifyOTPRequest, db: Session = Depends(get_db)):
 @router.post("/reset-password")
 def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
     """Reset the password after OTP verification."""
+    email = data.email.lower()
     otp_record = db.query(PasswordResetOTP).filter(
-        PasswordResetOTP.email == data.email,
+        PasswordResetOTP.email == email,
         PasswordResetOTP.otp_code == data.otp,
         PasswordResetOTP.is_verified == True
     ).first()
@@ -934,18 +942,18 @@ def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
     
     validate_password_strength(data.new_password)
     
-    admin = db.query(User).filter(User.email == data.email).first()
+    admin = db.query(User).filter(User.email == email).first()
     if not admin:
         raise HTTPException(status_code=404, detail="Account not found.")
     
     admin.hashed_password = get_password_hash(data.new_password)
     
-    db.query(PasswordResetOTP).filter(PasswordResetOTP.email == data.email).delete()
+    db.query(PasswordResetOTP).filter(PasswordResetOTP.email == email).delete()
     
     log = ActivityLog(
         action="Password Reset Completed",
-        user=data.email,
-        details=f"Password was reset for {data.email} via OTP verification",
+        user=email,
+        details=f"Password was reset for {email} via OTP verification",
         result="success"
     )
     db.add(log)
