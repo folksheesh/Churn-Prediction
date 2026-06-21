@@ -8,7 +8,9 @@ import AuthLayout from '@/layouts/AuthLayout';
 import Dashboard from '@/pages/admin/Dashboard';
 import Customers from '@/pages/admin/Customers';
 import Admin from '@/pages/admin/Admin';
-import Campaigns from '@/pages/admin/Campaigns';
+import CampaignManager from '@/pages/admin/CampaignManager';
+import CampaignEditor from '@/pages/admin/CampaignEditor';
+import EmailHistory from '@/pages/admin/EmailHistory';
 
 import Analysis from '@/pages/admin/Analysis';
 import Login from '@/pages/auth/Login';
@@ -42,7 +44,10 @@ export default function App() {
             <Route path="/admin" element={<AdminLayout />}>
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="customers" element={<Customers />} />
-              <Route path="campaigns" element={<Campaigns />} />
+              <Route path="campaigns" element={<CampaignManager />} />
+              <Route path="campaigns/new" element={<CampaignEditor />} />
+              <Route path="campaigns/:id" element={<CampaignEditor />} />
+              <Route path="email-history" element={<EmailHistory />} />
               <Route path="manage-admins" element={<AdminManagement />} />
               <Route path="user-management" element={<UserManagement />} />
               <Route path="cs-management" element={<CsManagement />} />

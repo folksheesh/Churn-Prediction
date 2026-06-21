@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.api.routers import predictions, analytics, customers, auth
+from backend.api.routers import predictions, analytics, customers, auth, campaigns
 from backend.api.routers import mitigation
 from backend.core.database import engine
 from backend.core import models
@@ -181,6 +181,7 @@ app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytic
 app.include_router(customers.router, prefix="/api/v1/customers", tags=["Customers"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(mitigation.router, prefix="/api/v1/mitigation", tags=["Mitigation"])
+app.include_router(campaigns.router, prefix="/api/v1/campaigns", tags=["Campaigns"])
 
 @app.get("/health")
 def health_check():

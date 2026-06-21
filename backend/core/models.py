@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from backend.core.database import Base
 
 # ── Role constants for RBAC ──────────────────────────────────────────────────
@@ -125,3 +126,38 @@ class PasswordResetOTP(Base):
     is_verified = Column(Boolean, default=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Campaign(Base):
+    __tablename__ = "campaigns"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    type = Column(String, nullable=False)   # discount_campaign, loyalty_program, customer_support_followup, product_recommendation
+    description = Column(Text, nullable=True)
+    subject = Column(String, nullable=False)
+    content = Column(Text, nullable=False)      # Rich HTML content from editor
+    banner_image = Column(Text, nullable=True)        # Base64 or URL
+    status = Column(String, default="draft")    # draft, active, completed
+    created_by = Column(String, nullable=False)     # admin email
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class CampaignRecipient(Base):
+    __tablename__ = "campaign_recipients"
+
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
+    customer_id = Column(String, nullable=False)
+    email_status = Column(String, default="pending")  # pending, sent, failed
+    sent_at = Column(DateTime(timezone=True), nullable=True)
+
+class EmailLog(Base):
+    __tablename__ = "email_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
+    customer_id = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    status = Column(String, default="pending")  # pending, sent, failed
+    error_message = Column(Text, nullable=True)
+    sent_at = Column(DateTime(timezone=True), nullable=True)

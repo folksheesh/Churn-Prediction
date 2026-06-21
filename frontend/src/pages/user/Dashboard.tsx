@@ -40,7 +40,6 @@ import {
   Target,
   User
 } from "lucide-react";
-import Campaigns from '@/pages/admin/Campaigns';
 import Profile from '@/pages/admin/Profile';
 import RetentionActionCenter from '@/components/RetentionActionCenter';
 import {
@@ -63,7 +62,7 @@ import {
 
 export default function Home() {
   const { logout, isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis" | "campaigns" | "profile">(() => {
+  const [activeTab, setActiveTab] = useState<"dashboard" | "customers" | "prediction" | "analysis" | "profile">(() => {
     return (localStorage.getItem("dashboard_active_tab") as any) || "dashboard";
   });
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -498,18 +497,6 @@ export default function Home() {
             <Activity className={`w-4 h-4 shrink-0 transition-colors ${activeTab === "analysis" ? "text-brand-600" : ""}`} />
             <span>Analysis</span>
           </button>
-
-          <button
-            onClick={() => setActiveTab("campaigns")}
-            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
-              activeTab === "campaigns"
-                ? "bg-white text-brand-700 shadow-sm border border-slate-200/60 ring-1 ring-slate-100/50"
-                : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent"
-            }`}
-          >
-            <Target className={`w-4 h-4 shrink-0 transition-colors ${activeTab === "campaigns" ? "text-brand-600" : ""}`} />
-            <span>Campaigns</span>
-          </button>
         </div>
 
         {/* Right: Auth Action */}
@@ -562,7 +549,7 @@ export default function Home() {
                 {/* Click-away overlay */}
                 <div className="fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)} />
                 <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-slate-200 shadow-xl rounded-xl flex flex-col p-2 gap-1 z-50">
-                  {(["dashboard", "customers", "prediction", "analysis", "campaigns", "profile"] as const).map((tab) => (
+                  {(["dashboard", "customers", "prediction", "analysis", "profile"] as const).map((tab) => (
                     <button
                       key={tab}
                       onClick={() => { setActiveTab(tab); setMobileMenuOpen(false); }}
@@ -574,7 +561,6 @@ export default function Home() {
                       {tab === "customers" && "Customers"}
                       {tab === "prediction" && "Customer Insights"}
                       {tab === "analysis" && "Analysis"}
-                      {tab === "campaigns" && "Campaigns"}
                       {tab === "profile" && "Edit Profile"}
                     </button>
                   ))}
@@ -614,7 +600,6 @@ export default function Home() {
               {activeTab === "customers" && "Directory"}
               {activeTab === "prediction" && "Calculator"}
               {activeTab === "analysis" && "Analytics"}
-              {activeTab === "campaigns" && "Campaigns"}
               {activeTab === "profile" && "Account"}
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-outfit">
@@ -622,7 +607,6 @@ export default function Home() {
               {activeTab === "customers" && "Customer Health Directory"}
               {activeTab === "prediction" && "Customer Insights Calculator"}
               {activeTab === "analysis" && "Visual Analytics"}
-              {activeTab === "campaigns" && "Active Campaigns"}
               {activeTab === "profile" && "Edit Profile"}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
@@ -630,7 +614,6 @@ export default function Home() {
               {activeTab === "customers" && "Real-time list of customers filterable by risk and location categories."}
               {activeTab === "prediction" && "Calculate simulated customer insights using pre-trained boundaries."}
               {activeTab === "analysis" && "These charts help you see patterns and trends in your customer data. Don't worry if you're not familiar with charts - each one includes a guide on how to read it!"}
-              {activeTab === "campaigns" && "Track and manage customers assigned to retention campaigns."}
               {activeTab === "profile" && "Update your personal information and secure your account."}
             </p>
           </div>
@@ -1509,20 +1492,7 @@ export default function Home() {
           <VisualAnalyticsTab customerData={customerData} summary={summary} />
         )}
 
-        {/* VIEW F: CAMPAIGNS TAB */}
-        {activeTab === "campaigns" && (
-          <div className="bg-white border border-slate-100 shadow-sm rounded-xl overflow-hidden h-[800px] flex">
-            <Campaigns 
-              hideHeader={true} 
-              onViewInCrm={(customerId) => {
-                setActiveTab("customers");
-                setSearchQuery(customerId);
-              }}
-            />
-          </div>
-        )}
-
-        {/* VIEW G: PROFILE TAB */}
+        {/* VIEW F: PROFILE TAB */}
         {activeTab === "profile" && (
           <Profile />
         )}
