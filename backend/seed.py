@@ -8,7 +8,7 @@ ROOT = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, ROOT)
 
 from backend.core.database import SessionLocal, engine
-from backend.core.models import Base, Customer, AdminUser
+from backend.core.models import Base, Customer, User
 from backend.core.security import get_password_hash
 from backend.api.services.ml_service import run_batch_prediction
 
@@ -95,7 +95,7 @@ def seed_db():
     # Seed default admin
     print("Seeding default admin...")
     hashed_pwd = get_password_hash("Admin#123")
-    default_admin = AdminUser(
+    default_admin = User(
         email="admin@churnsense.com",
         name="Super Admin",
         hashed_password=hashed_pwd,

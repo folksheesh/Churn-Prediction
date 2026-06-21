@@ -206,15 +206,14 @@ export default function Landing() {
         </section>
 
         {/* How It Works Section */}
-        <section className="py-24 px-6 md:px-12 relative bg-slate-900 overflow-hidden">
-          {/* Background decorations for dark section */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-50"></div>
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-brand-500/10 blur-[100px] rounded-full pointer-events-none"></div>
+        <section className="py-24 px-6 md:px-12 relative bg-[#f8fafc] overflow-hidden">
+          {/* Background decorations for light section */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-brand-400/5 blur-[100px] rounded-full pointer-events-none"></div>
 
           <div className="max-w-6xl mx-auto relative z-10">
             <motion.div {...fadeIn} className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-outfit">How it works</h2>
-              <p className="text-slate-400 text-lg">From raw data to actionable retention insights in minutes.</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 font-outfit">How it works</h2>
+              <p className="text-slate-500 text-lg">From raw data to actionable retention insights in minutes.</p>
             </motion.div>
             
             <motion.div 
@@ -225,25 +224,25 @@ export default function Landing() {
               className="grid md:grid-cols-4 gap-8 relative"
             >
               {/* Connecting lines for md screens */}
-              <div className="hidden md:block absolute top-[44px] left-[15%] right-[15%] h-[2px] bg-gradient-to-r from-brand-600/20 via-brand-500/50 to-indigo-500/20 z-0"></div>
+              <div className="hidden md:block absolute top-[44px] left-[15%] right-[15%] h-[2px] bg-slate-200 z-0"></div>
 
               {[
-                { title: "Upload Data", desc: "Upload your customer history securely via CSV.", step: 1, icon: <Upload size={26} className="text-brand-400"/> },
-                { title: "Validate", desc: "System verifies format completeness and data integrity.", step: 2, icon: <FileCheck size={26} className="text-brand-400"/> },
-                { title: "Process", desc: "ML models identify churn patterns and risk percentages.", step: 3, icon: <Cpu size={26} className="text-indigo-400"/> },
-                { title: "Mitigate", desc: "Get an interactive dashboard to launch retention campaigns.", step: 4, icon: <Rocket size={26} className="text-indigo-400"/> }
+                { title: "Upload Data", desc: "Upload your customer history securely via CSV.", step: 1, icon: <Upload size={26} className="text-brand-600"/> },
+                { title: "Validate", desc: "System verifies format completeness and data integrity.", step: 2, icon: <FileCheck size={26} className="text-brand-600"/> },
+                { title: "Process", desc: "ML models identify churn patterns and risk percentages.", step: 3, icon: <Cpu size={26} className="text-indigo-600"/> },
+                { title: "Mitigate", desc: "Get an interactive dashboard to launch retention campaigns.", step: 4, icon: <Rocket size={26} className="text-indigo-600"/> }
               ].map((item, i) => (
                 <motion.div key={i} variants={staggerItem} className="relative z-10 flex flex-col items-center text-center group">
                   <div className="w-20 h-24 relative mb-6">
                      {/* Fancy shape for icon */}
-                    <div className="absolute inset-0 bg-slate-800 rounded-2xl transform rotate-3 group-hover:rotate-6 transition-transform duration-300 shadow-xl border border-slate-700"></div>
-                    <div className="absolute inset-0 bg-slate-900 rounded-2xl flex flex-col items-center justify-center transform -rotate-3 group-hover:rotate-0 transition-transform duration-300 border border-slate-700/50 shadow-inner">
+                    <div className="absolute inset-0 bg-slate-100 rounded-2xl transform rotate-3 group-hover:rotate-6 transition-transform duration-300 shadow-md border border-slate-200"></div>
+                    <div className="absolute inset-0 bg-white rounded-2xl flex flex-col items-center justify-center transform -rotate-3 group-hover:rotate-0 transition-transform duration-300 border border-slate-200 shadow-sm">
                       {item.icon}
-                      <span className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-brand-600 text-white font-bold text-sm flex items-center justify-center border-4 border-slate-900 shadow-sm">{item.step}</span>
+                      <span className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-brand-600 text-white font-bold text-sm flex items-center justify-center border-4 border-[#f8fafc] shadow-sm">{item.step}</span>
                     </div>
                   </div>
-                  <h3 className="text-[19px] font-bold text-white mb-3 font-outfit">{item.title}</h3>
-                  <p className="text-[15px] text-slate-400 leading-relaxed px-2">
+                  <h3 className="text-[19px] font-bold text-slate-900 mb-3 font-outfit">{item.title}</h3>
+                  <p className="text-[15px] text-slate-500 leading-relaxed px-2">
                     {item.desc}
                   </p>
                 </motion.div>

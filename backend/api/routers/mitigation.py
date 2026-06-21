@@ -12,10 +12,10 @@ from pydantic import BaseModel
 
 from backend.core.database import get_db
 from backend.core.models import (
-    MitigationLog, ActivityLog, Customer, AdminUser,
+    MitigationLog, ActivityLog, Customer, User,
     ROLE_CS_MANAGER, ROLE_CS_AGENT
 )
-from backend.api.routers.auth import get_current_admin, get_optional_admin
+from backend.api.routers.auth import get_current_user, get_optional_admin
 from backend.api.services.email_service import send_campaign_email
 
 router = APIRouter()
@@ -102,7 +102,7 @@ class CampaignRecommendation(BaseModel):
 @router.post("/execute", response_model=CampaignAssignResponse)
 def assign_campaign(
     req: CampaignAssignRequest,
-    current_admin: Optional[AdminUser] = Depends(get_optional_admin),
+    current_admin: Optional[User] = Depends(get_optional_admin),
     db: Session = Depends(get_db),
 ):
     # Validate campaign name
@@ -218,7 +218,7 @@ def get_campaign_logs(customer_id: str, db: Session = Depends(get_db)):
 
     result = []
     for log in logs:
-        executor = db.query(AdminUser).filter(AdminUser.email == log.executed_by).first()
+        executor = db.query(User).filter(User.email == log.executed_by).first()
         campaign_label = CAMPAIGNS.get(log.action_type, {}).get("label", log.action_type)
         result.append({
             "id": log.id,
@@ -266,13 +266,13 @@ def get_campaign_stats(db: Session = Depends(get_db)):
 
 @router.get("/agents")
 def get_cs_agents(
-    current_admin: AdminUser = Depends(get_current_admin),
+    current_admin: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Return list of admins who can be assigned as CS agents."""
-    agents = db.query(AdminUser).filter(
-        AdminUser.status == "Active",
-        AdminUser.role.in_([ROLE_CS_AGENT, ROLE_CS_MANAGER])
+    agents = db.query(User).filter(
+        User.status == "Active",
+        User.role.in_([ROLE_CS_AGENT, ROLE_CS_MANAGER])
     ).all()
 
     return [
