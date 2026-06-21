@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from backend.core.database import get_db
-from backend.core.models import Campaign, CampaignRecipient, EmailLog, Customer, User, ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN
+from backend.core.models import Campaign, CampaignRecipient, EmailLog, Customer, User, ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN, ROLE_USER
 from backend.api.routers.auth import require_role
 from backend.api.schemas.campaign import (
     CampaignCreate, CampaignUpdate, CampaignResponse,
@@ -18,6 +18,7 @@ router = APIRouter()
 
 # Allow both super admins and company admins
 get_admin = require_role(ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN)
+get_any_user = require_role(ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN, ROLE_USER)
 
 def build_campaign_html(content: str, banner_image: str = None) -> str:
     """Wrap the custom rich text content in a standard HTML container."""
@@ -46,7 +47,7 @@ def process_dynamic_variables(text: str, customer: Customer, campaign: Campaign 
     return text
 
 @router.get("", response_model=List[CampaignResponse])
-def get_campaigns(db: Session = Depends(get_db), current_admin: User = Depends(get_admin)):
+def get_campaigns(db: Session = Depends(get_db), current_user: User = Depends(get_any_user)):
     campaigns = db.query(Campaign).order_by(Campaign.created_at.desc()).all()
     for c in campaigns:
         c.recipient_count = db.query(CampaignRecipient).filter(CampaignRecipient.campaign_id == c.id).count()
@@ -71,7 +72,7 @@ def create_campaign(req: CampaignCreate, db: Session = Depends(get_db), current_
     return new_campaign
 
 @router.get("/{campaign_id}", response_model=CampaignResponse)
-def get_campaign(campaign_id: int, db: Session = Depends(get_db), current_admin: User = Depends(get_admin)):
+def get_campaign(campaign_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_any_user)):
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
@@ -111,7 +112,7 @@ def delete_campaign(campaign_id: int, db: Session = Depends(get_db), current_adm
     return {"message": "Campaign deleted"}
 
 @router.get("/{campaign_id}/recipients", response_model=List[CampaignRecipientResponse])
-def get_campaign_recipients(campaign_id: int, db: Session = Depends(get_db), current_admin: User = Depends(get_admin)):
+def get_campaign_recipients(campaign_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_any_user)):
     recipients = db.query(CampaignRecipient).filter(CampaignRecipient.campaign_id == campaign_id).all()
     
     # Bulk fetch customers to avoid N+1 query problem
@@ -136,7 +137,7 @@ def get_campaign_recipients(campaign_id: int, db: Session = Depends(get_db), cur
     return results
 
 @router.post("/{campaign_id}/recipients")
-def add_recipients(campaign_id: int, req: CampaignRecipientAdd, db: Session = Depends(get_db), current_admin: User = Depends(get_admin)):
+def add_recipients(campaign_id: int, req: CampaignRecipientAdd, db: Session = Depends(get_db), current_user: User = Depends(get_any_user)):
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
@@ -172,7 +173,7 @@ def add_recipients(campaign_id: int, req: CampaignRecipientAdd, db: Session = De
     return {"message": f"Added {added_count} recipients"}
 
 @router.delete("/{campaign_id}/recipients/{customer_id}")
-def remove_recipient(campaign_id: int, customer_id: str, db: Session = Depends(get_db), current_admin: User = Depends(get_admin)):
+def remove_recipient(campaign_id: int, customer_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_any_user)):
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")

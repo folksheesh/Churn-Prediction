@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Send, Image as ImageIcon, Users, Eye, Sparkles, Loader2, Check, X, AlertTriangle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Save, Send, Image as ImageIcon, Users, Eye, Sparkles, Loader2, Check, X, AlertTriangle, CheckCircle, Trash2 } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import api from '@/lib/api';
@@ -106,6 +106,18 @@ export default function CampaignEditor() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    if (!window.confirm(`Are you sure you want to delete this campaign?`)) return;
+    try {
+      await api.delete(`/campaigns/${id}`);
+      showToast('Campaign deleted successfully', 'success');
+      setTimeout(() => navigate('/admin/campaigns'), 1000);
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || 'Failed to delete campaign', 'error');
+    }
+  };
+
   const handlePreview = async () => {
     try {
       const res = await api.post('/campaigns/preview', {
@@ -178,7 +190,7 @@ export default function CampaignEditor() {
           </button>
           <div>
             <h1 className="text-xl font-bold tracking-tight text-zinc-900">{isNew ? 'Create Campaign' : campaign.name}</h1>
-            <p className="text-xs text-zinc-500">{isNew ? 'Draft a new retention campaign' : `Status: ${campaign.status}`}</p>
+            <p className="text-xs text-zinc-500">{isNew ? 'Draft a new retention campaign' : 'Manage campaign details'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -188,6 +200,14 @@ export default function CampaignEditor() {
           >
             <Eye size={16} /> Preview
           </button>
+          {!isNew && (
+            <button
+              onClick={handleDelete}
+              className="px-4 py-2 text-sm font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <Trash2 size={16} /> Delete
+            </button>
+          )}
           {!isReadOnly && (
             <>
               <button
