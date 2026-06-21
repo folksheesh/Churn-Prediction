@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Tag, Search, ArrowRight, ShieldCheck, Headphones, Star, PackageOpen, MoreVertical, Plus, Edit3 } from 'lucide-react';
+import { Plus, Tag, Search, ShieldCheck, Headphones, Star, PackageOpen, Sparkles, Send, Edit3, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,12 @@ export default function CampaignManager() {
   const [searchQuery, setSearchQuery] = useState('');
   const [recipients, setRecipients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{show: boolean, message: string, type: 'success'|'error'}>({ show: false, message: '', type: 'success' });
+
+  const showToast = (message: string, type: 'success'|'error' = 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 4000);
+  };
 
   useEffect(() => {
     fetchCampaigns();
@@ -52,6 +58,48 @@ export default function CampaignManager() {
     } catch (err) {
       console.error(err);
       setRecipients([]);
+    }
+  };
+
+  const addRecipientsByRisk = async (risk: string) => {
+    if (activeTab === null) return;
+    try {
+      await api.post(`/campaigns/${activeTab}/recipients`, { risk_levels: [risk] });
+      showToast(`Added ${risk} risk customers to campaign!`, 'success');
+      fetchRecipients(activeTab);
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.response?.data?.detail || 'Failed to add recipients', 'error');
+    }
+  };
+
+  const removeRecipient = async (customerId: string) => {
+    if (activeTab === null) return;
+    try {
+      await api.delete(`/campaigns/${activeTab}/recipients/${customerId}`);
+      fetchRecipients(activeTab);
+      showToast('Customer removed from campaign', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Failed to remove recipient', 'error');
+    }
+  };
+
+  const handleSend = async () => {
+    if (activeTab === null) return;
+    if (recipients.length === 0) {
+      showToast("Please add recipients first.", 'error');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to send this campaign to ${recipients.length} recipients?`)) return;
+    
+    try {
+      await api.post(`/campaigns/${activeTab}/send`);
+      showToast('Campaign sending started!', 'success');
+      fetchCampaigns();
+      fetchRecipients(activeTab);
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || 'Failed to send campaign', 'error');
     }
   };
 
@@ -168,15 +216,35 @@ export default function CampaignManager() {
               </div>
             </div>
 
-            <div className="relative w-full md:w-72 shrink-0">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-              <input
-                type="text"
-                placeholder="Search by name or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm font-medium text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10 transition-all shadow-sm"
-              />
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto shrink-0">
+              {activeCampaign?.status !== 'completed' && activeCampaign?.status !== 'active' && (
+                <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-zinc-200 shadow-sm">
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider pl-2 pr-1">Quick Add:</span>
+                  <button onClick={() => addRecipientsByRisk('High')} className="px-2.5 py-1.5 bg-rose-50 text-rose-700 text-xs font-bold rounded-lg hover:bg-rose-100 transition-colors">High</button>
+                  <button onClick={() => addRecipientsByRisk('Medium')} className="px-2.5 py-1.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors">Med</button>
+                  <button onClick={() => addRecipientsByRisk('Low')} className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg hover:bg-emerald-100 transition-colors">Low</button>
+                </div>
+              )}
+
+              {recipients.length > 0 && activeCampaign?.status === 'draft' && (
+                <button
+                  onClick={handleSend}
+                  className="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-sm font-bold rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95"
+                >
+                  <Send size={16} /> Send Now
+                </button>
+              )}
+
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm font-medium text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10 transition-all shadow-sm"
+                />
+              </div>
             </div>
           </div>
 
@@ -189,6 +257,7 @@ export default function CampaignManager() {
                     <th className="px-8 py-4 font-bold">Email</th>
                     <th className="px-8 py-4 font-bold">Risk Level</th>
                     <th className="px-8 py-4 font-bold">Email Status</th>
+                    <th className="px-8 py-4 font-bold text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
@@ -221,7 +290,7 @@ export default function CampaignManager() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-8 py-5">
+                         <td className="px-8 py-5">
                            <span className={cn(
                              "text-[11px] font-bold px-2.5 py-1 rounded-lg border uppercase tracking-wider",
                              customer.email_status === 'sent' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
@@ -230,6 +299,9 @@ export default function CampaignManager() {
                            )}>
                              {customer.email_status}
                            </span>
+                        </td>
+                        <td className="px-8 py-5 text-right">
+                          <button onClick={() => removeRecipient(customer.customer_id)} className="text-rose-500 hover:text-rose-700 text-xs font-bold">Remove</button>
                         </td>
                       </tr>
                     );
@@ -259,6 +331,17 @@ export default function CampaignManager() {
         </div>
 
       </div>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-xl shadow-black/5 border animate-in slide-in-from-bottom-5 fade-in duration-300 flex items-center gap-3 ${toast.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'}`}>
+          {toast.type === 'success' ? <CheckCircle size={18} className="text-emerald-600 shrink-0" /> : <AlertTriangle size={18} className="text-rose-600 shrink-0" />}
+          <p className="font-bold text-sm">{toast.message}</p>
+          <button onClick={() => setToast(prev => ({...prev, show: false}))} className={`ml-3 p-1 rounded-md transition-colors ${toast.type === 'success' ? 'text-emerald-600 hover:bg-emerald-100' : 'text-rose-600 hover:bg-rose-100'}`}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
