@@ -37,7 +37,8 @@ import {
   HelpCircle,
   Wand2,
   LogOut,
-  Target
+  Target,
+  User
 } from "lucide-react";
 import Campaigns from '@/pages/admin/Campaigns';
 import Profile from '@/pages/admin/Profile';

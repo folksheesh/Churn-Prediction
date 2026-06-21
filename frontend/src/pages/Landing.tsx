@@ -110,7 +110,7 @@ export default function Landing() {
                 className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mb-8"
               >
                 <Link 
-                  to="/dashboard"
+                  to="/login"
                   className="group bg-slate-900 hover:bg-slate-800 text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-md flex items-center gap-3 w-full sm:w-auto justify-center text-[15px]"
                 >
                   Let's Get Started <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
