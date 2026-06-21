@@ -17,7 +17,7 @@ from backend.api.services.email_service import send_email
 router = APIRouter()
 
 # Allow both super admins and company admins
-get_admin = require_role([ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN])
+get_admin = require_role(ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN)
 
 def build_campaign_html(content: str, banner_image: str = None) -> str:
     """Wrap the custom rich text content in a standard HTML container."""
