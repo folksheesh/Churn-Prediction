@@ -35,6 +35,18 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans overflow-x-hidden text-slate-900 selection:bg-brand-100 selection:text-brand-900 relative">
       
+      {/* Abstract Background Lines */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <svg className="absolute left-0 top-0 h-full w-full stroke-brand-600/10 [mask-image:linear-gradient(to_bottom,white_20%,transparent_80%)]" aria-hidden="true">
+          <defs>
+            <pattern id="grid-pattern" width="60" height="60" x="50%" y="-1" patternUnits="userSpaceOnUse">
+              <path d="M.5 60V.5H60" fill="none" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" strokeWidth="0" fill="url(#grid-pattern)" />
+        </svg>
+      </div>
+
       {/* Navbar */}
       <motion.header 
         initial={{ y: -20, opacity: 0 }}
@@ -58,8 +70,8 @@ export default function Landing() {
       <main className="flex-1 w-full relative z-10">
         
         {/* Hero Section */}
-        <section className="pt-20 pb-28 px-6 md:px-12 max-w-[1400px] mx-auto relative">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <section className="pt-12 pb-16 px-6 md:px-12 max-w-[1400px] mx-auto relative">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Left Content (Text) */}
             <div className="lg:col-span-7 text-left flex flex-col items-start">
@@ -143,17 +155,17 @@ export default function Landing() {
         </section>
 
         {/* Features Cards Section */}
-        <section className="py-24 bg-white border-y border-slate-100 relative">
+        <section className="py-16 bg-white border-y border-slate-100 relative">
           
           <motion.div {...fadeIn} className="max-w-7xl mx-auto px-6 md:px-12 mb-16 text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 font-outfit">Everything you need to retain users</h2>
             <p className="text-slate-500 text-lg max-w-2xl mx-auto">From live dashboards to automated mitigation pipelines, ChurnSense gives you the tools to act fast.</p>
           </motion.div>
 
-          <div className="flex flex-col gap-28 px-6 md:px-12 max-w-[1400px] mx-auto mt-12">
+          <div className="flex flex-col gap-16 px-6 md:px-12 max-w-[1400px] mx-auto mt-8">
             
             {/* Feature 1: Image Left, Text Right */}
-            <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-8 lg:gap-16 items-center">
               <div className="order-2 md:order-1 flex justify-center">
                 <img src={feature1Img} alt="Live Risk Dashboard" className="w-full max-w-[320px] lg:max-w-[380px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
               </div>
@@ -166,7 +178,7 @@ export default function Landing() {
             </motion.div>
 
             {/* Feature 2: Text Left, Image Right */}
-            <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-8 lg:gap-16 items-center">
               <div className="space-y-5 md:pr-8">
                 <h3 className="text-3xl lg:text-4xl font-black text-slate-900 font-outfit tracking-tight">Early Warning System</h3>
                 <p className="text-slate-500 leading-relaxed text-lg">
@@ -179,7 +191,7 @@ export default function Landing() {
             </motion.div>
 
             {/* Feature 3: Image Left, Text Right */}
-            <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-8 lg:gap-16 items-center">
               <div className="order-2 md:order-1 flex justify-center">
                 <img src={feature3Img} alt="Deep Analytics" className="w-full max-w-[320px] lg:max-w-[380px] object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
               </div>
@@ -192,7 +204,7 @@ export default function Landing() {
             </motion.div>
 
             {/* Feature 4: Text Left, Image Right */}
-            <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <motion.div {...fadeIn} className="grid md:grid-cols-2 gap-8 lg:gap-16 items-center">
               <div className="space-y-5 md:pr-8">
                 <h3 className="text-3xl lg:text-4xl font-black text-slate-900 font-outfit tracking-tight">Smart Segmentation</h3>
                 <p className="text-slate-500 leading-relaxed text-lg">
@@ -208,9 +220,9 @@ export default function Landing() {
         </section>
 
         {/* How It Works Section */}
-        <section className="py-24 px-6 md:px-12 max-w-5xl mx-auto relative">
-          <motion.div {...fadeIn} className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 font-outfit">How it works</h2>
+        <section className="py-16 px-6 md:px-12 max-w-5xl mx-auto relative">
+          <motion.div {...fadeIn} className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3 font-outfit">How it works</h2>
             <p className="text-slate-500 text-lg">From raw data to actionable retention insights in minutes.</p>
           </motion.div>
           
@@ -219,7 +231,7 @@ export default function Landing() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-50px" }}
-            className="grid md:grid-cols-4 gap-8 relative"
+            className="grid md:grid-cols-4 gap-6 relative"
           >
             {/* Connecting lines for md screens */}
             <div className="hidden md:block absolute top-8 left-[12%] right-[12%] h-px bg-slate-200 z-0"></div>
