@@ -4,14 +4,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-const TYPE_MAPPING: Record<string, any> = {
-  'discount_campaign': { icon: <Tag size={18} />, color: 'from-brand-50 to-indigo-50', textColor: 'text-brand-700', borderColor: 'border-brand-200/50', iconColor: 'text-brand-500', activeRing: 'ring-brand-500' },
-  'customer_support_followup': { icon: <Headphones size={18} />, color: 'from-blue-50 to-cyan-50', textColor: 'text-blue-700', borderColor: 'border-blue-200/50', iconColor: 'text-blue-500', activeRing: 'ring-blue-500' },
-  'loyalty_program': { icon: <Star size={18} />, color: 'from-purple-50 to-fuchsia-50', textColor: 'text-purple-700', borderColor: 'border-purple-200/50', iconColor: 'text-purple-500', activeRing: 'ring-purple-500' },
-  'product_recommendation': { icon: <PackageOpen size={18} />, color: 'from-emerald-50 to-teal-50', textColor: 'text-emerald-700', borderColor: 'border-emerald-200/50', iconColor: 'text-emerald-500', activeRing: 'ring-emerald-500' }
-};
-
-const DEFAULT_MAPPING = { icon: <Tag size={18} />, color: 'from-zinc-50 to-slate-50', textColor: 'text-zinc-700', borderColor: 'border-zinc-200/50', iconColor: 'text-zinc-500', activeRing: 'ring-zinc-500' };
+const CAMPAIGN_STYLES = [
+  { icon: <Tag size={18} />, color: 'from-brand-50 to-indigo-50', textColor: 'text-brand-700', borderColor: 'border-brand-200/50', iconColor: 'text-brand-500', activeRing: 'ring-brand-500' },
+  { icon: <Headphones size={18} />, color: 'from-blue-50 to-cyan-50', textColor: 'text-blue-700', borderColor: 'border-blue-200/50', iconColor: 'text-blue-500', activeRing: 'ring-blue-500' },
+  { icon: <Star size={18} />, color: 'from-purple-50 to-fuchsia-50', textColor: 'text-purple-700', borderColor: 'border-purple-200/50', iconColor: 'text-purple-500', activeRing: 'ring-purple-500' },
+  { icon: <PackageOpen size={18} />, color: 'from-emerald-50 to-teal-50', textColor: 'text-emerald-700', borderColor: 'border-emerald-200/50', iconColor: 'text-emerald-500', activeRing: 'ring-emerald-500' },
+  { icon: <Sparkles size={18} />, color: 'from-rose-50 to-pink-50', textColor: 'text-rose-700', borderColor: 'border-rose-200/50', iconColor: 'text-rose-500', activeRing: 'ring-rose-500' }
+];
 
 export default function CampaignManager() {
   const navigate = useNavigate();
@@ -159,9 +158,9 @@ export default function CampaignManager() {
               <p className="text-xs text-zinc-400 mt-1">Create a custom email flow</p>
             </div>
 
-            {campaigns.map(camp => {
+            {campaigns.map((camp, index) => {
               const isActive = activeTab === camp.id;
-              const map = TYPE_MAPPING[camp.type] || DEFAULT_MAPPING;
+              const map = CAMPAIGN_STYLES[index % CAMPAIGN_STYLES.length];
               
               return (
                 <div

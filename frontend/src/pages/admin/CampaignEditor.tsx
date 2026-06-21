@@ -6,12 +6,7 @@ import 'react-quill-new/dist/quill.snow.css';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-const CAMPAIGN_TYPES = [
-  { id: 'discount_campaign', label: 'Discount Campaign' },
-  { id: 'loyalty_program', label: 'Loyalty Program' },
-  { id: 'customer_support_followup', label: 'Customer Support Follow-up' },
-  { id: 'product_recommendation', label: 'Product Recommendation' },
-];
+
 
 export default function CampaignEditor() {
   const { id } = useParams();
@@ -22,7 +17,7 @@ export default function CampaignEditor() {
   const [saving, setSaving] = useState(false);
   const [campaign, setCampaign] = useState({
     name: '',
-    type: 'discount_campaign',
+    type: 'custom',
     description: '',
     subject: '',
     content: '',
@@ -223,7 +218,7 @@ export default function CampaignEditor() {
             <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white text-sm flex items-center justify-center shadow-inner">1</span>
             Campaign Information
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
               <label className="text-xs font-bold text-zinc-700 uppercase">Campaign Name</label>
               <input
@@ -236,19 +231,6 @@ export default function CampaignEditor() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold text-zinc-700 uppercase">Campaign Type</label>
-              <select
-                value={campaign.type}
-                onChange={(e) => setCampaign({ ...campaign, type: e.target.value })}
-                disabled={isReadOnly}
-                className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:opacity-60"
-              >
-                {CAMPAIGN_TYPES.map(t => (
-                  <option key={t.id} value={t.id}>{t.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="md:col-span-2 space-y-2">
               <label className="text-xs font-bold text-zinc-700 uppercase">Description (Internal)</label>
               <textarea
                 value={campaign.description}
