@@ -331,32 +331,14 @@ export default function UserManagement() {
                               Resend
                             </button>
 
-                            {cancelConfirm === inv.email ? (
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => handleCancelInvite(inv.email)}
-                                  disabled={actionLoading === `cancel-${inv.email}`}
-                                  className="px-2.5 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                  {actionLoading === `cancel-${inv.email}` ? 'Cancelling...' : 'Confirm'}
-                                </button>
-                                <button
-                                  onClick={() => setCancelConfirm(null)}
-                                  className="px-2.5 py-1.5 text-xs font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
-                                >
-                                  No
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => setCancelConfirm(inv.email)}
-                                disabled={actionLoading === `cancel-${inv.email}` || actionLoading === `resend-${inv.email}`}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors disabled:opacity-50"
-                              >
-                                <X size={12} />
-                                Cancel
-                              </button>
-                            )}
+                            <button
+                              onClick={() => setCancelConfirm(inv.email)}
+                              disabled={actionLoading === `cancel-${inv.email}` || actionLoading === `resend-${inv.email}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              <X size={12} />
+                              Cancel
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -530,7 +512,43 @@ export default function UserManagement() {
         </div>
       )}
 
-      {/* Delete Confirmation for mobile (inline in table for desktop) */}
+      {/* Cancel Invitation Confirmation Modal */}
+      {cancelConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-[420px] bg-white border border-zinc-200 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-600">
+                  <X size={18} />
+                </div>
+                <h3 className="text-base font-bold text-zinc-900">Cancel Invitation</h3>
+              </div>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                Are you sure you want to cancel the invitation for{' '}
+                <span className="font-bold text-zinc-900">{cancelConfirm}</span>?{' '}
+                The invitation link will be invalidated immediately.
+              </p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCancelConfirm(null)}
+                  className="px-5 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Keep Invitation
+                </button>
+                <button
+                  type="button"
+                  disabled={actionLoading === `cancel-${cancelConfirm}`}
+                  onClick={() => handleCancelInvite(cancelConfirm)}
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+                >
+                  {actionLoading === `cancel-${cancelConfirm}` ? 'Cancelling...' : 'Cancel Invitation'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
