@@ -607,34 +607,33 @@ export default function Home() {
       <main className="flex-1 flex flex-col w-full px-4 sm:px-8 py-8">
         
         {/* TOP BAR / HEADER */}
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8 shrink-0">
-          <div>
-            <div className="text-[11px] font-bold text-brand-500 tracking-wider uppercase mb-1">
-              {activeTab === "dashboard" && "Overview"}
-              {activeTab === "customers" && "Directory"}
-              {activeTab === "prediction" && "Calculator"}
-              {activeTab === "analysis" && "Analytics"}
-              {activeTab === "campaigns" && "Campaigns"}
-              {activeTab === "profile" && "Account"}
+        {activeTab !== "campaigns" && (
+          <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8 shrink-0">
+            <div>
+              <div className="text-[11px] font-bold text-brand-500 tracking-wider uppercase mb-1">
+                {activeTab === "dashboard" && "Overview"}
+                {activeTab === "customers" && "Directory"}
+                {activeTab === "prediction" && "Calculator"}
+                {activeTab === "analysis" && "Analytics"}
+                {activeTab === "profile" && "Account"}
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-outfit">
+                {activeTab === "dashboard" && "Dashboard Overview"}
+                {activeTab === "customers" && "Customer Health Directory"}
+                {activeTab === "prediction" && "Customer Insights Calculator"}
+                {activeTab === "analysis" && "Visual Analytics"}
+                {activeTab === "profile" && "Edit Profile"}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+                {activeTab === "dashboard" && "Welcome back! Here is your custom customer health analysis."}
+                {activeTab === "customers" && "Real-time list of customers filterable by risk and location categories."}
+                {activeTab === "prediction" && "Calculate simulated customer insights using pre-trained boundaries."}
+                {activeTab === "analysis" && "These charts help you see patterns and trends in your customer data. Don't worry if you're not familiar with charts - each one includes a guide on how to read it!"}
+                {activeTab === "profile" && "Update your personal information and secure your account."}
+              </p>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-outfit">
-              {activeTab === "dashboard" && "Dashboard Overview"}
-              {activeTab === "customers" && "Customer Health Directory"}
-              {activeTab === "prediction" && "Customer Insights Calculator"}
-              {activeTab === "analysis" && "Visual Analytics"}
-              {activeTab === "campaigns" && "Campaign Manager"}
-              {activeTab === "profile" && "Edit Profile"}
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
-              {activeTab === "dashboard" && "Welcome back! Here is your custom customer health analysis."}
-              {activeTab === "customers" && "Real-time list of customers filterable by risk and location categories."}
-              {activeTab === "prediction" && "Calculate simulated customer insights using pre-trained boundaries."}
-              {activeTab === "analysis" && "These charts help you see patterns and trends in your customer data. Don't worry if you're not familiar with charts - each one includes a guide on how to read it!"}
-              {activeTab === "campaigns" && "View available campaigns and manually enroll customers."}
-              {activeTab === "profile" && "Update your personal information and secure your account."}
-            </p>
-          </div>
-        </header>
+          </header>
+        )}
 
         {/* 3. DYNAMIC VIEWS */}
         
