@@ -561,7 +561,7 @@ export default function Home() {
                 {/* Click-away overlay */}
                 <div className="fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)} />
                 <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-slate-200 shadow-xl rounded-xl flex flex-col p-2 gap-1 z-50">
-                  {(["dashboard", "customers", "prediction", "analysis", "profile"] as const).map((tab) => (
+                  {(["dashboard", "customers", "campaigns", "prediction", "analysis", "profile"] as const).map((tab) => (
                     <button
                       key={tab}
                       onClick={() => { setActiveTab(tab); setMobileMenuOpen(false); }}
@@ -571,6 +571,7 @@ export default function Home() {
                     >
                       {tab === "dashboard" && "Dashboard"}
                       {tab === "customers" && "Customers"}
+                      {tab === "campaigns" && "Campaigns"}
                       {tab === "prediction" && "Customer Insights"}
                       {tab === "analysis" && "Analysis"}
                       {tab === "profile" && "Edit Profile"}
