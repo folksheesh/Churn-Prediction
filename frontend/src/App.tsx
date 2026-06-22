@@ -8,13 +8,14 @@ import AuthLayout from '@/layouts/AuthLayout';
 import Dashboard from '@/pages/admin/Dashboard';
 import Customers from '@/pages/admin/Customers';
 import Admin from '@/pages/admin/Admin';
-import Campaigns from '@/pages/admin/Campaigns';
-
+import CampaignManager from '@/pages/admin/CampaignManager';
+import CampaignEditor from '@/pages/admin/CampaignEditor';
 import Analysis from '@/pages/admin/Analysis';
 import Login from '@/pages/auth/Login';
-import SignUp from '@/pages/auth/SignUp';
+import ActivateAccount from '@/pages/auth/ActivateAccount';
 import ForgotPassword from '@/pages/auth/ForgotPassword';
 import AdminManagement from '@/pages/admin/AdminManagement';
+import UserManagement from '@/pages/admin/UserManagement';
 import Landing from '@/pages/Landing';
 import UserDashboard from '@/pages/user/Dashboard';
 
@@ -29,7 +30,7 @@ export default function App() {
           {/* Public Auth Routes */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
+            <Route path="/activate-account" element={<ActivateAccount />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
           </Route>
 
@@ -37,12 +38,15 @@ export default function App() {
           <Route path="/" element={<Landing />} />
 
           {/* Protected Admin Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['Admin', 'Super Admin', 'CS Manager', 'CS Agent']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['super_admin', 'company_admin']} />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="customers" element={<Customers />} />
-              <Route path="campaigns" element={<Campaigns />} />
+              <Route path="campaigns" element={<CampaignManager />} />
+              <Route path="campaigns/new" element={<CampaignEditor />} />
+              <Route path="campaigns/:id" element={<CampaignEditor />} />
               <Route path="manage-admins" element={<AdminManagement />} />
+              <Route path="user-management" element={<UserManagement />} />
               <Route path="cs-management" element={<CsManagement />} />
               <Route path="analysis" element={<Analysis />} />
               <Route path="profile" element={<Profile />} />

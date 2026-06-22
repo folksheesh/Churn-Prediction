@@ -1,14 +1,13 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from backend.core.database import Base
 
 # ── Role constants for RBAC ──────────────────────────────────────────────────
-ROLE_SUPER_ADMIN = "Super Admin"
-ROLE_ADMIN = "Admin"
-ROLE_CS_MANAGER = "CS Manager"
-ROLE_CS_AGENT = "CS Agent"
+ROLE_SUPER_ADMIN = "super_admin"
+ROLE_COMPANY_ADMIN = "company_admin"
 ROLE_USER = "user"
-ALL_ROLES = [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_CS_MANAGER, ROLE_CS_AGENT, ROLE_USER]
+ALL_ROLES = [ROLE_SUPER_ADMIN, ROLE_COMPANY_ADMIN, ROLE_USER]
 
 class Customer(Base):
     __tablename__ = "customers"
@@ -75,13 +74,24 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     name = Column(String)
     hashed_password = Column(String)
-    role = Column(String, default=ROLE_USER)        # Super Admin, Admin, CS Manager, CS Agent, user
-    status = Column(String, default="Active")       # Active, Inactive, Suspended
-    phone = Column(String, nullable=True)           # For CS Agent profiles
-    department = Column(String, nullable=True)      # e.g., Retention, Support, Onboarding
+    role = Column(String, default=ROLE_USER)        # super_admin, company_admin, user
+    status = Column(String, default="active")       # active, inactive, pending
+    phone = Column(String, nullable=True)
+    department = Column(String, nullable=True)
     last_login = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class Invitation(Base):
+    __tablename__ = "invitations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, nullable=False, index=True)
+    invitation_token = Column(String, unique=True, nullable=False, index=True)
+    invited_by = Column(String, nullable=False)  # email of admin who sent invite
+    status = Column(String, default="pending")   # pending, accepted, expired
+    expired_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class MitigationLog(Base):
     __tablename__ = "mitigation_logs"
@@ -117,3 +127,37 @@ class PasswordResetOTP(Base):
     expires_at = Column(DateTime(timezone=True), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+class Campaign(Base):
+    __tablename__ = "campaigns"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    type = Column(String, nullable=False)   # discount_campaign, loyalty_program, customer_support_followup, product_recommendation
+    description = Column(Text, nullable=True)
+    subject = Column(String, nullable=False)
+    content = Column(Text, nullable=False)      # Rich HTML content from editor
+    banner_image = Column(Text, nullable=True)        # Base64 or URL
+    status = Column(String, default="draft")    # draft, active, completed
+    created_by = Column(String, nullable=False)     # admin email
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class CampaignRecipient(Base):
+    __tablename__ = "campaign_recipients"
+
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
+    customer_id = Column(String, nullable=False)
+    email_status = Column(String, default="pending")  # pending, sent, failed
+    sent_at = Column(DateTime(timezone=True), nullable=True)
+
+class EmailLog(Base):
+    __tablename__ = "email_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
+    customer_id = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    status = Column(String, default="pending")  # pending, sent, failed
+    error_message = Column(Text, nullable=True)
+    sent_at = Column(DateTime(timezone=True), nullable=True)

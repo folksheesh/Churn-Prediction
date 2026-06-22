@@ -458,6 +458,13 @@ async def import_customers_csv(file: UploadFile = File(...), db: Session = Depen
                 elif not (0 <= row['days_since_joined'] <= 3650):
                     errors.append(f"Row {row_num}: '{lbl('days_since_joined')}' should be between 0 and 3650 days, but you entered '{row['days_since_joined']}'.")
 
+            # Plan Tier: must be Basic, Pro, or Enterprise
+            if 'plan_tier' in df.columns:
+                if pd.isna(row['plan_tier']):
+                    errors.append(f"Row {row_num}: '{lbl('plan_tier')}' is empty — please fill in a value.")
+                elif str(row['plan_tier']).strip() not in ["Basic", "Pro", "Enterprise"]:
+                    errors.append(f"Row {row_num}: '{lbl('plan_tier')}' must be one of: Basic, Pro, Enterprise. You entered '{row['plan_tier']}'.")
+
             # Days Since Last Login: non-negative
             if 'days_since_last_login' in df.columns and pd.notna(row['days_since_last_login']):
                 if row['days_since_last_login'] < 0:

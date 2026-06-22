@@ -17,7 +17,7 @@ export interface Segment {
   name: string;
   churn_rate: number;
   users: number;
-  risk: 'HIGH' | 'MEDIUM' | 'LOW' | 'SAFE';
+  risk: 'HIGH' | 'MEDIUM' | 'LOW';
 }
 
 export interface FeatureData {
@@ -51,15 +51,6 @@ const riskConfig = {
   },
   LOW: {
     label: 'LOW',
-    pill: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    bar: 'from-yellow-500 to-yellow-400',
-    barBg: 'bg-yellow-50',
-    dot: 'bg-yellow-500',
-    text: 'text-yellow-700',
-    glow: 'shadow-yellow-200/40',
-  },
-  SAFE: {
-    label: 'SAFE',
     pill: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     bar: 'from-emerald-500 to-emerald-400',
     barBg: 'bg-emerald-50',

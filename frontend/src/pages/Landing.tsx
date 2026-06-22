@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Activity, ShieldAlert, BarChart3, Users, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Activity, ShieldAlert, BarChart3, Users, ArrowRight, CheckCircle2, Upload, FileCheck, Cpu, Rocket } from 'lucide-react';
 import { motion } from 'framer-motion';
 import presentationImg from '@/assets/presentation.png';
 import feature1Img from '@/assets/feature-1.png';
@@ -64,11 +64,8 @@ export default function Landing() {
           <span className="text-xl font-bold tracking-tight text-slate-900 font-outfit">ChurnSense</span>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/login" className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
+          <Link to="/login" className="px-5 py-2 bg-brand-600 hover:bg-brand-700 rounded-lg text-sm font-semibold text-white transition-all shadow-sm">
             Sign In
-          </Link>
-          <Link to="/signup" className="px-5 py-2 bg-brand-600 hover:bg-brand-700 rounded-lg text-sm font-semibold text-white transition-all shadow-sm">
-            Sign Up
           </Link>
         </div>
       </motion.header>
@@ -108,7 +105,7 @@ export default function Landing() {
                 className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mb-8"
               >
                 <Link 
-                  to="/user-dashboard"
+                  to="/login"
                   className="group bg-slate-900 hover:bg-slate-800 text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-md flex items-center gap-3 w-full sm:w-auto justify-center text-[15px]"
                 >
                   Let's Get Started <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
@@ -204,39 +201,49 @@ export default function Landing() {
         </section>
 
         {/* How It Works Section */}
-        <section className="py-16 px-6 md:px-12 max-w-5xl mx-auto relative">
-          <motion.div {...fadeIn} className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3 font-outfit">How it works</h2>
-            <p className="text-slate-500 text-lg">From raw data to actionable retention insights in minutes.</p>
-          </motion.div>
-          
-          <motion.div 
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-50px" }}
-            className="grid md:grid-cols-4 gap-6 relative"
-          >
-            {/* Connecting lines for md screens */}
-            <div className="hidden md:block absolute top-8 left-[12%] right-[12%] h-px bg-slate-200 z-0"></div>
+        <section className="py-24 px-6 md:px-12 relative bg-[#f8fafc] overflow-hidden">
+          {/* Background decorations for light section */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-brand-400/5 blur-[100px] rounded-full pointer-events-none"></div>
 
-            {[
-              { title: "Upload Data", desc: "Upload your customer history securely via CSV.", step: 1 },
-              { title: "Validate", desc: "System verifies format completeness and data integrity.", step: 2 },
-              { title: "Process", desc: "ML models identify churn patterns and risk percentages.", step: 3 },
-              { title: "Mitigate", desc: "Get an interactive dashboard to launch retention campaigns.", step: 4 }
-            ].map((item, i) => (
-              <motion.div key={i} variants={staggerItem} className="relative z-10 flex flex-col items-center text-center bg-[#f8fafc] px-2 py-4">
-                <div className="w-16 h-16 bg-white border border-slate-200 shadow-sm rounded-2xl flex items-center justify-center text-brand-600 font-bold text-xl mb-6 relative overflow-hidden font-outfit">
-                  <span className="relative z-10">{item.step}</span>
-                </div>
-                <h3 className="text-[17px] font-bold text-slate-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  {item.desc}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
+          <div className="max-w-6xl mx-auto relative z-10">
+            <motion.div {...fadeIn} className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 font-outfit">How it works</h2>
+              <p className="text-slate-500 text-lg">From raw data to actionable retention insights in minutes.</p>
+            </motion.div>
+            
+            <motion.div 
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-50px" }}
+              className="grid md:grid-cols-4 gap-8 relative"
+            >
+              {/* Connecting lines for md screens */}
+              <div className="hidden md:block absolute top-[44px] left-[15%] right-[15%] h-[2px] bg-slate-200 z-0"></div>
+
+              {[
+                { title: "Upload Data", desc: "Upload your customer history securely via CSV.", step: 1, icon: <Upload size={26} className="text-brand-600"/> },
+                { title: "Validate", desc: "System verifies format completeness and data integrity.", step: 2, icon: <FileCheck size={26} className="text-brand-600"/> },
+                { title: "Process", desc: "ML models identify churn patterns and risk percentages.", step: 3, icon: <Cpu size={26} className="text-indigo-600"/> },
+                { title: "Mitigate", desc: "Get an interactive dashboard to launch retention campaigns.", step: 4, icon: <Rocket size={26} className="text-indigo-600"/> }
+              ].map((item, i) => (
+                <motion.div key={i} variants={staggerItem} className="relative z-10 flex flex-col items-center text-center group">
+                  <div className="w-20 h-24 relative mb-6">
+                     {/* Fancy shape for icon */}
+                    <div className="absolute inset-0 bg-slate-100 rounded-2xl transform rotate-3 group-hover:rotate-6 transition-transform duration-300 shadow-md border border-slate-200"></div>
+                    <div className="absolute inset-0 bg-white rounded-2xl flex flex-col items-center justify-center transform -rotate-3 group-hover:rotate-0 transition-transform duration-300 border border-slate-200 shadow-sm">
+                      {item.icon}
+                      <span className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-brand-600 text-white font-bold text-sm flex items-center justify-center border-4 border-[#f8fafc] shadow-sm">{item.step}</span>
+                    </div>
+                  </div>
+                  <h3 className="text-[19px] font-bold text-slate-900 mb-3 font-outfit">{item.title}</h3>
+                  <p className="text-[15px] text-slate-500 leading-relaxed px-2">
+                    {item.desc}
+                  </p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
         </section>
 
       </main>

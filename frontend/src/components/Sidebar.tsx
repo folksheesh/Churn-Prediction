@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut, ShieldCheck, Upload, Zap, X, Target } from 'lucide-react';
+import { Users, Activity, LayoutDashboard, Database, Settings, BarChart3, ShieldAlert, ChevronDown, LogOut, ShieldCheck, Upload, Zap, X, Target, UserPlus, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,13 +21,13 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Analysis', href: '/admin/analysis', icon: BarChart3 },
     { name: 'Customers', href: '/admin/customers', icon: Users },
-    { name: 'Active Campaigns', href: '/admin/campaigns', icon: Target },
+    { name: 'Campaigns', href: '/admin/campaigns', icon: Target },
   ];
 
   const adminNavItems = [
     { name: 'System Status', href: '/admin', icon: Zap },
-    { name: 'Manage Admins', href: '/admin/manage-admins', icon: ShieldCheck },
-    { name: 'CS Management', href: '/admin/cs-management', icon: Users },
+    ...(user?.role === 'super_admin' ? [{ name: 'Manage Admins', href: '/admin/manage-admins', icon: ShieldCheck }] : []),
+    { name: 'User Management', href: '/admin/user-management', icon: UserPlus },
   ];
 
   return (
