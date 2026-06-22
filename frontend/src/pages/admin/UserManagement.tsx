@@ -47,6 +47,7 @@ export default function UserManagement() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [cancelConfirm, setCancelConfirm] = useState<string | null>(null);
+  const [errorModal, setErrorModal] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -95,7 +96,7 @@ export default function UserManagement() {
       await api.post('/auth/invite/resend', { email });
       fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to resend invitation.');
+      setErrorModal(err.response?.data?.detail || 'Failed to resend invitation.');
     } finally {
       setActionLoading(null);
     }
@@ -108,7 +109,7 @@ export default function UserManagement() {
       await api.delete('/auth/invite/cancel', { data: { email } });
       fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to cancel invitation.');
+      setErrorModal(err.response?.data?.detail || 'Failed to cancel invitation.');
     } finally {
       setActionLoading(null);
     }
@@ -121,7 +122,7 @@ export default function UserManagement() {
       await api.put(`/auth/users/${userId}/status`, { status: newStatus });
       fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to update status.');
+      setErrorModal(err.response?.data?.detail || 'Failed to update status.');
     } finally {
       setActionLoading(null);
     }
@@ -134,7 +135,7 @@ export default function UserManagement() {
       setDeleteConfirm(null);
       fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to delete user.');
+      setErrorModal(err.response?.data?.detail || 'Failed to delete user.');
     } finally {
       setActionLoading(null);
     }
@@ -543,6 +544,31 @@ export default function UserManagement() {
                   className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
                 >
                   {actionLoading === `cancel-${cancelConfirm}` ? 'Cancelling...' : 'Cancel Invitation'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Error Modal */}
+      {errorModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-[400px] bg-white border border-zinc-200 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
+                  <AlertTriangle size={18} />
+                </div>
+                <h3 className="text-base font-bold text-zinc-900">Something went wrong</h3>
+              </div>
+              <p className="text-sm text-zinc-500 leading-relaxed">{errorModal}</p>
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setErrorModal(null)}
+                  className="px-6 py-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer"
+                >
+                  OK
                 </button>
               </div>
             </div>
