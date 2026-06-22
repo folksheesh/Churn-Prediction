@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Tag, Headphones, Star, Package, Sparkles, Loader2, Check } from 'lucide-react';
+import { X, Tag, Headphones, Star, Package, Sparkles, Loader2, Check, AlertTriangle } from 'lucide-react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +27,7 @@ export default function RetentionActionCenter({ customer, onClose, onSuccess }: 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [showToast, setShowToast] = useState(false);
+  const [errorModal, setErrorModal] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -93,7 +94,7 @@ export default function RetentionActionCenter({ customer, onClose, onSuccess }: 
       }, 1500);
     } catch (err) {
       console.error('Failed to assign campaign:', err);
-      alert('Failed to assign customer to campaign.');
+      setErrorModal('Failed to assign customer to campaign. Please try again or check your connection.');
     } finally {
       setLoading(false);
     }
@@ -101,6 +102,29 @@ export default function RetentionActionCenter({ customer, onClose, onSuccess }: 
 
   return (
     <>
+      {/* Error Modal */}
+      {errorModal && (
+        <div className="fixed inset-0 bg-zinc-950/60 backdrop-blur-md z-[100] flex items-center justify-center animate-fade-in p-4" onClick={() => setErrorModal(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
+            <div className="p-6 text-center flex flex-col items-center">
+              <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center mb-4 text-rose-500 border border-rose-100">
+                <AlertTriangle size={32} />
+              </div>
+              <h3 className="text-xl font-black text-zinc-900 mb-2">Assignment Failed</h3>
+              <p className="text-sm text-zinc-500 leading-relaxed">{errorModal}</p>
+            </div>
+            <div className="p-4 bg-zinc-50 border-t border-zinc-100 flex justify-center">
+              <button 
+                onClick={() => setErrorModal(null)}
+                className="w-full px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl shadow-md transition-colors"
+              >
+                Okay, I understand
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast Notification */}
       {showToast && (
         <div className="toast-success flex items-center gap-3">
