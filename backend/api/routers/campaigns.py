@@ -84,9 +84,6 @@ def update_campaign(campaign_id: int, req: CampaignUpdate, db: Session = Depends
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
-    
-    if campaign.status != "draft":
-        raise HTTPException(status_code=400, detail="Only draft campaigns can be updated")
 
     update_data = req.dict(exclude_unset=True)
     for key, value in update_data.items():
@@ -102,9 +99,6 @@ def delete_campaign(campaign_id: int, db: Session = Depends(get_db), current_adm
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
-        
-    if campaign.status != "draft":
-        raise HTTPException(status_code=400, detail="Only draft campaigns can be deleted")
         
     db.query(CampaignRecipient).filter(CampaignRecipient.campaign_id == campaign_id).delete()
     db.delete(campaign)
@@ -174,9 +168,6 @@ def remove_recipient(campaign_id: int, customer_id: str, db: Session = Depends(g
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
-        
-    if campaign.status != "draft":
-        raise HTTPException(status_code=400, detail="Recipients can only be removed from draft campaigns")
         
     recip = db.query(CampaignRecipient).filter(
         CampaignRecipient.campaign_id == campaign_id,
@@ -265,7 +256,6 @@ def send_campaign_emails_bg(campaign_id: int, db: Session):
                 sent_at=datetime.datetime.utcnow()
             ))
             
-    campaign.status = "completed"
     db.commit()
 
 @router.post("/{campaign_id}/send")
@@ -274,14 +264,10 @@ def send_campaign(campaign_id: int, background_tasks: BackgroundTasks, db: Sessi
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
         
-    if campaign.status != "draft":
-        raise HTTPException(status_code=400, detail="Only draft campaigns can be sent")
-        
     recipient_count = db.query(CampaignRecipient).filter(CampaignRecipient.campaign_id == campaign_id).count()
     if recipient_count == 0:
         raise HTTPException(status_code=400, detail="Cannot send campaign with no recipients")
         
-    campaign.status = "active"
     db.commit()
     
     # Send emails in background
