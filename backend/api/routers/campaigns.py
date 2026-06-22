@@ -141,9 +141,6 @@ def add_recipients(campaign_id: int, req: CampaignRecipientAdd, db: Session = De
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
-        
-    if campaign.status != "draft":
-        raise HTTPException(status_code=400, detail="Recipients can only be added to draft campaigns")
 
     # Determine which customers to add
     customer_query = db.query(Customer)
