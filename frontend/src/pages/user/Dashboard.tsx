@@ -98,6 +98,7 @@ export default function Home() {
   // Modal tracking
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [retentionModalCustomer, setRetentionModalCustomer] = useState<any | null>(null);
+  const [mitigationError, setMitigationError] = useState<string | null>(null);
 
   // Send Offer state removed (duplicate)
 
@@ -429,9 +430,9 @@ export default function Home() {
       }, 3000);
     } catch (err) {
       console.error("Failed to send offer:", err);
-      // Even if fallback, we should just show error instead of pretending it worked
       setSendingOffer(null);
-      alert("Failed to apply mitigation. Please check the console for details.");
+      setMitigationError("Failed to apply mitigation. Please try again.");
+      setTimeout(() => setMitigationError(null), 5000);
     }
   };
 
@@ -440,6 +441,14 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen font-sans bg-[#fcfcfd]">
       
+      {/* Error Toast */}
+      {mitigationError && (
+        <div className="fixed top-5 right-5 z-[100] flex items-center gap-3 bg-rose-600 text-white px-5 py-3 rounded-2xl shadow-2xl text-sm font-semibold animate-in slide-in-from-top-2 duration-300">
+          <AlertTriangle size={16} className="shrink-0" />
+          {mitigationError}
+          <button onClick={() => setMitigationError(null)} className="ml-2 hover:opacity-70 transition-opacity"><X size={14} /></button>
+        </div>
+      )}
       {/* 1. TOP NAVBAR */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 px-6 h-16 flex items-center justify-between shrink-0 shadow-sm transition-all">
         {/* Left: Logo */}

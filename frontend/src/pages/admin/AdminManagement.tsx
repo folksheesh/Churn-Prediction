@@ -478,7 +478,8 @@ export default function AdminManagement() {
                         await api.delete(`/auth/admins/${id}`);
                         fetchAdmins();
                       } catch (err: any) {
-                        alert(err.response?.data?.detail || "Failed to delete employee");
+                        setAdminToDelete(null);
+                        setError(err.response?.data?.detail || "Failed to delete employee");
                       }
                     }}
                     className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm hover:shadow-md cursor-pointer"

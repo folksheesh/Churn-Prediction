@@ -168,7 +168,7 @@ export default function Customers() {
       link.remove();
     } catch (err) {
       console.error(err);
-      alert('Failed to download template');
+      setAddCustomerStatus({ type: 'error', msg: 'Failed to download template. Please try again.' });
     }
   };
 

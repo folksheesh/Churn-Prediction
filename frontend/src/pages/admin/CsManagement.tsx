@@ -30,6 +30,7 @@ export default function CsManagement() {
     department: 'Support'
   });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const fetchAgents = async () => {
     try {
@@ -49,6 +50,7 @@ export default function CsManagement() {
   const handleOpenAdd = () => {
     setIsEditMode(false);
     setSelectedAgent(null);
+    setSaveError(null);
     setFormData({ name: '', email: '', password: '', role: 'CS Agent', phone: '', department: 'Support' });
     setIsAddDrawerOpen(true);
   };
@@ -56,6 +58,7 @@ export default function CsManagement() {
   const handleOpenEdit = (agent: CSAgent) => {
     setIsEditMode(true);
     setSelectedAgent(agent);
+    setSaveError(null);
     setFormData({ 
       name: agent.name, 
       email: agent.email, 
@@ -80,9 +83,9 @@ export default function CsManagement() {
       }
       await fetchAgents();
       setIsAddDrawerOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save CS agent", err);
-      alert("Failed to save. Check your connection or permissions.");
+      setSaveError(err.response?.data?.detail || "Failed to save. Check your connection or permissions.");
     } finally {
       setSaving(false);
     }
@@ -184,6 +187,12 @@ export default function CsManagement() {
             </div>
             <div className="p-5 flex-1 overflow-y-auto">
               <form id="csForm" onSubmit={handleSubmit} className="space-y-4">
+                {saveError && (
+                  <div className="flex items-start gap-2 p-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 font-medium">
+                    <span className="shrink-0">⚠️</span>
+                    <span>{saveError}</span>
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold text-zinc-700 mb-1">Full Name</label>
                   <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="saas-input w-full" placeholder="John Doe" />
