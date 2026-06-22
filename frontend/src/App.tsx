@@ -17,6 +17,7 @@ import ForgotPassword from '@/pages/auth/ForgotPassword';
 import AdminManagement from '@/pages/admin/AdminManagement';
 import UserManagement from '@/pages/admin/UserManagement';
 import Landing from '@/pages/Landing';
+import ExpoDemo from '@/pages/ExpoDemo';
 import UserDashboard from '@/pages/user/Dashboard';
 
 import CsManagement from '@/pages/admin/CsManagement';
@@ -36,6 +37,9 @@ export default function App() {
 
           {/* Public Landing Page */}
           <Route path="/" element={<Landing />} />
+
+          {/* Public Expo Demo Page */}
+          <Route path="/expo-demo" element={<ExpoDemo />} />
 
           {/* Protected Admin Routes */}
           <Route element={<ProtectedRoute allowedRoles={['super_admin', 'company_admin']} />}>
