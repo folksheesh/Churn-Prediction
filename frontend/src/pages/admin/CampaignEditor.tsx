@@ -75,11 +75,12 @@ export default function CampaignEditor() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const payload = { ...campaign, status: 'active' };
       if (isNew) {
-        await api.post('/campaigns', campaign);
+        await api.post('/campaigns', payload);
         navigate(`/admin/campaigns`);
       } else {
-        await api.put(`/campaigns/${id}`, campaign);
+        await api.put(`/campaigns/${id}`, payload);
         showToast('Campaign saved successfully', 'success');
       }
     } catch (err: any) {
@@ -177,9 +178,14 @@ export default function CampaignEditor() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-zinc-500">Loading campaign...</div>;
+  if (loading) return (
+    <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-indigo-50/30 to-slate-50/50 justify-center items-center">
+      <Loader2 size={32} className="animate-spin text-brand-500 mb-4" />
+      <p className="text-zinc-500 font-medium">Loading campaign details...</p>
+    </div>
+  );
 
-  const isReadOnly = !isNew && campaign.status !== 'draft' && campaign.status !== 'active';
+  const isReadOnly = false;
 
   return (
     <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-indigo-50/30 to-slate-50/50 overflow-y-auto">

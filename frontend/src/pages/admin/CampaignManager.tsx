@@ -257,16 +257,15 @@ export default function CampaignManager() {
             </div>
 
             <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto shrink-0">
-              {activeCampaign?.status !== 'completed' && activeCampaign?.status !== 'active' && (
-                <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-zinc-200 shadow-sm">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider pl-2 pr-1">Quick Add:</span>
-                  <button onClick={() => addRecipientsByRisk('High')} className="px-2.5 py-1.5 bg-rose-50 text-rose-700 text-xs font-bold rounded-lg hover:bg-rose-100 transition-colors">High</button>
-                  <button onClick={() => addRecipientsByRisk('Medium')} className="px-2.5 py-1.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors">Med</button>
-                  <button onClick={() => addRecipientsByRisk('Low')} className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg hover:bg-emerald-100 transition-colors">Low</button>
-                </div>
-              )}
+              {/* Always show Quick Add buttons */}
+              <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-zinc-200 shadow-sm">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider pl-2 pr-1">Quick Add:</span>
+                <button onClick={() => addRecipientsByRisk('High')} className="px-2.5 py-1.5 bg-rose-50 text-rose-700 text-xs font-bold rounded-lg hover:bg-rose-100 transition-colors">High</button>
+                <button onClick={() => addRecipientsByRisk('Medium')} className="px-2.5 py-1.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors">Med</button>
+                <button onClick={() => addRecipientsByRisk('Low')} className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg hover:bg-emerald-100 transition-colors">Low</button>
+              </div>
 
-              {recipients.length > 0 && activeCampaign?.status === 'draft' && (
+              {recipients.length > 0 && (
                 <button
                   onClick={triggerSendConfirm}
                   className="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-sm font-bold rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95"
