@@ -46,6 +46,7 @@ export default function UserManagement() {
   // Action states
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [cancelConfirm, setCancelConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -95,6 +96,19 @@ export default function UserManagement() {
       fetchData();
     } catch (err: any) {
       alert(err.response?.data?.detail || 'Failed to resend invitation.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancelInvite = async (email: string) => {
+    setActionLoading(`cancel-${email}`);
+    setCancelConfirm(null);
+    try {
+      await api.delete('/auth/invite/cancel', { data: { email } });
+      fetchData();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to cancel invitation.');
     } finally {
       setActionLoading(null);
     }
@@ -307,14 +321,43 @@ export default function UserManagement() {
                         <td className="px-6 py-4 text-sm text-zinc-500">{formatDate(inv.expired_at)}</td>
                         <td className="px-6 py-4 text-sm text-zinc-500">{formatDate(inv.created_at)}</td>
                         <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => handleResendInvite(inv.email)}
-                            disabled={actionLoading === `resend-${inv.email}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors disabled:opacity-50"
-                          >
-                            <RefreshCw size={12} className={actionLoading === `resend-${inv.email}` ? 'animate-spin' : ''} />
-                            Resend
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleResendInvite(inv.email)}
+                              disabled={actionLoading === `resend-${inv.email}` || actionLoading === `cancel-${inv.email}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              <RefreshCw size={12} className={actionLoading === `resend-${inv.email}` ? 'animate-spin' : ''} />
+                              Resend
+                            </button>
+
+                            {cancelConfirm === inv.email ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleCancelInvite(inv.email)}
+                                  disabled={actionLoading === `cancel-${inv.email}`}
+                                  className="px-2.5 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                  {actionLoading === `cancel-${inv.email}` ? 'Cancelling...' : 'Confirm'}
+                                </button>
+                                <button
+                                  onClick={() => setCancelConfirm(null)}
+                                  className="px-2.5 py-1.5 text-xs font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+                                >
+                                  No
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setCancelConfirm(inv.email)}
+                                disabled={actionLoading === `cancel-${inv.email}` || actionLoading === `resend-${inv.email}`}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                <X size={12} />
+                                Batal
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))

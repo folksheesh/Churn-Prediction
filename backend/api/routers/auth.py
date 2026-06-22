@@ -331,6 +331,32 @@ def resend_invitation(
     
     return {"message": f"Invitation resent to {email}"}
 
+@router.delete("/invite/cancel")
+def cancel_invitation(
+    data: InviteRequest,
+    current_user: User = Depends(require_admin()),
+    db: Session = Depends(get_db)
+):
+    """Cancel a pending invitation."""
+    email = data.email.lower()
+    updated = db.query(Invitation).filter(
+        Invitation.email == email,
+        Invitation.status == "pending"
+    ).update({"status": "cancelled"})
+
+    if updated == 0:
+        raise HTTPException(status_code=404, detail="No pending invitation found for this email.")
+
+    log = ActivityLog(
+        action="Invitation Cancelled",
+        user=current_user.email,
+        details=f"Cancelled invitation for {email}",
+        result="success"
+    )
+    db.add(log)
+    db.commit()
+    return {"message": f"Invitation for {email} has been cancelled."}
+
 @router.get("/invite/validate")
 def validate_invitation(token: str, db: Session = Depends(get_db)):
     """Validate an invitation token (public endpoint for activate-account page)."""
