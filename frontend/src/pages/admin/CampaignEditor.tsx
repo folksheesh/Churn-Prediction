@@ -30,6 +30,7 @@ export default function CampaignEditor() {
   const [previewHtml, setPreviewHtml] = useState<{subject: string, html: string} | null>(null);
 
   const [toast, setToast] = useState<{show: boolean, message: string, type: 'success'|'error'}>({ show: false, message: '', type: 'success' });
+  const [confirmModal, setConfirmModal] = useState<{action: 'send'|'delete', label: string} | null>(null);
 
   const showToast = (message: string, type: 'success'|'error' = 'error') => {
     setToast({ show: true, message, type });
@@ -96,26 +97,33 @@ export default function CampaignEditor() {
       showToast("Please add recipients first.", 'error');
       return;
     }
-    if (!window.confirm(`Are you sure you want to send this campaign to ${recipients.length} recipients?`)) return;
-    
-    try {
-      await api.post(`/campaigns/${id}/send`);
-      showToast('Campaign sending started!', 'success');
-      setTimeout(() => navigate('/admin/campaigns'), 1500);
-    } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Failed to send campaign', 'error');
-    }
+    setConfirmModal({ action: 'send', label: `Send this campaign to ${recipients.length} recipient${recipients.length !== 1 ? 's' : ''}?` });
   };
 
   const handleDelete = async () => {
     if (!id) return;
-    if (!window.confirm(`Are you sure you want to delete this campaign?`)) return;
-    try {
-      await api.delete(`/campaigns/${id}`);
-      showToast('Campaign deleted successfully', 'success');
-      setTimeout(() => navigate('/admin/campaigns'), 1000);
-    } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Failed to delete campaign', 'error');
+    setConfirmModal({ action: 'delete', label: 'Delete this campaign permanently? This cannot be undone.' });
+  };
+
+  const executeConfirm = async () => {
+    if (!confirmModal) return;
+    setConfirmModal(null);
+    if (confirmModal.action === 'send') {
+      try {
+        await api.post(`/campaigns/${id}/send`);
+        showToast('Campaign sending started!', 'success');
+        setTimeout(() => navigate('/admin/campaigns'), 1500);
+      } catch (err: any) {
+        showToast(err.response?.data?.detail || 'Failed to send campaign', 'error');
+      }
+    } else if (confirmModal.action === 'delete') {
+      try {
+        await api.delete(`/campaigns/${id}`);
+        showToast('Campaign deleted successfully', 'success');
+        setTimeout(() => navigate('/admin/campaigns'), 1000);
+      } catch (err: any) {
+        showToast(err.response?.data?.detail || 'Failed to delete campaign', 'error');
+      }
     }
   };
 
@@ -386,6 +394,40 @@ export default function CampaignEditor() {
           <button onClick={() => setToast(prev => ({...prev, show: false}))} className={`ml-3 p-1 rounded-md transition-colors ${toast.type === 'success' ? 'text-emerald-600 hover:bg-emerald-100' : 'text-rose-600 hover:bg-rose-100'}`}>
             <X size={16} />
           </button>
+        </div>
+      )}
+      {/* Confirm Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-[420px] bg-white border border-zinc-200 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${confirmModal.action === 'delete' ? 'bg-rose-50 text-rose-600' : 'bg-brand-50 text-brand-600'}`}>
+                  {confirmModal.action === 'delete' ? <Trash2 size={18} /> : <Send size={18} />}
+                </div>
+                <h3 className="text-base font-bold text-zinc-900">
+                  {confirmModal.action === 'delete' ? 'Delete Campaign' : 'Send Campaign'}
+                </h3>
+              </div>
+              <p className="text-sm text-zinc-500 leading-relaxed">{confirmModal.label}</p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setConfirmModal(null)}
+                  className="px-5 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={executeConfirm}
+                  className={`px-5 py-2 text-white font-bold rounded-xl text-xs transition-all shadow-sm cursor-pointer ${confirmModal.action === 'delete' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-brand-600 hover:bg-brand-700'}`}
+                >
+                  {confirmModal.action === 'delete' ? 'Yes, Delete' : 'Yes, Send'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
