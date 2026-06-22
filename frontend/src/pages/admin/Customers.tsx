@@ -40,7 +40,7 @@ export default function Customers() {
   const [formData, setFormData] = useState({
     id: '', name: '', email: '', phone_number: '', age: '', gender: 'Male', plan_tier: 'Basic', 
     api_calls_90d: '', logins_90d: '', days_since_active: '',
-    points_in_wallet: '', avg_transaction_value: '', avg_session_duration: ''
+    points_in_wallet: '', avg_transaction_value: '', avg_session_duration: '', feedback: ''
   });
   const [addCustomerStatus, setAddCustomerStatus] = useState<{type: 'error'|'success', msg: string}|null>(null);
 
@@ -930,6 +930,25 @@ export default function Customers() {
                     <label className="text-[13px] font-bold text-zinc-700">Avg Session (Mins)</label>
                     <input type="number" min="0" step="any" required placeholder="0" value={formData.avg_session_duration} onChange={e => setFormData({...formData, avg_session_duration: e.target.value})} className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400" />
                   </div>
+                </div>
+
+                <div className="pt-2 pb-1">
+                  <div className="h-px w-full bg-gradient-to-r from-transparent via-indigo-100 to-transparent"></div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-bold text-zinc-700 flex items-center gap-1.5">
+                    <MessageSquare size={13} className="text-zinc-400" />
+                    Customer Feedback
+                    <span className="text-[11px] font-medium text-zinc-400 ml-1">(optional)</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="e.g. Great service, but onboarding was confusing..."
+                    value={formData.feedback}
+                    onChange={e => setFormData({...formData, feedback: e.target.value})}
+                    className="w-full border border-indigo-100 bg-indigo-50/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all hover:bg-white placeholder:text-zinc-400 resize-none"
+                  />
                 </div>
               </div>
 
