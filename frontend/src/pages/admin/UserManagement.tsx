@@ -354,7 +354,7 @@ export default function UserManagement() {
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors disabled:opacity-50"
                               >
                                 <X size={12} />
-                                Batal
+                                Cancel
                               </button>
                             )}
                           </div>
