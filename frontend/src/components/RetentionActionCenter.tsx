@@ -34,7 +34,7 @@ export default function RetentionActionCenter({ customer, onClose, onSuccess }: 
       try {
         // Fetch dynamic campaigns
         const campRes = await api.get('/campaigns');
-        const activeCampaigns = campRes.data.filter((c: any) => c.status !== 'completed');
+        const activeCampaigns = campRes.data;
         setCampaigns(activeCampaigns);
 
         // Fetch AI recommendation

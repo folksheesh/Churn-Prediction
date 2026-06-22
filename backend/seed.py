@@ -147,7 +147,7 @@ def seed_db():
     <a href="#" style="display: inline-block; background-color: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">Access My VIP Dashboard</a>
   </div>
 </div>""",
-            status="draft",
+            status="active",
             created_by="admin@churnsense.com"
         ),
         Campaign(
@@ -165,7 +165,7 @@ def seed_db():
     <a href="#" style="display: inline-block; background-color: #d97706; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">Take the 2-Minute Survey</a>
   </div>
 </div>""",
-            status="completed",
+            status="active",
             created_by="sarah.jenkins@churnsense.com"
         )
     ]
