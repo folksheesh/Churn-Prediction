@@ -42,9 +42,7 @@ export default function Login() {
         {/* Top Logo Area */}
         <div className="relative z-10">
           <Link to="/" className="inline-flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 bg-gradient-to-tr from-brand-600 to-brand-400 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-brand-500/20">
-              <Activity size={20} strokeWidth={3} />
-            </div>
+            <img src="/logoo.jpeg" alt="ChurnSense Logo" className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-brand-500/20" />
             <span className="text-2xl font-black tracking-tight text-white">ChurnSense</span>
           </Link>
         </div>
@@ -74,7 +72,7 @@ export default function Login() {
             </div>
             <div className="flex gap-4 items-start">
               <div className="mt-1 bg-zinc-900 rounded-lg p-2 shrink-0 border border-zinc-800">
-                <Activity size={20} className="text-brand-400" />
+                <img src="/logoo.jpeg" alt="logo" className="w-5 h-5 rounded object-cover" />
               </div>
               <div>
                 <h4 className="font-bold text-white text-sm">99% Accuracy</h4>
@@ -104,9 +102,7 @@ export default function Login() {
           
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 bg-gradient-to-tr from-brand-600 to-brand-400 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-brand-500/20">
-              <Activity size={20} strokeWidth={3} />
-            </div>
+            <img src="/logoo.jpeg" alt="ChurnSense Logo" className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-brand-500/20" />
             <span className="text-2xl font-black tracking-tight text-zinc-900">ChurnSense</span>
           </div>
 

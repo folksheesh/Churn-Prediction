@@ -98,8 +98,8 @@ export default function Admin() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-emerald-100 text-emerald-700 rounded-md">
-                <Activity size={18} />
+              <div className="p-2 bg-emerald-100 rounded-md overflow-hidden">
+                <img src="/logoo.jpeg" alt="logo" className="w-[18px] h-[18px] rounded object-cover" />
               </div>
               <h3 className="font-semibold text-zinc-900 text-sm">Model Status</h3>
             </div>

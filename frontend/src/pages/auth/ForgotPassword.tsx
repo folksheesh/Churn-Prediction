@@ -158,9 +158,7 @@ export default function ForgotPassword() {
         
         <div className="relative z-10">
           <Link to="/" className="inline-flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 bg-gradient-to-tr from-brand-600 to-brand-400 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-brand-500/20">
-              <Activity size={20} strokeWidth={3} />
-            </div>
+            <img src="/logoo.jpeg" alt="ChurnSense Logo" className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-brand-500/20" />
             <span className="text-2xl font-black tracking-tight text-white">ChurnSense</span>
           </Link>
         </div>
@@ -219,9 +217,7 @@ export default function ForgotPassword() {
         <div className="w-full max-w-md mx-auto px-8 sm:px-12 py-12">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 bg-gradient-to-tr from-brand-600 to-brand-400 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-brand-500/20">
-              <Activity size={20} strokeWidth={3} />
-            </div>
+            <img src="/logoo.jpeg" alt="ChurnSense Logo" className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-brand-500/20" />
             <span className="text-2xl font-black tracking-tight text-zinc-900">ChurnSense</span>
           </div>
 

@@ -60,9 +60,7 @@ export default function Landing() {
         className="absolute top-0 left-0 right-0 flex justify-between items-center px-6 py-6 md:px-12 max-w-[1400px] mx-auto w-full z-50"
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-brand-600 rounded-lg flex items-center justify-center shadow-sm">
-            <Activity size={18} className="text-white" />
-          </div>
+          <img src="/logoo.jpeg" alt="ChurnSense Logo" className="w-9 h-9 rounded-lg object-cover shadow-sm" />
           <span className="text-xl font-bold tracking-tight text-slate-900 font-outfit">ChurnSense</span>
         </div>
         <div className="flex items-center gap-3">
@@ -247,7 +245,7 @@ export default function Landing() {
       <footer className="py-8 border-t border-slate-200 bg-white text-center text-slate-500 text-sm mt-auto">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Activity size={16} className="text-brand-600" />
+            <img src="/logoo.jpeg" alt="ChurnSense Logo" className="w-5 h-5 rounded-md object-cover" />
             <span className="font-bold text-slate-900 font-outfit">ChurnSense</span>
           </div>
           <p>&copy; 2026 ChurnSense Inc. All rights reserved.</p>
