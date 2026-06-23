@@ -35,7 +35,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
       {/* Workspace Selector (Linear style) */}
       <div className="h-16 flex items-center px-4 border-b border-slate-200/60 mb-4">
         <Link to="/" className="flex items-center gap-3 w-full hover:bg-slate-100/80 p-1.5 -ml-1.5 rounded-xl transition-all cursor-pointer group">
-          <img src="/logoo.jpeg" alt="ChurnSense Logo" className="w-8 h-8 rounded-lg object-cover shadow-[0_2px_10px_rgba(37,99,235,0.2)]" />
+          <img src="/logo keren.jpeg" alt="ChurnSense Logo" className="w-8 h-8 rounded-lg object-cover shadow-[0_2px_10px_rgba(37,99,235,0.2)]" />
           <div className="flex flex-col flex-1 justify-center">
             <span className="font-semibold text-[13px] tracking-tight text-slate-900 leading-tight">ChurnSense</span>
             <span className="text-[11px] text-slate-500 font-medium">Acme Corporation</span>
