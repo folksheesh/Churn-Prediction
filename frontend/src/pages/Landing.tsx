@@ -142,16 +142,12 @@ export default function Landing() {
 
           <div className="max-w-5xl mx-auto relative z-10">
             <motion.div {...fadeIn} className="text-center mb-14">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-semibold tracking-wide mb-5">
-                <Activity size={13} />
-                Memahami Masalah
-              </span>
               <h2 className="text-3xl md:text-4xl lg:text-[42px] font-black text-slate-900 mb-5 font-outfit tracking-tight leading-tight">
-                Apa Itu <span className="text-brand-600">Customer Churn</span>?
+                What is <span className="text-brand-600">Customer Churn</span>?
               </h2>
               <p className="text-slate-500 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-                <strong className="text-slate-700">Customer churn</strong> adalah ketika pelanggan berhenti menggunakan produk atau layanan Anda.
-                Ini merupakan salah satu ancaman terbesar bagi pertumbuhan bisnis — karena mempertahankan pelanggan jauh lebih murah daripada mencari pelanggan baru.
+                <strong className="text-slate-700">Customer churn</strong> is when customers stop doing business with you or stop using your product.
+                It is one of the biggest threats to business growth — because retaining an existing customer is much cheaper than acquiring a new one.
               </p>
             </motion.div>
 
@@ -169,24 +165,24 @@ export default function Landing() {
                   iconBg: 'bg-red-50 border-red-100',
                   title: 'Revenue Loss',
                   stat: '~$1.6T',
-                  statLabel: 'per tahun secara global',
-                  desc: 'Bisnis kehilangan triliunan dolar setiap tahun akibat pelanggan yang pergi tanpa peringatan dini.',
+                  statLabel: 'per year globally',
+                  desc: 'Businesses lose trillions of dollars every year due to customers leaving without early warning.',
                 },
                 {
                   icon: <Users size={24} className="text-amber-500" />,
                   iconBg: 'bg-amber-50 border-amber-100',
-                  title: 'Biaya Akuisisi Tinggi',
+                  title: 'High Acquisition Cost',
                   stat: '5–25×',
-                  statLabel: 'lebih mahal',
-                  desc: 'Mendapatkan pelanggan baru bisa 5 sampai 25 kali lebih mahal daripada mempertahankan pelanggan yang sudah ada.',
+                  statLabel: 'more expensive',
+                  desc: 'Acquiring a new customer can be 5 to 25 times more expensive than retaining an existing one.',
                 },
                 {
                   icon: <ShieldAlert size={24} className="text-indigo-500" />,
                   iconBg: 'bg-indigo-50 border-indigo-100',
-                  title: 'Efek Domino',
+                  title: 'Domino Effect',
                   stat: '1 → 26',
-                  statLabel: 'pelanggan terdampak',
-                  desc: 'Untuk setiap 1 pelanggan yang komplain, ada 26 pelanggan lain yang pergi secara diam-diam tanpa memberi tahu Anda.',
+                  statLabel: 'customers affected',
+                  desc: 'For every 1 customer who complains, 26 other customers leave silently without telling you.',
                 },
               ].map((card, i) => (
                 <motion.div
@@ -222,10 +218,10 @@ export default function Landing() {
               <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
                 <div className="flex-1">
                   <h3 className="text-2xl md:text-[26px] font-bold text-white mb-3 font-outfit leading-snug">
-                    Solusinya? <span className="text-brand-400">Prediksi sebelum terjadi.</span>
+                    The Solution? <span className="text-brand-400">Predict before it happens.</span>
                   </h3>
                   <p className="text-slate-400 leading-relaxed text-[15px] md:text-base">
-                    Dengan <strong className="text-slate-200">machine learning</strong>, ChurnSense menganalisis pola perilaku pelanggan dan memprediksi siapa yang berisiko pergi — sehingga tim Anda bisa mengambil tindakan <em>sebelum</em> mereka benar-benar pergi.
+                    With <strong className="text-slate-200">machine learning</strong>, ChurnSense analyzes customer behavior patterns and predicts who is at risk of leaving — so your team can take action <em>before</em> they actually leave.
                   </p>
                 </div>
                 <div className="flex-shrink-0 flex flex-col sm:flex-row gap-3">
@@ -233,14 +229,14 @@ export default function Landing() {
                     to="/expo-demo"
                     className="group bg-brand-600 hover:bg-brand-500 text-white font-semibold px-6 py-3 rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-brand-600/25"
                   >
-                    Coba Demo AI
+                    Try AI Demo
                     <Sparkles size={15} className="group-hover:rotate-12 transition-transform" />
                   </Link>
                   <Link
                     to="/login"
                     className="bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 rounded-xl transition-all text-sm flex items-center gap-2 border border-white/10"
                   >
-                    Pelajari Lebih Lanjut
+                    Learn More
                     <ArrowRight size={15} />
                   </Link>
                 </div>
