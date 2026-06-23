@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Activity, ShieldAlert, BarChart3, Users, ArrowRight, CheckCircle2, Upload, FileCheck, Cpu, Rocket } from 'lucide-react';
+import { Activity, ShieldAlert, BarChart3, Users, ArrowRight, CheckCircle2, Upload, FileCheck, Cpu, Rocket, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import presentationImg from '@/assets/presentation.png';
 import feature1Img from '@/assets/feature-1.png';
@@ -132,6 +132,120 @@ export default function Landing() {
               />
             </motion.div>
             
+          </div>
+        </section>
+
+        {/* ── What is Churn? Section ── */}
+        <section className="py-20 px-6 md:px-12 relative overflow-hidden">
+          {/* Decorative bg glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-gradient-to-r from-brand-200/20 to-indigo-200/20 blur-[100px] rounded-full pointer-events-none" />
+
+          <div className="max-w-5xl mx-auto relative z-10">
+            <motion.div {...fadeIn} className="text-center mb-14">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-semibold tracking-wide mb-5">
+                <Activity size={13} />
+                Memahami Masalah
+              </span>
+              <h2 className="text-3xl md:text-4xl lg:text-[42px] font-black text-slate-900 mb-5 font-outfit tracking-tight leading-tight">
+                Apa Itu <span className="text-brand-600">Customer Churn</span>?
+              </h2>
+              <p className="text-slate-500 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
+                <strong className="text-slate-700">Customer churn</strong> adalah ketika pelanggan berhenti menggunakan produk atau layanan Anda.
+                Ini merupakan salah satu ancaman terbesar bagi pertumbuhan bisnis — karena mempertahankan pelanggan jauh lebih murah daripada mencari pelanggan baru.
+              </p>
+            </motion.div>
+
+            {/* 3 Impact Cards */}
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-50px" }}
+              className="grid md:grid-cols-3 gap-6 mb-14"
+            >
+              {[
+                {
+                  icon: <BarChart3 size={24} className="text-red-500" />,
+                  iconBg: 'bg-red-50 border-red-100',
+                  title: 'Revenue Loss',
+                  stat: '~$1.6T',
+                  statLabel: 'per tahun secara global',
+                  desc: 'Bisnis kehilangan triliunan dolar setiap tahun akibat pelanggan yang pergi tanpa peringatan dini.',
+                },
+                {
+                  icon: <Users size={24} className="text-amber-500" />,
+                  iconBg: 'bg-amber-50 border-amber-100',
+                  title: 'Biaya Akuisisi Tinggi',
+                  stat: '5–25×',
+                  statLabel: 'lebih mahal',
+                  desc: 'Mendapatkan pelanggan baru bisa 5 sampai 25 kali lebih mahal daripada mempertahankan pelanggan yang sudah ada.',
+                },
+                {
+                  icon: <ShieldAlert size={24} className="text-indigo-500" />,
+                  iconBg: 'bg-indigo-50 border-indigo-100',
+                  title: 'Efek Domino',
+                  stat: '1 → 26',
+                  statLabel: 'pelanggan terdampak',
+                  desc: 'Untuk setiap 1 pelanggan yang komplain, ada 26 pelanggan lain yang pergi secara diam-diam tanpa memberi tahu Anda.',
+                },
+              ].map((card, i) => (
+                <motion.div
+                  key={i}
+                  variants={staggerItem}
+                  className="group bg-white rounded-2xl p-7 border border-slate-100 shadow-sm hover:shadow-lg hover:border-slate-200 transition-all duration-300 hover:-translate-y-1"
+                >
+                  <div className={`w-12 h-12 rounded-xl ${card.iconBg} border flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
+                    {card.icon}
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-2 font-outfit">{card.title}</h3>
+                  <div className="flex items-baseline gap-2 mb-3">
+                    <span className="text-2xl font-black text-slate-900 font-outfit">{card.stat}</span>
+                    <span className="text-sm text-slate-400 font-medium">{card.statLabel}</span>
+                  </div>
+                  <p className="text-sm text-slate-500 leading-relaxed">{card.desc}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Solution callout */}
+            <motion.div
+              {...fadeIn}
+              className="relative rounded-2xl p-8 md:p-10 overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+              }}
+            >
+              {/* Inner glow */}
+              <div className="absolute top-0 right-0 w-80 h-80 bg-brand-500/15 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-60 h-60 bg-indigo-500/10 rounded-full blur-[60px] pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                <div className="flex-1">
+                  <h3 className="text-2xl md:text-[26px] font-bold text-white mb-3 font-outfit leading-snug">
+                    Solusinya? <span className="text-brand-400">Prediksi sebelum terjadi.</span>
+                  </h3>
+                  <p className="text-slate-400 leading-relaxed text-[15px] md:text-base">
+                    Dengan <strong className="text-slate-200">machine learning</strong>, ChurnSense menganalisis pola perilaku pelanggan dan memprediksi siapa yang berisiko pergi — sehingga tim Anda bisa mengambil tindakan <em>sebelum</em> mereka benar-benar pergi.
+                  </p>
+                </div>
+                <div className="flex-shrink-0 flex flex-col sm:flex-row gap-3">
+                  <Link
+                    to="/expo-demo"
+                    className="group bg-brand-600 hover:bg-brand-500 text-white font-semibold px-6 py-3 rounded-xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-brand-600/25"
+                  >
+                    Coba Demo AI
+                    <Sparkles size={15} className="group-hover:rotate-12 transition-transform" />
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 rounded-xl transition-all text-sm flex items-center gap-2 border border-white/10"
+                  >
+                    Pelajari Lebih Lanjut
+                    <ArrowRight size={15} />
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </section>
 
