@@ -453,7 +453,7 @@ export default function Home() {
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 px-6 h-16 flex items-center justify-between shrink-0 shadow-sm transition-all">
         {/* Left: Logo */}
         <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-          <img src="/logoo.jpeg" alt="ChurnSense Logo" className="w-8 h-8 rounded-lg object-cover shadow-[0_2px_10px_rgba(37,99,235,0.2)]" />
+          <img src="/logo keren.jpeg" alt="ChurnSense Logo" className="w-8 h-8 rounded-lg object-cover shadow-[0_2px_10px_rgba(37,99,235,0.2)]" />
           <h1 className="font-outfit font-bold text-lg leading-tight text-slate-900 hidden sm:block">ChurnSense</h1>
         </Link>
 
@@ -503,7 +503,7 @@ export default function Home() {
                 : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent"
             }`}
           >
-            <img src="/logoo.jpeg" alt="logo" className={`w-4 h-4 shrink-0 rounded object-cover transition-opacity ${activeTab === "analysis" ? "opacity-100" : "opacity-50"}`} />
+            <img src="/logo keren.jpeg" alt="logo" className={`w-4 h-4 shrink-0 rounded object-cover transition-opacity ${activeTab === "analysis" ? "opacity-100" : "opacity-50"}`} />
             <span>Analysis</span>
           </button>
 
@@ -657,7 +657,7 @@ export default function Home() {
                     <h3 className="text-3xl font-extrabold text-slate-900 font-outfit mt-2">{summary.totalCustomers?.toLocaleString()}</h3>
                   </div>
                   <div className="text-xs text-slate-400 mt-2 flex items-center gap-1">
-                    <img src="/logoo.jpeg" alt="logo" className="w-3.5 h-3.5 rounded object-cover" />
+                    <img src="/logo keren.jpeg" alt="logo" className="w-3.5 h-3.5 rounded object-cover" />
                     <span>Live active customers in dataset</span>
                   </div>
                 </div>
