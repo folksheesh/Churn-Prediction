@@ -467,7 +467,7 @@ export default function ExpoDemo() {
       <ThemeToggle isDark={t.dark} onToggle={() => setThemeMode(m => m === 'dark' ? 'light' : 'dark')} />
 
       {/* Main container: Mobile-first, expands gracefully on desktop */}
-      <div className="relative z-10 w-full max-w-[430px] md:max-w-3xl lg:max-w-4xl mx-auto min-h-screen flex flex-col md:justify-center">
+      <div className="relative z-10 w-full max-w-[430px] md:max-w-[700px] lg:max-w-[800px] mx-auto min-h-screen flex flex-col md:justify-center md:py-8">
         <AnimatePresence mode="wait" initial={false}>
           {screen === 'hero'       && <HeroSection      key="hero"       t={t} onStart={() => setScreen('questions')} />}
           {screen === 'questions'  && (
@@ -706,7 +706,7 @@ function QuestionSection({
           {questionIndex + 1} / {totalQuestions}
         </div>
         <div className="w-10 h-10 rounded-xl overflow-hidden opacity-75">
-          <img src="/logo keren.jpeg" alt="ChurnSense" className="w-full h-full object-cover" />
+          <img src="/logo%20keren.jpeg" alt="ChurnSense" className="w-full h-full object-cover" />
         </div>
       </div>
 
@@ -995,7 +995,7 @@ function ResultSection({ t, pct, meta, answers, onReset, onDashboard }: ResultSe
       <div className="px-5 pt-12 pb-5">
         <div className="flex items-center justify-between pr-14">
           <div className="flex items-center gap-2">
-            <img src="/logo keren.jpeg" alt="ChurnSense" className="w-7 h-7 rounded-lg object-cover opacity-80" />
+            <img src="/logo%20keren.jpeg" alt="ChurnSense" className="w-7 h-7 rounded-lg object-cover opacity-80" />
             <span className="font-semibold text-sm" style={{ color: t.s }}>ChurnSense</span>
           </div>
           <button
@@ -1009,7 +1009,10 @@ function ResultSection({ t, pct, meta, answers, onReset, onDashboard }: ResultSe
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-5 pb-10 flex flex-col md:grid md:grid-cols-2 md:gap-6 space-y-4 md:space-y-0 md:items-start">
+      <div className="flex-1 overflow-y-auto px-5 pb-10 flex flex-col space-y-4">
+        
+        {/* Top 4 Panels (Grid on Desktop) */}
+        <div className="flex flex-col md:grid md:grid-cols-2 md:gap-6 space-y-4 md:space-y-0 md:items-start">
 
         {/* Churn Risk Card */}
         <motion.div
@@ -1134,13 +1137,15 @@ function ResultSection({ t, pct, meta, answers, onReset, onDashboard }: ResultSe
           </div>
         </motion.div>
 
+        </div> {/* End of Top 4 Panels Grid */}
+
         {/* Transition to user dashboard */}
-        <div className="space-y-4 md:flex md:flex-col md:h-full">
+        <div className="pt-2 md:pt-4">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.6 }}
-            className="rounded-3xl p-6 text-center md:flex-1 md:flex md:flex-col"
+            className="rounded-3xl p-6 text-center"
             style={{
               background: t.adminCardBg,
               border: `1px solid ${t.adminCardBdr}`,
