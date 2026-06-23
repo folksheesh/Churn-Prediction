@@ -466,8 +466,8 @@ export default function ExpoDemo() {
       {/* Theme toggle — always visible */}
       <ThemeToggle isDark={t.dark} onToggle={() => setThemeMode(m => m === 'dark' ? 'light' : 'dark')} />
 
-      {/* Mobile container */}
-      <div className="relative z-10 w-full max-w-[430px] mx-auto min-h-screen flex flex-col">
+      {/* Main container: Mobile-first, expands gracefully on desktop */}
+      <div className="relative z-10 w-full max-w-[430px] md:max-w-3xl lg:max-w-4xl mx-auto min-h-screen flex flex-col md:justify-center">
         <AnimatePresence mode="wait" initial={false}>
           {screen === 'hero'       && <HeroSection      key="hero"       t={t} onStart={() => setScreen('questions')} />}
           {screen === 'questions'  && (
@@ -753,8 +753,8 @@ function QuestionSection({
         </h2>
       </div>
 
-      {/* Options — professional Lucide icons replace emojis */}
-      <div className="flex flex-col gap-3 flex-1">
+      {/* Options — Grid on desktop */}
+      <div className="flex flex-col gap-3 flex-1 md:grid md:grid-cols-2 md:gap-x-5 md:gap-y-4 md:content-start">
         {question.options.map(({ Icon, label, iconColor }, i) => {
           const isSel = selected === i;
           return (
@@ -1009,7 +1009,7 @@ function ResultSection({ t, pct, meta, answers, onReset, onDashboard }: ResultSe
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-5 pb-10 space-y-4">
+      <div className="flex-1 overflow-y-auto px-5 pb-10 flex flex-col md:grid md:grid-cols-2 md:gap-6 space-y-4 md:space-y-0 md:items-start">
 
         {/* Churn Risk Card */}
         <motion.div
@@ -1135,16 +1135,17 @@ function ResultSection({ t, pct, meta, answers, onReset, onDashboard }: ResultSe
         </motion.div>
 
         {/* Transition to user dashboard */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.6 }}
-          className="rounded-3xl p-6 text-center"
-          style={{
-            background: t.adminCardBg,
-            border: `1px solid ${t.adminCardBdr}`,
-          }}
-        >
+        <div className="space-y-4 md:flex md:flex-col md:h-full">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7, duration: 0.6 }}
+            className="rounded-3xl p-6 text-center md:flex-1 md:flex md:flex-col"
+            style={{
+              background: t.adminCardBg,
+              border: `1px solid ${t.adminCardBdr}`,
+            }}
+          >
           <div
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-4"
             style={{ background: t.pillBg, color: t.pillTxt, border: `1px solid ${t.pillBdr}` }}
@@ -1179,21 +1180,22 @@ function ResultSection({ t, pct, meta, answers, onReset, onDashboard }: ResultSe
             ))}
           </div>
 
-          <motion.button
-            id="expo-goto-dashboard-btn"
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={onDashboard}
-            className="w-full py-3.5 rounded-2xl font-bold text-[15px] flex items-center justify-center gap-2.5 text-white"
-            style={{
-              backgroundImage: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
-              boxShadow: t.dark ? '0 8px 24px rgba(37,99,235,0.35)' : '0 6px 18px rgba(37,99,235,0.20)',
-            }}
-          >
-            Masuk ke Dashboard
-            <ArrowRight size={17} />
-          </motion.button>
-        </motion.div>
+            <motion.button
+              id="expo-goto-dashboard-btn"
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={onDashboard}
+              className="w-full py-3.5 rounded-2xl font-bold text-[15px] flex items-center justify-center gap-2.5 text-white mt-auto"
+              style={{
+                backgroundImage: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+                boxShadow: t.dark ? '0 8px 24px rgba(37,99,235,0.35)' : '0 6px 18px rgba(37,99,235,0.20)',
+              }}
+            >
+              Masuk ke Dashboard
+              <ArrowRight size={17} />
+            </motion.button>
+          </motion.div>
+        </div>
 
         <div className="h-4" />
       </div>
