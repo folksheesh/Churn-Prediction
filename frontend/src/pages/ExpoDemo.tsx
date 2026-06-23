@@ -396,7 +396,7 @@ export default function ExpoDemo() {
   const [churnPct, setChurnPct] = useState(0);
   const [direction, setDirection] = useState(1);
   const [checkedSteps, setCheckedSteps] = useState<number[]>([]);
-  const [themeMode, setThemeMode] = useState<'dark' | 'light'>('dark');
+  const [themeMode, setThemeMode] = useState<'dark' | 'light'>('light');
   const navigate = useNavigate();
 
   const t = themeMode === 'dark' ? DARK : LIGHT;
