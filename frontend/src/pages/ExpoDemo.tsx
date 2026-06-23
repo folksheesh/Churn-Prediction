@@ -525,7 +525,7 @@ function HeroSection({ t, onStart }: { t: ThemeConfig; onStart: () => void }) {
       >
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg overflow-hidden shadow-lg">
-            <img src="/logoo.jpeg" alt="ChurnSense" className="w-full h-full object-cover" />
+            <img src="/logo keren.jpeg" alt="ChurnSense" className="w-full h-full object-cover" />
           </div>
           <span className="font-bold text-[15px] tracking-tight" style={{ color: t.h }}>ChurnSense</span>
         </div>
@@ -706,7 +706,7 @@ function QuestionSection({
           {questionIndex + 1} / {totalQuestions}
         </div>
         <div className="w-10 h-10 rounded-xl overflow-hidden opacity-75">
-          <img src="/logoo.jpeg" alt="ChurnSense" className="w-full h-full object-cover" />
+          <img src="/logo keren.jpeg" alt="ChurnSense" className="w-full h-full object-cover" />
         </div>
       </div>
 
@@ -995,7 +995,7 @@ function ResultSection({ t, pct, meta, answers, onReset, onDashboard }: ResultSe
       <div className="px-5 pt-12 pb-5">
         <div className="flex items-center justify-between pr-14">
           <div className="flex items-center gap-2">
-            <img src="/logoo.jpeg" alt="ChurnSense" className="w-7 h-7 rounded-lg object-cover opacity-80" />
+            <img src="/logo keren.jpeg" alt="ChurnSense" className="w-7 h-7 rounded-lg object-cover opacity-80" />
             <span className="font-semibold text-sm" style={{ color: t.s }}>ChurnSense</span>
           </div>
           <button
