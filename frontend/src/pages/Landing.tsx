@@ -206,22 +206,19 @@ export default function Landing() {
             {/* Solution callout */}
             <motion.div
               {...fadeIn}
-              className="relative rounded-2xl p-8 md:p-10 overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-              }}
+              className="relative rounded-2xl p-8 md:p-10 overflow-hidden border border-brand-100 shadow-xl shadow-brand-900/5 bg-white"
             >
               {/* Inner glow */}
-              <div className="absolute top-0 right-0 w-80 h-80 bg-brand-500/15 rounded-full blur-[80px] pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-60 h-60 bg-indigo-500/10 rounded-full blur-[60px] pointer-events-none" />
+              <div className="absolute top-0 right-0 w-80 h-80 bg-brand-500/5 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-60 h-60 bg-indigo-500/5 rounded-full blur-[60px] pointer-events-none" />
 
               <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
                 <div className="flex-1">
-                  <h3 className="text-2xl md:text-[26px] font-bold text-white mb-3 font-outfit leading-snug">
-                    The Solution? <span className="text-brand-400">Predict before it happens.</span>
+                  <h3 className="text-2xl md:text-[26px] font-bold text-slate-900 mb-3 font-outfit leading-snug">
+                    The Solution? <span className="text-brand-600">Predict before it happens.</span>
                   </h3>
-                  <p className="text-slate-400 leading-relaxed text-[15px] md:text-base">
-                    With <strong className="text-slate-200">machine learning</strong>, ChurnSense analyzes customer behavior patterns and predicts who is at risk of leaving — so your team can take action <em>before</em> they actually leave.
+                  <p className="text-slate-500 leading-relaxed text-[15px] md:text-base">
+                    With <strong className="text-slate-700">machine learning</strong>, ChurnSense analyzes customer behavior patterns and predicts who is at risk of leaving — so your team can take action <em>before</em> they actually leave.
                   </p>
                 </div>
                 <div className="flex-shrink-0 flex flex-col sm:flex-row gap-3">
@@ -234,7 +231,7 @@ export default function Landing() {
                   </Link>
                   <Link
                     to="/login"
-                    className="bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 rounded-xl transition-all text-sm flex items-center gap-2 border border-white/10"
+                    className="bg-white hover:bg-slate-50 text-slate-700 font-semibold px-6 py-3 rounded-xl transition-all text-sm flex items-center gap-2 border border-slate-200 shadow-sm"
                   >
                     Learn More
                     <ArrowRight size={15} />
